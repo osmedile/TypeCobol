@@ -45,6 +45,9 @@ namespace CLI.Test
             CLITestHelper.Test("dependencies_1", ReturnCode.Success);
             CLITestHelper.Test("dependencies_2", ReturnCode.Success);
             CLITestHelper.Test("dependencies_3", ReturnCode.ParsingDiagnostics);
+#if EUROINFO_RULES
+            CLITestHelper.Test("ei_dependencies_1", ReturnCode.ParsingDiagnostics);
+#endif
         }
 
         [TestMethod]
@@ -59,6 +62,12 @@ namespace CLI.Test
             CLITestHelper.Test("return_code_2", ReturnCode.OutputFileError);
             CLITestHelper.Test("return_code_3", ReturnCode.ParsingDiagnostics);
             CLITestHelper.Test("return_code_4", ReturnCode.Warning);
+        }
+
+
+        [TestMethod]
+        public void TestOutputFormat() {
+            CLITestHelper.Test("outputSignature_1", ReturnCode.Success);
         }
 
     }

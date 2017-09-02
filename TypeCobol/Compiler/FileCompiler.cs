@@ -77,6 +77,7 @@ namespace TypeCobol.Compiler
         /// </summary>
         public int SourceFileLoadTime { get; private set; }
 
+
         /// <summary>
         /// Load a Cobol source file in memory
         /// </summary>
@@ -96,6 +97,13 @@ namespace TypeCobol.Compiler
         /// </summary>
         public FileCompiler(ITextDocument textDocument, SourceFileProvider sourceFileProvider, IProcessedTokensDocumentProvider documentProvider, TypeCobolOptions compilerOptions, bool isCopyFile, CompilationProject compilationProject) :
             this(null, null, null, sourceFileProvider, documentProvider, default(ColumnsLayout), textDocument, compilerOptions, null, isCopyFile, null, compilationProject, null)
+        { }
+
+        /// <summary>
+        /// Use a pre-existing text document, not yet associated with a Cobol file + Existing SymbolTable
+        /// </summary>
+        public FileCompiler(ITextDocument textDocument, SourceFileProvider sourceFileProvider, IProcessedTokensDocumentProvider documentProvider, TypeCobolOptions compilerOptions, SymbolTable customSymbols, bool isCopyFile, CompilationProject compilationProject) :
+            this(null, null, null, sourceFileProvider, documentProvider, default(ColumnsLayout), textDocument, compilerOptions, customSymbols, isCopyFile, null, compilationProject, null)
         { }
 
         /// <summary>
@@ -127,9 +135,6 @@ namespace TypeCobol.Compiler
                 }
                 else
                 {
-                    if (isCopyFile)
-                        compilationProject.MissingCopys.Add(fileName);
-
                     var message = string.IsNullOrEmpty(libraryName) ? string.Format("Cobol source file not found: {0}", fileName)
                                                                     : string.Format("Cobol source file not found: {0} in {1}", fileName, libraryName);
                     throw new Exception(message);
@@ -218,7 +223,7 @@ namespace TypeCobol.Compiler
                 CompilationResultsForProgram.RefreshProcessedTokensDocumentSnapshot(); //Preprocessor
 
                 if (!(CompilerOptions.ExecToStep > ExecutionStep.Preprocessor)) return;
-                if (CompilerOptions.HaltOnMissingCopy && CompilationProject.MissingCopys.Count > 0) return; //If the Option is set to true and there is at least one missing copy, we don't have to run the semantic phase
+                if (CompilerOptions.HaltOnMissingCopy && CompilationResultsForProgram.MissingCopies.Count > 0) return; //If the Option is set to true and there is at least one missing copy, we don't have to run the semantic phase
 
                 AnalyticsWrapper.Telemetry.TrackEvent("[Phase] Syntaxic Step");
                 CompilationResultsForProgram.RefreshCodeElementsDocumentSnapshot(); //SyntaxCheck

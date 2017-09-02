@@ -8,6 +8,7 @@ using TypeCobol.Compiler.Text;
 using TypeCobol.Compiler.Scanner;
 using System;
 using TypeCobol.Codegen.Config;
+using TypeCobol.Tools.Options_Config;
 
 namespace TypeCobol.Server.Serialization
 {
@@ -54,12 +55,12 @@ namespace TypeCobol.Server.Serialization
     /// <summary>
     /// ConfigSerializer class to encode/decode config object between client & server communication. 
     /// </summary>
-    public class ConfigSerializer : Serializer<Config>
+    public class ConfigSerializer : Serializer<TypeCobolConfiguration>
     {
-        internal override void Encode(Config data) { Encode(msgpack, data); }
-        internal override Config Decode() { return Decode(msgpack); }
+        internal override void Encode(TypeCobolConfiguration data) { Encode(msgpack, data); }
+        internal override TypeCobolConfiguration Decode() { return Decode(msgpack); }
 
-        internal static void Encode(MsgPack msgpack, Config data)
+        internal static void Encode(MsgPack msgpack, TypeCobolConfiguration data)
         {
             msgpack.ForcePathObject("ErrorFile").AsString = string.IsNullOrEmpty(data.ErrorFile)?string.Empty:data.ErrorFile;
             msgpack.ForcePathObject("skeletonPath").AsString = string.IsNullOrEmpty(data.skeletonPath) ? string.Empty : data.skeletonPath;
@@ -68,6 +69,7 @@ namespace TypeCobol.Server.Serialization
             msgpack.ForcePathObject("HaltOnMissingCopyFilePath").AsString = string.IsNullOrEmpty(data.HaltOnMissingCopyFilePath) ? string.Empty : data.HaltOnMissingCopyFilePath;
             msgpack.ForcePathObject("AutoRmarks").AsString = Convert.ToString(data.AutoRemarks);
             msgpack.ForcePathObject("Telemetry").AsString = Convert.ToString(data.Telemetry);
+            msgpack.ForcePathObject("OutputFormat").AsString = Convert.ToString(data.OutputFormat);
 
 
 
@@ -128,9 +130,9 @@ namespace TypeCobol.Server.Serialization
                 }
             }
         }
-        internal static Config Decode(MsgPack msgpack)
+        internal static TypeCobolConfiguration Decode(MsgPack msgpack)
         {
-            Config config = new Config();
+            TypeCobolConfiguration config = new TypeCobolConfiguration();
             config.ErrorFile = msgpack.ForcePathObject("ErrorFile").AsString;
             config.skeletonPath = msgpack.ForcePathObject("skeletonPath").AsString;
             Enum.TryParse(msgpack.ForcePathObject("ExecToStep").AsString, true, out config.ExecToStep); //Get string processing step into enum value
@@ -138,6 +140,7 @@ namespace TypeCobol.Server.Serialization
             config.HaltOnMissingCopyFilePath = msgpack.ForcePathObject("HaltOnMissingCopyFilePath").AsString;
             config.AutoRemarks = msgpack.ForcePathObject("AutoRmarks").AsString.Equals("True", StringComparison.InvariantCultureIgnoreCase);
             config.Telemetry = msgpack.ForcePathObject("Telemetry").AsString.Equals("True", StringComparison.InvariantCultureIgnoreCase);
+            Enum.TryParse(msgpack.ForcePathObject("OutputFormat").AsString, true, out config.OutputFormat); //Get string processing step into enum value
 
             List<string> InputFiles = new List<string>();
             foreach (MsgPack item in msgpack.ForcePathObject("InputFiles"))

@@ -39,7 +39,11 @@ namespace TypeCobol.Compiler.Nodes {
         /// <see cref="Remove" />
         /// methods.
         public IReadOnlyList<Node> Children {
+#if NET40
+            get { return new ReadOnlyList<Node>(children); }
+#else
             get { return children; }
+#endif
         }
 
         /// <summary>
@@ -259,6 +263,10 @@ namespace TypeCobol.Compiler.Nodes {
         /// TODO this method should be in CodeGen project
         /// </summary>
         public bool NeedGeneration { get; set; }
+        /// <summary>
+        /// Flag to know if the node belongs to the intrinsic files
+        /// </summary>
+        public bool IsIntrinsic { get; set; }
 
         public IList<N> GetChildren<N>() where N : Node {
             return children.OfType<N>().ToList();
@@ -561,7 +569,12 @@ namespace TypeCobol.Compiler.Nodes {
             // if the performance is better or if it avoids a copy.
             var result = new List<C>();
             foreach (var child in node.Children) result.Add((C) child);
+#if NET40
+            return new ReadOnlyList<C>(result);
+#else
             return result.AsReadOnly();
+#endif
+
         }
     }
 

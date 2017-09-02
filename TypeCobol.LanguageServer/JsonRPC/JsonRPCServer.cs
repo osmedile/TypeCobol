@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using TypeCobol.LanguageServer.StdioHttp;
+using Analytics;
 
 namespace TypeCobol.LanguageServer.JsonRPC
 {
@@ -166,6 +167,8 @@ namespace TypeCobol.LanguageServer.JsonRPC
                 catch(Exception e)
                 {
                     WriteServerLog(String.Format("Notification handler for {0} failed : {1}", notificationType.GetType().Name, e.Message));
+                    ResponseResultOrError error = new ResponseResultOrError() { code = ErrorCodes.InternalError, message = e.Message , data = parameters.ToString() };
+                    Reply(method, error);
                 }
             }
         }
@@ -267,6 +270,7 @@ namespace TypeCobol.LanguageServer.JsonRPC
         public void WriteServerLog(string trace)
         {
             messageServer.WriteServerLog(trace);
+            AnalyticsWrapper.Telemetry.TrackException(new Exception(trace));
         }       
     }
 }

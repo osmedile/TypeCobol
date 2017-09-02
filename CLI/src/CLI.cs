@@ -1,18 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Threading;
 using TypeCobol.CustomExceptions;
-using TypeCobol.Compiler;
-using TypeCobol.Compiler.CodeModel;
 using TypeCobol.Compiler.Diagnostics;
 using TypeCobol.Compiler.Directives;
 using TypeCobol.Compiler.Text;
 using Analytics;
 using TypeCobol.CLI.CustomExceptions;
 using System.Linq;
+using TypeCobol.Codegen;
+using TypeCobol.Codegen.Skeletons;
+using TypeCobol.Tools.Options_Config;
 
 namespace TypeCobol.Server
 {
@@ -25,7 +24,7 @@ namespace TypeCobol.Server
         /// runOnce method to parse the input file(s).
         /// </summary>
         /// <param name="config">Config</param>
-        internal static ReturnCode runOnce(Config config) {
+        internal static ReturnCode runOnce(TypeCobolConfiguration config) {
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
             string debugLine = DateTime.Now + " start parsing of ";
@@ -46,9 +45,11 @@ namespace TypeCobol.Server
             errorWriter.Outputs = config.OutputFiles;
 
             //Call the runOnce2() Methode and manage all the different kinds of exception. 
+
+            ReturnCode returnCode;
             try
             {
-                return runOnce2(config, errorWriter);
+                returnCode =  runOnce2(config, errorWriter);
             }
             catch(TypeCobolException typeCobolException)//Catch managed exceptions
             {
@@ -66,15 +67,15 @@ namespace TypeCobol.Server
                
 
                 if (typeCobolException is PresenceOfDiagnostics)
-                    return ReturnCode.ParsingDiagnostics;
-                if (typeCobolException is ParsingException)
-                    return ReturnCode.FatalError;
-                if (typeCobolException is GenerationException)
-                    return ReturnCode.GenerationError;
-                if (typeCobolException is MissingCopyException)
-                    return ReturnCode.MissingCopy;
-
-                return ReturnCode.FatalError; //Just in case..
+                    returnCode = ReturnCode.ParsingDiagnostics;
+                else if (typeCobolException is ParsingException)
+                    returnCode = ReturnCode.FatalError;
+                else if(typeCobolException is GenerationException)
+                    returnCode = ReturnCode.GenerationError;
+                else if(typeCobolException is MissingCopyException)
+                    returnCode = ReturnCode.MissingCopy;
+                else
+                    returnCode = ReturnCode.FatalError; //Just in case..
             }
             catch (Exception e)//Catch any other exception
             {
@@ -82,35 +83,48 @@ namespace TypeCobol.Server
                 AnalyticsWrapper.Telemetry.SendMail(e, config.InputFiles, config.CopyFolders, config.CommandLine);
 
                 Server.AddError(errorWriter, MessageCode.SyntaxErrorInParser, e.Message + e.StackTrace, string.Empty);
-                return ReturnCode.FatalError;
+                returnCode= ReturnCode.FatalError;
             }
-            finally
-            {
-                errorWriter.Write();
-                errorWriter.FlushAndClose();
-                errorWriter = null;
-                //as textWriter can be a Text file created, we need to close it
-                textWriter.Close();
+            
 
-                stopWatch.Stop();
-                debugLine = "                         parsed in " + stopWatch.Elapsed + " ms\n";
-                File.AppendAllText("TypeCobol.CLI.log", debugLine);
-                Console.WriteLine(debugLine);
+            errorWriter.Write(returnCode);
+            errorWriter.FlushAndClose();
+            errorWriter = null;
+            //as textWriter can be a Text file created, we need to close it
+            textWriter.Close();
 
-                AnalyticsWrapper.Telemetry.TrackEvent("[Duration] Execution Time",
-                                                        new Dictionary<string, string> { { "Duration", "Duration"} }, //Custom properties for metrics
-                                                        new Dictionary<string, double> { { "ExecutionTime", stopWatch.Elapsed.Milliseconds} }); //Metrics fo duration
-            }
+            stopWatch.Stop();
+            debugLine = "                         parsed in " + stopWatch.Elapsed + " ms\n";
+            File.AppendAllText("TypeCobol.CLI.log", debugLine);
+            Console.WriteLine(debugLine);
 
-            return ReturnCode.Success;
+            AnalyticsWrapper.Telemetry.TrackEvent("[Duration] Execution Time",
+                                                    new Dictionary<string, string> { { "Duration", "Duration"} }, //Custom properties for metrics
+                                                    new Dictionary<string, double> { { "ExecutionTime", stopWatch.Elapsed.Milliseconds} }); //Metrics fo duration
+            
+            return returnCode;
         }
 
-        private static ReturnCode runOnce2(Config config, AbstractErrorWriter errorWriter)
+        private static ReturnCode runOnce2(TypeCobolConfiguration config, AbstractErrorWriter errorWriter)
         {
             var parser = new Parser();
+            bool diagDetected = false;
+            EventHandler<Tools.APIHelpers.DiagnosticsErrorEvent> DiagnosticsErrorEvent = null;
+            DiagnosticsErrorEvent += delegate(object sender, Tools.APIHelpers.DiagnosticsErrorEvent diagEvent)
+            {
+                //Delegate Event to handle diagnostics generated while loading dependencies/intrinsics
+                diagDetected = true;
+                var diagnostic = diagEvent.Diagnostic;
+                Server.AddError(errorWriter, MessageCode.IntrinsicLoading,
+                    diagnostic.ColumnStart, diagnostic.ColumnEnd, diagnostic.Line,
+                    "Error while parsing " + diagEvent.Path + ": " + diagnostic, diagEvent.Path);
+            };
 
-            parser.CustomSymbols = LoadCopies(errorWriter, config.Copies, config.Format); //Load of the intrinsics
-            parser.CustomSymbols = LoadDependencies(errorWriter, config.Dependencies, config.Format, parser.CustomSymbols); //Load of the dependency files
+            parser.CustomSymbols = Tools.APIHelpers.Helpers.LoadIntrinsic(config.Copies, config.Format, DiagnosticsErrorEvent); //Load of the intrinsics
+            parser.CustomSymbols = Tools.APIHelpers.Helpers.LoadDependencies(config.Dependencies, config.Format, parser.CustomSymbols, config.InputFiles, DiagnosticsErrorEvent); //Load of the dependency files
+           
+            if (diagDetected)
+                throw new CopyLoadingException("Diagnostics detected while parsing Intrinsic file", null, null, logged: false, needMail: false);
 
             ReturnCode returnCode = ReturnCode.Success;
             for (int c = 0; c < config.InputFiles.Count; c++)
@@ -156,7 +170,7 @@ namespace TypeCobol.Server
                 }
 
                 var allDiags = parser.Results.AllDiagnostics();
-                errorWriter.AddErrors(path, allDiags); //Write diags into error file
+                errorWriter.AddErrors(path, allDiags.Take(config.MaximumDiagnostics == 0 ? allDiags.Count : config.MaximumDiagnostics)); //Write diags into error file
 
                 if (allDiags.Count > 0)
                 {
@@ -189,29 +203,39 @@ namespace TypeCobol.Server
                     throw new ParsingException(MessageCode.SyntaxErrorInParser, "File \"" + path + "\" has semantic error(s) preventing codegen (ProgramClass).", path); //Make ParsingException trace back to RunOnce()
                 }
 
-                if (config.ExecToStep >= ExecutionStep.Generate)
-                {
-                    var skeletons = TypeCobol.Codegen.Config.Config.Parse(config.skeletonPath);
-                    var codegen = new TypeCobol.Codegen.Generators.DefaultGenerator(parser.Results, new StreamWriter(config.OutputFiles[c]), skeletons);
+                if (config.ExecToStep >= ExecutionStep.Generate) {
+
                     try
                     {
-                        codegen.Generate(parser.Results, ColumnsLayout.CobolReferenceFormat);
-                        if (codegen.Diagnostics != null)
-                        {
-                            errorWriter.AddErrors(path, codegen.Diagnostics); //Write diags into error file
-                            throw new PresenceOfDiagnostics("Diagnostics Detected"); //Make ParsingException trace back to RunOnce()
+                        //Load skeletons if necessary
+                        List<Skeleton> skeletons = null;
+                        if (!(string.IsNullOrEmpty(config.skeletonPath))) {
+                            skeletons = TypeCobol.Codegen.Config.Config.Parse(config.skeletonPath);
                         }
-                    } catch (PresenceOfDiagnostics) {//rethrow exception
-                        throw;
-                    }
-                    catch (Exception e)
-                    {
-                        if (e is GenerationException)
-                            throw e; //Throw the same exception to let runOnce() knows there is a problem
-                        
-                        throw new GenerationException(e.Message, path, e); //Otherwise create a new GenerationException
-                    }
 
+
+                        //Get Generator from specified config.OutputFormat
+                        var generator = GeneratorFactoryManager.Instance.Create(config.OutputFormat.ToString(), parser.Results,
+                            new StreamWriter(config.OutputFiles[c]), skeletons);
+
+                        if (generator == null) {
+                            throw new GenerationException("Unkown OutputFormat=" + config.OutputFormat + "_", path);
+                        }
+
+                        //Generate and check diagnostics
+                        generator.Generate(parser.Results, ColumnsLayout.CobolReferenceFormat);
+                        if (generator.Diagnostics != null) {
+                            errorWriter.AddErrors(path, generator.Diagnostics); //Write diags into error file
+                            throw new PresenceOfDiagnostics("Diagnostics Detected");
+                            //Make ParsingException trace back to RunOnce()
+                        }
+                    } catch (PresenceOfDiagnostics) { 
+                        throw; //Throw the same exception to let runOnce() knows there is a problem
+                    } catch (GenerationException) {
+                        throw; //Throw the same exception to let runOnce() knows there is a problem
+                    } catch(Exception e) { //Otherwise create a new GenerationException
+                        throw new GenerationException(e.Message, path, e);
+                    }
                 }
 
                 if (parser.Results.AllDiagnostics().Any(d => d.Info.Severity == Compiler.Diagnostics.Severity.Warning)) {
@@ -220,148 +244,6 @@ namespace TypeCobol.Server
             }
 
             return returnCode;
-        }
-
-        /// <summary>
-        /// LoadCopies method.
-        /// </summary>
-        /// <param name="writer">AbstractErrorWriter</param>
-        /// <param name="paths">List<string></param>
-        /// <param name="copyDocumentFormat">DocumentFormat</param>
-        /// <returns>SymbolTable</returns>
-        private static SymbolTable LoadCopies(AbstractErrorWriter writer, List<string> paths, DocumentFormat copyDocumentFormat)
-        {
-            var parser = new Parser();
-
-			var table = new SymbolTable(null, SymbolTable.Scope.Intrinsic);
-
-			var copies = new List<string>();
-			foreach(string path in paths) copies.AddRange(Tools.FileSystem.GetFiles(path, parser.Extensions, false));
-
-			foreach(string path in copies) {
-			    try {
-                    parser.Init(path, new TypeCobolOptions { ExecToStep = ExecutionStep.SemanticCheck}, copyDocumentFormat);
-			        parser.Parse(path);
-
-                    var diagnostics = parser.Results.AllDiagnostics();
-
-
-                    foreach (var diagnostic in diagnostics) {
-                        Server.AddError(writer, MessageCode.IntrinsicLoading, 
-                            diagnostic.ColumnStart, diagnostic.ColumnEnd, diagnostic.Line, 
-                            "Error while parsing " + path + ": " + diagnostic, path);
-                    }
-                    if (diagnostics.Count > 0)
-                        throw new CopyLoadingException("Diagnostics detected while parsing Intrinsic file", path, null, logged: false, needMail: false);
-
-
-                    if (parser.Results.ProgramClassDocumentSnapshot.Root.Programs == null || parser.Results.ProgramClassDocumentSnapshot.Root.Programs.Count() == 0)
-                    {
-                        throw new CopyLoadingException("Your Intrisic types/functions are not included into a program.", path, null, logged: true, needMail: false);
-                    }
-
-                    foreach (var program in parser.Results.ProgramClassDocumentSnapshot.Root.Programs)
-                    {
-                        var symbols = program.SymbolTable.GetTableFromScope(SymbolTable.Scope.Declarations);
-
-                        if (symbols.Types.Count == 0 && symbols.Functions.Count == 0)
-                        {
-                            Server.AddError(writer, MessageCode.Warning, "No types and no procedures/functions found", path);
-                            continue;
-                        }
-
-                        //TODO check if types or functions are already there
-			        table.CopyAllTypes(symbols.Types);
-                    table.CopyAllFunctions(symbols.Functions);
-                    }
-                }
-                catch (CopyLoadingException copyException)
-                {
-                    throw copyException; //Make CopyLoadingException trace back to runOnce()
-                }
-                catch (Exception e)
-                {
-                    throw new CopyLoadingException(e.Message + "\n" + e.StackTrace, path, e, logged: true, needMail: true);
-                }
-               
-            }
-            return table;
-        }
-
-        /// <summary>
-        /// LoadCopies method.
-        /// </summary>
-        /// <param name="writer">AbstractErrorWriter</param>
-        /// <param name="paths">List<string></param>
-        /// <param name="copyDocumentFormat">DocumentFormat</param>
-        /// <returns>SymbolTable</returns>
-        private static SymbolTable LoadDependencies(AbstractErrorWriter writer, List<string> paths, DocumentFormat format, SymbolTable intrinsicTable)
-        {
-            var parser = new Parser(intrinsicTable);
-            var table = new SymbolTable(intrinsicTable, SymbolTable.Scope.Namespace); //Generate a table of NameSPace containing the dependencies programs based on the previously created intrinsic table. 
-
-            var dependencies = new List<string>();
-            string[] extensions = { ".tcbl", ".cbl", ".cpy" };
-            foreach (var path in paths)
-            {
-                dependencies.AddRange(Tools.FileSystem.GetFiles(path, extensions, true)); //Get File by name or search the directory for all files
-            }
-
-            foreach (string path in dependencies)
-            {
-                try
-                {
-                    parser.Init(path, new TypeCobolOptions { ExecToStep = ExecutionStep.SemanticCheck }, format);
-                    parser.Parse(path); //Parse the dependencie file
-
-                    var diagnostics = parser.Results.AllDiagnostics();
-                    foreach (var diagnostic in diagnostics)
-                    {
-                        Server.AddError(writer, MessageCode.DependenciesLoading,
-                            diagnostic.ColumnStart, diagnostic.ColumnEnd, diagnostic.Line,
-                            "Error while parsing " + path + ": " + diagnostic, path);
-                    }
-                    if (diagnostics.Count > 0)
-                        throw new DepedenciesLoadingException("Diagnostics detected while parsing dependency file", path, null, logged: false, needMail: false);
-
-                    if (parser.Results.ProgramClassDocumentSnapshot.Root.Programs == null || parser.Results.ProgramClassDocumentSnapshot.Root.Programs.Count() == 0)
-                    {
-                        throw new DepedenciesLoadingException("Your dependency file is not included into a program", path, null, logged: true, needMail: false);
-                    }
-
-                    foreach (var program in parser.Results.ProgramClassDocumentSnapshot.Root.Programs)
-                    {
-                        table.AddProgram(program); //Add program to Namespace symbol table
-                    }
-                   
-                }
-                catch (DepedenciesLoadingException)
-                {
-                    throw; //Make DepedenciesLoadingException trace back to runOnce()
-                }
-                catch (Exception e)
-                {
-                    throw new DepedenciesLoadingException(e.Message + "\n" + e.StackTrace, path, e);
-                }
-            }
-            return table;
-        }
-
-        /// <summary>
-        /// CreateFormat method to get the format name.
-        /// </summary>
-        /// <param name="encoding">string</param>
-        /// <param name="config">Config</param>
-        /// <returns>DocumentFormat</returns>
-        internal static Compiler.DocumentFormat CreateFormat(string encoding, ref Config config)
-        {
-            config.EncFormat = encoding;
-
-            if (encoding == null) return null;
-            if (encoding.ToLower().Equals("zos")) return TypeCobol.Compiler.DocumentFormat.ZOsReferenceFormat;
-            if (encoding.ToLower().Equals("utf8")) return TypeCobol.Compiler.DocumentFormat.FreeUTF8Format;
-            /*if (encoding.ToLower().Equals("rdz"))*/
-            return TypeCobol.Compiler.DocumentFormat.RDZReferenceFormat;
-        }
+        }   
     }
 }

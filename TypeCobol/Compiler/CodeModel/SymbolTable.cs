@@ -6,6 +6,7 @@ using System.Linq;
 using TypeCobol.Compiler.CodeElements;
 using TypeCobol.Compiler.CodeElements.Expressions;
 using TypeCobol.Compiler.Nodes;
+using System.Linq.Expressions;
 
 namespace TypeCobol.Compiler.CodeModel
 {
@@ -38,9 +39,12 @@ namespace TypeCobol.Compiler.CodeModel
 
         private List<T> GetFromTable<T>(string head, IDictionary<string, List<T>> table) where T : Node
         {
-            List<T> values;
-            table.TryGetValue(head, out values);
-            if (values != null) return values.ToList();
+            if (head != null)
+            {
+                List<T> values;
+                table.TryGetValue(head, out values);
+                if (values != null) return values.ToList();
+            }
             return new List<T>();
         }
 
@@ -197,6 +201,24 @@ namespace TypeCobol.Compiler.CodeModel
             return found;
         }
 
+        public List<DataDefinition> GetVariables(Expression<Func<DataDefinition, bool>> predicate, List<Scope> scopes)
+        {
+            var foundedVariables = new List<DataDefinition>();
+            scopes.Insert(0, this.CurrentScope); //Insert the current scope 
+
+            foreach (var scope in scopes)
+            {
+                if (scope == Scope.Namespace || scope == Scope.Intrinsic)
+                    throw new NotSupportedException();
+
+                var dataToSeek = this.GetTableFromScope(scope).DataEntries.Values.SelectMany(t => t);
+                var results = dataToSeek.AsQueryable().Where(predicate);
+                foundedVariables.AddRange(results);
+            }
+
+            return foundedVariables.Distinct().ToList(); //Distinct on object not on variable name
+        }
+
 
         private IDictionary<string, List<DataDefinition>> GetDataDefinitionTable(SymbolTable symbolTable)
         {
@@ -209,7 +231,7 @@ namespace TypeCobol.Compiler.CodeModel
             var candidates = GetCustomTypesSubordinatesNamed(name.Head); //Get variable name declared into typedef declaration
             candidates.AddRange(GetVariable(name.Head)); //Get all variables that corresponds to the given head of QualifiedName
             
-            
+
             foreach (var candidate in candidates) {
                 //if name doesn't match then name.Head match one property inside the DataDefinition
                 if (!name.Head.Equals(candidate.Name, StringComparison.InvariantCultureIgnoreCase)) {
@@ -230,11 +252,10 @@ namespace TypeCobol.Compiler.CodeModel
                     }
                     throw new NotImplementedException();
                     
-                } 
+                }
                 MatchVariable(found, candidate, name, name.Count-1, candidate);
             }
-
-//
+            
             return found;
         }
 
@@ -325,36 +346,46 @@ namespace TypeCobol.Compiler.CodeModel
         private List<DataDefinition> GetCustomTypesSubordinatesNamed(string name)
         {
             var subs = new List<DataDefinition>();
-            seekSymbolTable(this, name, subs);
-
-            //if (subs.Count > 0)
-            //    return subs; //name found in current program symboltable
 
             //Get programs from Namespace table
             var programList = this.GetProgramsTable(GetTableFromScope(Scope.Namespace));
             foreach (var programs in programList) {
+
+                //Get Custom Types from program 
                 foreach (var pgm in programs.Value) { //we shouldn't have more than one program with the same name
                                                       //but just in case it changes 
                     seekSymbolTable(pgm.SymbolTable, name, subs);
                 }
             }
-            
+
+
+            //Get Custom Types from Intrinsic table 
+            var intrinsicTable = this.GetTableFromScope(Scope.Intrinsic);
+            foreach (var type in intrinsicTable.Types)
+            {
+                foreach (var type2 in type.Value)
+                {
+                    subs.AddRange(type2.GetChildren<DataDefinition>(name, true));
+                }
+            }
+
             return subs;
         }
 
         private void seekSymbolTable(SymbolTable symbolTable, string name, List<DataDefinition> datadefinitions)
         {
-            var scope = symbolTable;
-            while (scope != null)
+            var currSymbolTable = symbolTable;
+            //Don't search into Intrinsic table because it's shared between all programs
+            while (currSymbolTable != null && currSymbolTable.CurrentScope != Scope.Intrinsic)
             {
-                foreach (var type in scope.Types)
+                foreach (var type in currSymbolTable.Types)
                 {
                     foreach (var type2 in type.Value)
                     {
                         datadefinitions.AddRange(type2.GetChildren<DataDefinition>(name, true));
                     }
                 }
-                scope = scope.EnclosingScope;
+                currSymbolTable = currSymbolTable.EnclosingScope;
             }
         }
 
@@ -498,9 +529,9 @@ namespace TypeCobol.Compiler.CodeModel
         /// Get all paragraphs in the current scope.
         /// </summary>
         /// <returns>The collection of paragraph names</returns>
-        public ICollection<string> GetParagraphNames()
+        public List<Paragraph> GetParagraphs(Expression<Func<Paragraph, bool>> predicate)
         {
-            return Paragraphs.Keys;
+            return Paragraphs.Values.SelectMany(p => p).AsQueryable().Where(predicate).Distinct().ToList();
         }
 
         #endregion
@@ -524,7 +555,9 @@ namespace TypeCobol.Compiler.CodeModel
         {
             return GetType(symbolReference.URI);
         }
-       
+
+      
+
         public List<TypeDefinition> GetType(DataType dataType, string pgmName = null)
         {
             var uri = new URI(dataType.Name);
@@ -555,6 +588,38 @@ namespace TypeCobol.Compiler.CodeModel
 
             return found;
         }
+
+        public List<TypeDefinition> GetTypes(Expression<Func<TypeDefinition, bool>> predicate, List<Scope> scopes)
+        {
+            var foundedTypes = new List<TypeDefinition>();
+            
+            foreach (var scope in scopes)
+            {
+                var dataToSeek = this.GetTableFromScope(scope).Types.Values.SelectMany(t => t);
+                if (scope == Scope.Namespace)
+                {
+                    //For namespace scope, we need to browse every program
+                    dataToSeek = this.GetTableFromScope(scope)
+                                    .Programs.SelectMany(p => p.Value.First().SymbolTable.GetTableFromScope(Scope.Declarations)
+                                    .Types.Values.SelectMany(t => t));
+
+                    dataToSeek.Concat(this.GetTableFromScope(scope)
+                                    .Programs.SelectMany(p => p.Value.First().SymbolTable.GetTableFromScope(Scope.Global)
+                                    .Types.Values.SelectMany(t => t)));
+                }
+
+                var results = dataToSeek.AsQueryable().Where(predicate);
+
+                if (scope == Scope.Intrinsic || scope == Scope.Namespace)
+                    results = results.Where(tp => (tp.CodeElement as DataTypeDescriptionEntry) != null && (tp.CodeElement as DataTypeDescriptionEntry).Visibility == AccessModifier.Public);
+
+                foundedTypes.AddRange(results);
+            }
+
+            return foundedTypes.Distinct().ToList();
+        }
+
+
 
         /// <summary>
         /// Get type into a specific program by giving program name
@@ -631,6 +696,35 @@ namespace TypeCobol.Compiler.CodeModel
             var uri = new URI(symbolReference.Name);
             return GetFunction(uri, profile);
         }
+
+
+        public List<FunctionDeclaration> GetFunctions(Expression<Func<FunctionDeclaration, bool>> predicate, List<Scope> scopes)
+        {
+            var foundedFunctions = new List<FunctionDeclaration>();
+
+            foreach (var scope in scopes)
+            {
+                var dataToSeek = this.GetTableFromScope(scope).Functions.Values.SelectMany(t => t);
+                if (scope == Scope.Namespace)
+                {
+                    //For namespace scope, we need to browse every program
+                    dataToSeek = this.GetTableFromScope(scope)
+                                    .Programs.SelectMany(p => p.Value.First().SymbolTable.GetTableFromScope(Scope.Declarations)
+                                    .Functions.Values.SelectMany(t => t));
+                }
+
+                var results = dataToSeek.AsQueryable().Where(predicate);
+
+                if (scope == Scope.Intrinsic || scope == Scope.Namespace)
+                    results = results.Where(tp => (tp.CodeElement as FunctionDeclarationHeader) != null && (tp.CodeElement as FunctionDeclarationHeader).Visibility == AccessModifier.Public);
+
+                foundedFunctions.AddRange(results);
+            }
+
+            return foundedFunctions.Distinct().ToList();
+        }
+
+        
 
         public List<FunctionDeclaration> GetFunction(QualifiedName name, ParameterList profile = null, string nameSpace = null)
         {
@@ -764,7 +858,13 @@ namespace TypeCobol.Compiler.CodeModel
             return symbolTable.Programs;
         }
 
-       
+        public List<Program> GetPrograms(string filter)
+        {
+            var programs = this.GetTableFromScope(Scope.Namespace)
+                .Programs.Values.SelectMany(t => t).Where(fd => fd.Name.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase));
+            return programs.ToList();
+        }
+
 
         #endregion
 
@@ -997,26 +1097,5 @@ namespace TypeCobol.Compiler.CodeModel
 
 
         #endregion
-    }
-
-    public static class IEnumerableExtensions
-    {
-        public static IEnumerable<T> SelectManyRecursive<T>(this IEnumerable<T> source, Func<T, IEnumerable<T>> selector)
-        {
-            if (source == null) throw new ArgumentNullException("source");
-            if (selector == null) throw new ArgumentNullException("selector");
-
-            return !source.Any() ? source :
-                source.Concat(
-                    source
-                    .SelectMany(i => selector(i).EmptyIfNull())
-                    .SelectManyRecursive(selector)
-                );
-        }
-
-        public static IEnumerable<T> EmptyIfNull<T>(this IEnumerable<T> source)
-        {
-            return source ?? Enumerable.Empty<T>();
-        }
     }
 }

@@ -21,9 +21,9 @@ namespace TypeCobol.Compiler.Preprocessor
         /// <summary>
         /// Initial preprocessing of a complete document
         /// </summary>
-        internal static void ProcessDocument(TextSourceInfo textSourceInfo, ISearchableReadOnlyList<ProcessedTokensLine> documentLines, TypeCobolOptions compilerOptions, IProcessedTokensDocumentProvider processedTokensDocumentProvider, List<RemarksDirective.TextNameVariation> copyTextNameVariations, PerfStatsForParserInvocation perfStatsForParserInvocation)
+        internal static void ProcessDocument(TextSourceInfo textSourceInfo, ISearchableReadOnlyList<ProcessedTokensLine> documentLines, TypeCobolOptions compilerOptions, IProcessedTokensDocumentProvider processedTokensDocumentProvider, List<RemarksDirective.TextNameVariation> copyTextNameVariations, PerfStatsForParserInvocation perfStatsForParserInvocation, List<CopyDirective> missingCopies )
         {
-            ProcessTokensLinesChanges(textSourceInfo, documentLines, null, null, compilerOptions, processedTokensDocumentProvider, copyTextNameVariations, perfStatsForParserInvocation);
+            ProcessTokensLinesChanges(textSourceInfo, documentLines, null, null, compilerOptions, processedTokensDocumentProvider, copyTextNameVariations, perfStatsForParserInvocation, missingCopies);
         }
 
         // When not null, optionnaly used to gather Antlr performance profiling information
@@ -32,7 +32,7 @@ namespace TypeCobol.Compiler.Preprocessor
         /// <summary>
         /// Incremental preprocessing of a set of tokens lines changes
         /// </summary>
-        internal static IList<DocumentChange<IProcessedTokensLine>> ProcessTokensLinesChanges(TextSourceInfo textSourceInfo, ISearchableReadOnlyList<ProcessedTokensLine> documentLines, IList<DocumentChange<ITokensLine>> tokensLinesChanges, PrepareDocumentLineForUpdate prepareDocumentLineForUpdate, TypeCobolOptions compilerOptions, IProcessedTokensDocumentProvider processedTokensDocumentProvider, List<RemarksDirective.TextNameVariation> copyTextNameVariations, PerfStatsForParserInvocation perfStatsForParserInvocation)
+        internal static IList<DocumentChange<IProcessedTokensLine>> ProcessTokensLinesChanges(TextSourceInfo textSourceInfo, ISearchableReadOnlyList<ProcessedTokensLine> documentLines, IList<DocumentChange<ITokensLine>> tokensLinesChanges, PrepareDocumentLineForUpdate prepareDocumentLineForUpdate, TypeCobolOptions compilerOptions, IProcessedTokensDocumentProvider processedTokensDocumentProvider, List<RemarksDirective.TextNameVariation> copyTextNameVariations, PerfStatsForParserInvocation perfStatsForParserInvocation, List<CopyDirective> missingCopies )
         {
             // Collect all changes applied to the processed tokens lines during the incremental scan
             IList<DocumentChange<IProcessedTokensLine>> processedTokensLinesChanges = new List<DocumentChange<IProcessedTokensLine>>();
@@ -256,13 +256,18 @@ namespace TypeCobol.Compiler.Preprocessor
 
             // --- COPY IMPORT PHASE : Process COPY (REPLACING) directives ---
 
+            foreach (var lineChange in processedTokensLinesChanges)
+            {
+                missingCopies.Remove(missingCopies.FirstOrDefault(c => c.COPYToken.Line == lineChange.LineIndex + 1));
+            }
+
             // 1. Iterate over all updated lines containing a new COPY directive
             if (parsedLinesWithCopyDirectives != null)
             {
                 foreach (ProcessedTokensLine tokensLineWithCopyDirective in parsedLinesWithCopyDirectives)
                 {
                     // Iterate over all COPY directives found on one updated line
-                    foreach (CopyDirective copyDirective in tokensLineWithCopyDirective.ImportedDocuments.Keys.ToArray<CopyDirective>())
+                    foreach (CopyDirective copyDirective in tokensLineWithCopyDirective.ImportedDocuments.Keys.Where(c => c.TextName != null || c.COPYToken.TokenType == TokenType.EXEC).ToArray())
                     {
                         try
                         {
@@ -282,6 +287,14 @@ namespace TypeCobol.Compiler.Preprocessor
                         }
                         catch (Exception e)
                         {
+                            if (missingCopies != null && copyDirective != null && copyDirective.COPYToken != null && !missingCopies.Contains(copyDirective)) //If list already contains the copy directive just ignore
+                            {
+                                var missingCopieToReplace =  missingCopies.FirstOrDefault(c => c.COPYToken.Line == copyDirective.COPYToken.Line);
+                                missingCopies.Remove(missingCopieToReplace);
+                                missingCopies.Add(copyDirective);
+                            }
+
+
                             // Text name refenced by COPY directive was not found
                             // => register a preprocessor error on this line                            
                             Token failedDirectiveToken = tokensLineWithCopyDirective.TokensWithCompilerDirectives
@@ -303,6 +316,8 @@ namespace TypeCobol.Compiler.Preprocessor
                     tokensLineWithCopyDirective.PreprocessingState = ProcessedTokensLine.PreprocessorState.Ready;
                 }
             }
+
+            
 
             // --- REPLACE PHASE : REPLACE directives are implemented in ReplaceTokensLinesIterator ---
 

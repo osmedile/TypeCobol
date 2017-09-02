@@ -52,6 +52,8 @@ namespace TypeCobol.Compiler
         /// </summary>
         public List<RemarksDirective.TextNameVariation> CopyTextNamesVariations { get; set; }
 
+        public List<CopyDirective> MissingCopies { get; set; }
+
         /// <summary>
         /// Register a new symbolic character name found in the source file
         /// </summary>
@@ -171,6 +173,7 @@ namespace TypeCobol.Compiler
             TextSourceInfo = textSourceInfo;
             CompilerOptions = compilerOptions;
             CopyTextNamesVariations = copyTextNameVariations ?? new List<RemarksDirective.TextNameVariation>();
+            MissingCopies = new List<CopyDirective>();
 
             this.processedTokensDocumentProvider = processedTokensDocumentProvider;
 
@@ -420,7 +423,7 @@ namespace TypeCobol.Compiler
         /// Update the tokens lines of the document if the text lines changed since the last time this method was called.
         /// NOT thread-safe : this method can only be called from the owner thread.
         /// </summary>
-        public void UpdateTokensLines()
+        public void UpdateTokensLines(System.Action onVersion = null)
         {
             // This method can only be called by the document owner thread
             if (documentOwnerThread == null)
@@ -472,6 +475,8 @@ namespace TypeCobol.Compiler
                     // Prepare an event to signal document change to all listeners
                     documentChangedEvent = new DocumentChangedEvent<ITokensLine>(currentTokensLinesVersion, currentTokensLinesVersion.next);
                     currentTokensLinesVersion = currentTokensLinesVersion.next;
+                    if (onVersion != null)
+                        onVersion();
                 }
 
                 // Register that the tokens lines were synchronized with the current text lines version
@@ -587,7 +592,7 @@ namespace TypeCobol.Compiler
                     if (tokensDocument != null)
                     {
                         // Process all lines of the document for the first time
-                        PreprocessorStep.ProcessDocument(TextSourceInfo, ((ImmutableList<CodeElementsLine>)tokensDocument.Lines), CompilerOptions, processedTokensDocumentProvider, CopyTextNamesVariations, perfStatsForParserInvocation);
+                        PreprocessorStep.ProcessDocument(TextSourceInfo, ((ImmutableList<CodeElementsLine>)tokensDocument.Lines), CompilerOptions, processedTokensDocumentProvider, CopyTextNamesVariations, perfStatsForParserInvocation, this.MissingCopies);
 
                         // Create the first processed tokens document snapshot
                         ProcessedTokensDocumentSnapshot = new ProcessedTokensDocument(tokensDocument, new DocumentVersion<IProcessedTokensLine>(this), ((ImmutableList<CodeElementsLine>)tokensDocument.Lines));
@@ -596,7 +601,7 @@ namespace TypeCobol.Compiler
                 else
                 {
                     ImmutableList<CodeElementsLine>.Builder processedTokensDocumentLines = ((ImmutableList<CodeElementsLine>)tokensDocument.Lines).ToBuilder();
-                    IList<DocumentChange<IProcessedTokensLine>> documentChanges = PreprocessorStep.ProcessTokensLinesChanges(TextSourceInfo, processedTokensDocumentLines, tokensLineChanges, PrepareDocumentLineForUpdate, CompilerOptions, processedTokensDocumentProvider, CopyTextNamesVariations, perfStatsForParserInvocation);
+                    IList<DocumentChange<IProcessedTokensLine>> documentChanges = PreprocessorStep.ProcessTokensLinesChanges(TextSourceInfo, processedTokensDocumentLines, tokensLineChanges, PrepareDocumentLineForUpdate, CompilerOptions, processedTokensDocumentProvider, CopyTextNamesVariations, perfStatsForParserInvocation, this.MissingCopies);
 
                     // Create a new version of the document to track these changes
                     DocumentVersion<IProcessedTokensLine> currentProcessedTokensLineVersion = previousProcessedTokensDocument.CurrentVersion;

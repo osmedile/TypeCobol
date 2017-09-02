@@ -3,16 +3,17 @@ using TypeCobol.Compiler.Scanner;
 
 namespace TypeCobol.Compiler.Diagnostics {
 
-	using Antlr4.Runtime;
-	using System;
-	using System.Collections.Generic;
-	using TypeCobol.Compiler.CodeElements;
-	using TypeCobol.Compiler.CodeElements.Expressions;
-	using TypeCobol.Compiler.CodeModel;
-	using TypeCobol.Compiler.Nodes;
-	using TypeCobol.Compiler.Parser;
-	using TypeCobol.Compiler.Parser.Generated;
-	using TypeCobol.Tools;
+    using Antlr4.Runtime;
+    using System;
+    using System.Collections.Generic;
+    using TypeCobol.Compiler.CodeElements;
+    using TypeCobol.Compiler.CodeElements.Expressions;
+    using TypeCobol.Compiler.CodeModel;
+    using TypeCobol.Compiler.Nodes;
+    using TypeCobol.Compiler.Parser;
+    using TypeCobol.Compiler.Parser.Generated;
+    using TypeCobol.Tools;
+    using System.Text.RegularExpressions;
 
     public class Cobol85CompleteASTChecker : AbstractAstVisitor
     {
@@ -36,6 +37,8 @@ namespace TypeCobol.Compiler.Diagnostics {
                     CheckVariable(node, storageAreaWrite);
                 }
             }
+
+            
 
             FunctionCallChecker.OnNode(node);
             TypedDeclarationChecker.OnNode(node);
@@ -83,6 +86,34 @@ namespace TypeCobol.Compiler.Diagnostics {
         public override bool VisitVariableWriter(VariableWriter variableWriter) {
             WriteTypeConsistencyChecker.OnNode(variableWriter, CurrentNode);
             return true;
+        }
+
+        public override bool Visit(DataDefinition dataDefinition)
+        {
+            if(dataDefinition.CodeElement is CommonDataDescriptionAndDataRedefines)
+            {
+                CheckPicture((dataDefinition.CodeElement as CommonDataDescriptionAndDataRedefines));
+            }
+            return true;
+        }
+
+        public static void CheckPicture(CommonDataDescriptionAndDataRedefines codeElement)
+        {
+            if (codeElement.Picture != null)
+            {
+                foreach (Match match in Regex.Matches(codeElement.Picture.Value, @"\(([^)]*)\)"))
+                {
+                    try //Try catch is here beacause of the risk to parse a non numerical value
+                    {
+                        int value = int.Parse(match.Value, System.Globalization.NumberStyles.AllowParentheses);
+                    }
+                    catch (Exception)
+                    {
+                        var m = "Given value is not correct : " + match.Value + " expected numerical value only";
+                        DiagnosticUtils.AddError(codeElement, m);
+                    }
+                }
+            }
         }
 
         private void CheckVariable(Node node, VariableBase variable)
@@ -209,12 +240,16 @@ namespace TypeCobol.Compiler.Diagnostics {
         if (statement == null) {
             return; //not our job
         }
-        var context = c as CodeElementsParser.CobolCallStatementContext;
+	    var context = (c as CodeElementsParser.CallStatementContext).cobolCallStatement();
 
-		foreach (var call in context.callUsingParameters()) CheckCallUsings(statement, call);
+        if (context != null) //if null it's certainly a CallStatementContext
+        {
+            foreach (var call in context.callUsingParameters()) CheckCallUsings(statement, call);
 
-		if (context.callReturningParameter() != null && statement.OutputParameter == null)
-			DiagnosticUtils.AddError(statement, "CALL .. RETURNING: Missing identifier", context);
+            if (context.callReturningParameter() != null && statement.OutputParameter == null)
+                DiagnosticUtils.AddError(statement, "CALL .. RETURNING: Missing identifier", context);
+        }
+	
 	}
 
 	private void CheckCallUsings(CallStatement statement, CodeElementsParser.CallUsingParametersContext context) {
@@ -315,15 +350,22 @@ namespace TypeCobol.Compiler.Diagnostics {
         if (statement == null) {
             return; //not our job
         }
-		var context = c as CodeElementsParser.MoveSimpleContext;
-	    if (statement.StorageAreaWrites != null) {
-	        for (int i = 0; i < statement.StorageAreaWrites.Count; i++) {
-	            var receiver = statement.StorageAreaWrites[i].StorageArea;
-	            if (receiver is FunctionCallResult)
-	                DiagnosticUtils.AddError(statement, "MOVE: illegal <function call> after TO", context.storageArea1()[i]);
-	        }
-	    }
-	}
+		var moveStatementContext = c as CodeElementsParser.MoveStatementContext;
+	    if (moveStatementContext != null)
+	    {
+	        var moveSimpleContext = moveStatementContext.moveSimple();
+	        if (moveSimpleContext != null)
+	        {
+	            if (statement.StorageAreaWrites != null) {
+	                for (int i = 0; i < statement.StorageAreaWrites.Count; i++) {
+	                    var receiver = statement.StorageAreaWrites[i].StorageArea;
+	                    if (receiver is FunctionCallResult)
+	                        DiagnosticUtils.AddError(statement, "MOVE: illegal <function call> after TO", moveSimpleContext.storageArea1()[i]);
+	                }
+	            }
+            }
+        }
+    }
 }
 
     class SearchStatementChecker: CodeElementListener {

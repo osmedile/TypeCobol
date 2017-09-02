@@ -7,7 +7,7 @@ namespace TypeCobol.LanguageServer.VsCodeProtocol
     /// <summary>
     /// Base class for all language servers
     /// </summary>
-    public class LanguageServer
+    class LanguageServer
     {
         public LanguageServer(IRPCServer rpcServer)
         {
@@ -36,13 +36,14 @@ namespace TypeCobol.LanguageServer.VsCodeProtocol
             rpcServer.RegisterNotificationMethod(DidChangeTextDocumentNotification.Type, CallDidChangeTextDocument);
             rpcServer.RegisterNotificationMethod(DidCloseTextDocumentNotification.Type, CallDidCloseTextDocument);
             rpcServer.RegisterNotificationMethod(DidOpenTextDocumentNotification.Type, CallDidOpenTextDocument);
+            rpcServer.RegisterNotificationMethod(DidSaveTextDocumentNotification.Type, CallDidSaveTextDocument);
 
             RemoteConsole = new RemoteConsole(rpcServer);
             RemoteWindow = new RemoteWindow(rpcServer);
         }
 
         // RPC server used to send Remote Procedure Calls to the client
-        private IRPCServer rpcServer;
+        public IRPCServer rpcServer { get; private set; }
 
         // --- Generic notification and request handlers ---
 
@@ -374,6 +375,7 @@ namespace TypeCobol.LanguageServer.VsCodeProtocol
             catch (Exception e)
             {
                 RemoteConsole.Error(String.Format("Error while handling notification {0} : {1}", notificationType.Method, e.Message));
+                throw e;
             }
         }
 
@@ -394,6 +396,18 @@ namespace TypeCobol.LanguageServer.VsCodeProtocol
             try
             {
                 OnDidOpenTextDocument((DidOpenTextDocumentParams)parameters);
+            }
+            catch (Exception e)
+            {
+                RemoteConsole.Error(String.Format("Error while handling notification {0} : {1}", notificationType.Method, e.Message));
+            }
+        }
+
+        private void CallDidSaveTextDocument(NotificationType notificationType, object parameters)
+        {
+            try
+            {
+                OnDidSaveTextDocument((DidSaveTextDocumentParams)parameters);
             }
             catch (Exception e)
             {
@@ -503,10 +517,21 @@ namespace TypeCobol.LanguageServer.VsCodeProtocol
         { }
 
         /// <summary>
+        /// The document save notification is sent from the client to the server when the document for saved in the client.
+        /// </summary>
+        public virtual void OnDidSaveTextDocument(DidSaveTextDocumentParams parameters)
+        { }
+
+        /// <summary>
         /// Diagnostics notification are sent from the server to the client to signal
         /// results of validation runs.
         /// </summary>
-        public virtual void SendDiagnostics(PublishDiagnosticsParams parameters) { }
+        public virtual void SendDiagnostics(PublishDiagnosticsParams parameters)
+        {
+            rpcServer.SendNotification(PublishDiagnosticsNotification.Type, parameters);
+        }
+
+       
 
         /// <summary>
         /// Request to request hover information at a given text document position. The request's
@@ -556,7 +581,7 @@ namespace TypeCobol.LanguageServer.VsCodeProtocol
         /// </summary>
         public virtual Definition OnDefinition(TextDocumentPosition parameters)
         {
-            return null;
+            throw new ArgumentException("No definition");            
         }
 
         /// <summary>

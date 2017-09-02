@@ -11,6 +11,7 @@ using TypeCobol.Compiler.CodeModel;
 using TypeCobol.Compiler.AntlrUtils;
 using TypeCobol.Tools;
 using Analytics;
+using Castle.Core.Internal;
 
 namespace TypeCobol.Compiler.Parser
 {
@@ -52,6 +53,10 @@ namespace TypeCobol.Compiler.Parser
                     SymbolTable intrinsicTable = value.GetTableFromScope(SymbolTable.Scope.Intrinsic);
                     SymbolTable nameSpaceTable = value.GetTableFromScope(SymbolTable.Scope.Namespace);
 
+                    intrinsicTable.DataEntries.Values.ToList().ForEach(d => d.ForEach(da => da.IsIntrinsic = true));
+                    intrinsicTable.Types.Values.ToList().ForEach(d => d.ForEach(da => da.IsIntrinsic = true));
+                    intrinsicTable.Functions.Values.ToList().ForEach(d => d.ForEach(da => da.IsIntrinsic = true));
+
                     TableOfIntrisic.CopyAllDataEntries(intrinsicTable.DataEntries.Values);
                     TableOfIntrisic.CopyAllTypes(intrinsicTable.Types);
                     TableOfIntrisic.CopyAllFunctions(intrinsicTable.Functions, AccessModifier.Public);
@@ -76,10 +81,16 @@ namespace TypeCobol.Compiler.Parser
 
 
         public Node CurrentNode { get { return SyntaxTree.CurrentNode; } }
+
+        public Dictionary<CodeElement, Node> NodeCodeElementLinkers = new Dictionary<CodeElement, Node>();
+
         private void Enter([NotNull] Node node, ParserRuleContext context = null, SymbolTable table = null)
         {
             node.SymbolTable = table ?? SyntaxTree.CurrentNode.SymbolTable;
             SyntaxTree.Enter(node, context);
+
+            if (node.CodeElement != null)
+                NodeCodeElementLinkers.Add(node.CodeElement, node);
         }
         private void Exit()
         {

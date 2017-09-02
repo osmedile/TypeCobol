@@ -599,7 +599,11 @@ namespace TypeCobol.Compiler.Parser
 
 				if (logicalOperator == null)
 				{
-					return CreateConditionalExpression(context.conditionalExpression()[0]);
+                    if (context.conditionalExpression().Length == 1)
+                        return CreateConditionalExpression(context.conditionalExpression()[0]);
+                    else {
+                        return null;
+                    }
 				}
 				else
 				{
@@ -1221,6 +1225,23 @@ namespace TypeCobol.Compiler.Parser
 				StorageArea storageArea = CreateIdentifierOrTCFunctionProcedure(context.identifier());
 				variable = new SymbolReferenceVariable(StorageDataType.ProgramNameOrProgramEntryOrProcedurePointerOrFunctionPointer, storageArea);
 			}
+
+            // Collect storage area read/writes at the code element level
+            if (variable.StorageArea != null)
+            {
+                this.storageAreaReads.Add(variable.StorageArea);
+            }
+
+            return variable;
+        }
+
+        internal SymbolReferenceVariable CreateProcedurePointerOrFunctionPointerVariableOrTCFunctionProcedure(CodeElementsParser.IdentifierContext context)
+		{
+            SymbolReferenceVariable variable = null;
+			
+			StorageArea storageArea = CreateIdentifierOrTCFunctionProcedure(context);
+			variable = new SymbolReferenceVariable(StorageDataType.ProcedurePointerOrFunctionPointerOrTCFunctionName, storageArea);
+			
 
             // Collect storage area read/writes at the code element level
             if (variable.StorageArea != null)

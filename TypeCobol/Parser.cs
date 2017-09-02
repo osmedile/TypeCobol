@@ -19,7 +19,6 @@ namespace TypeCobol
 {
 	public class Parser
 	{
-		public IObserver<CodeElementChangedEvent> Observer { get; private set; }
 	    public List<string> MissingCopys { get; set; }
         protected Dictionary<string,bool> Inits;
         protected Dictionary<string,FileCompiler> Compilers;
@@ -31,7 +30,6 @@ namespace TypeCobol
 		public string[] CopyExtensions = { ".cpy" };
 
 		public Parser() {
-			Observer = new Observer();
 			Inits = new Dictionary<string,bool>();
 			Compilers = new Dictionary<string,FileCompiler>();
 		}
@@ -80,20 +78,17 @@ namespace TypeCobol
 			Compiler.CompilationResultsForProgram.TextLinesChanged += OnTextLine;
 			Compiler.CompilationResultsForProgram.CodeElementsLinesChanged += OnCodeElementLine;
 
-			if (!Inits[path]) Inits[path] = true;// no need to update with the same content as at compiler creation
-			else Compiler.CompilationResultsForProgram.UpdateTextLines(e);
+            if (!Inits[path]) Inits[path] = true;// no need to update with the same content as at compiler creation
+            else if (e != null) Compiler.CompilationResultsForProgram.UpdateTextLines(e);
 
             AnalyticsWrapper.Telemetry.TrackEvent("[Parser] Started");
 
             try { Compiler.CompileOnce(); }
 			catch(Exception ex) {
-				Observer.OnError(ex);
-				System.Console.WriteLine(ex.ToString());
-
-                throw new ParsingException(MessageCode.SyntaxErrorInParser, ex.Message, null, ex, false);
+                throw new ParsingException(MessageCode.SyntaxErrorInParser, ex.Message, path, ex, true, true);
 			}
 
-		    MissingCopys = Compiler.CompilationProject.MissingCopys;
+		    MissingCopys = Compiler.CompilationResultsForProgram.MissingCopies.Select(c => c.TextName).Distinct().ToList();
 
 			Compiler.CompilationResultsForProgram.TextLinesChanged -= OnTextLine;
 			Compiler.CompilationResultsForProgram.CodeElementsLinesChanged -= OnCodeElementLine;
@@ -167,25 +162,5 @@ namespace TypeCobol
             parser.Parse(path);
 			return parser;
 		}
-	}
-
-
-
-	internal class Observer : IObserver<CodeElementChangedEvent>
-	{
-		private IList<System.Exception> errors = new List<System.Exception>();
-		public bool HasErrors
-		{
-			get { return errors.Count > 0; }
-		}
-		public string DumpErrors()
-		{
-			var str = new System.Text.StringBuilder();
-			foreach (var error in errors) str.AppendLine(error.ToString());
-			return str.ToString();
-		}
-		public void OnCompleted() { }
-		public void OnError(System.Exception error) { errors.Add(error); }
-		public void OnNext(TypeCobol.Compiler.Parser.CodeElementChangedEvent value) { }
 	}
 }
