@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.Linq;
+using JetBrains.Annotations;
 using TypeCobol.Compiler.Scanner;
 
 namespace TypeCobol.Compiler.Diagnostics {
@@ -17,6 +18,7 @@ namespace TypeCobol.Compiler.Diagnostics {
 
     public class Cobol85CompleteASTChecker : AbstractAstVisitor
     {
+        
         private Node CurrentNode {get;set;}
         public override bool BeginNode(Node node)
         {
@@ -38,12 +40,11 @@ namespace TypeCobol.Compiler.Diagnostics {
                 }
             }
 
-            
-
             FunctionCallChecker.OnNode(node);
             TypedDeclarationChecker.OnNode(node);
             RenamesChecker.OnNode(node);
             ReadOnlyPropertiesChecker.OnNode(node);
+
             return true;
         }
 
@@ -92,14 +93,35 @@ namespace TypeCobol.Compiler.Diagnostics {
         {
             if(dataDefinition.CodeElement is CommonDataDescriptionAndDataRedefines)
             {
-                CheckPicture((dataDefinition.CodeElement as CommonDataDescriptionAndDataRedefines));
+                CheckPicture(dataDefinition);
             }
             return true;
         }
 
-        public static void CheckPicture(CommonDataDescriptionAndDataRedefines codeElement)
+        public override bool Visit(IndexDefinition indexDefinition)
         {
-            if (codeElement.Picture != null)
+            var found = indexDefinition.SymbolTable.GetVariables(new URI(indexDefinition.Name));
+
+            if (indexDefinition.Name.Length > 22 && (found.Count > 1 || indexDefinition.GetParentTypeDefinition != null))
+            {
+                //If indexdefinition is NOT unique or is declared inside a typedef it'll limited to 22 chars. 
+                DiagnosticUtils.AddError(indexDefinition.Parent.CodeElement, "Index name is over 22 characters.");
+            }
+            if (indexDefinition.GetParentTypeDefinition == null) //Detect index and make sure it's not inside a TypeDef
+            {
+                if (found != null && found.Count > 1) //If multiple index with same name found, display a warning.
+                {
+                    DiagnosticUtils.AddError(indexDefinition.Parent.CodeElement, "An index named '" + indexDefinition.Name + "' is already defined.", MessageCode.Warning);
+                }
+            }
+
+            return true;
+        }
+
+        public static void CheckPicture(Node node, CommonDataDescriptionAndDataRedefines customCodeElement = null)
+        {
+            var codeElement = customCodeElement == null ? node.CodeElement as CommonDataDescriptionAndDataRedefines : customCodeElement;
+            if (codeElement != null && codeElement.Picture != null)
             {
                 foreach (Match match in Regex.Matches(codeElement.Picture.Value, @"\(([^)]*)\)"))
                 {
@@ -110,7 +132,7 @@ namespace TypeCobol.Compiler.Diagnostics {
                     catch (Exception)
                     {
                         var m = "Given value is not correct : " + match.Value + " expected numerical value only";
-                        DiagnosticUtils.AddError(codeElement, m);
+                        DiagnosticUtils.AddError(node, m);
                     }
                 }
             }
@@ -130,16 +152,41 @@ namespace TypeCobol.Compiler.Diagnostics {
                 return;
             }
             var area = storageArea.GetStorageAreaThatNeedDeclaration;
+            List<DataDefinition> found;
+            var foundQualified = new List<KeyValuePair<string, DataDefinition>>();
 
             if (area.SymbolReference == null) return;
             //Do not handle TCFunctionName, it'll be done by TypeCobolChecker
             if (area.SymbolReference.IsOrCanBeOfType(SymbolType.TCFunctionName)) return;
 
-            var found = node.SymbolTable.GetVariable(area);
+            var isPartOfTypeDef = (node as DataDefinition) != null && ((DataDefinition) node).IsPartOfATypeDef;
+            if(isPartOfTypeDef)
+                found = node.SymbolTable.GetVariables(area,((DataDefinition) node).GetParentTypeDefinition);
+            else
+            {
+                foundQualified = node.SymbolTable.GetVariablesExplicitWithQualifiedName(area.SymbolReference != null ? area.SymbolReference.URI : new URI(area.ToString()));
+                found = foundQualified.Select(v => v.Value).ToList();
+            }
+
+            if (found.Count == 1 && foundQualified.Count == 1 && found[0].IsIndex)
+            {
+                //Mark this node for generator
+                node.SetFlag(Node.Flag.NodeContainsIndex, true);
+                if (node.QualifiedStorageAreas == null)
+                    node.QualifiedStorageAreas = new Dictionary<StorageArea, string>();
+
+                if (!node.QualifiedStorageAreas.ContainsKey(storageArea))
+                    node.QualifiedStorageAreas.Add(storageArea, foundQualified.First().Key);
+
+                if (area.SymbolReference.IsQualifiedReference && !area.SymbolReference.IsTypeCobolQualifiedReference)
+                    DiagnosticUtils.AddError(node.CodeElement, "Index can not be use with OF or IN qualifiers " + area);
+            }
+
             if (found.Count < 1)
                 if (node.SymbolTable.GetFunction(area).Count < 1)
                     DiagnosticUtils.AddError(node.CodeElement, "Symbol " + area + " is not referenced");
-            if (found.Count > 1) DiagnosticUtils.AddError(node.CodeElement, "Ambiguous reference to symbol " + area);
+            if (found.Count > 1)
+                DiagnosticUtils.AddError(node.CodeElement, "Ambiguous reference to symbol " + area);
 
         }
         }
@@ -437,20 +484,22 @@ namespace TypeCobol.Compiler.Diagnostics {
 
     class SectionOrParagraphUsageChecker {
 
-	    public static void CheckReferenceToParagraphOrSection(PerformProcedure perform) {
-		    var performCE = (PerformProcedureStatement) perform.CodeElement;
-		    SymbolReference symbol;
-		    symbol = ResolveProcedureName(perform.SymbolTable, performCE.Procedure as AmbiguousSymbolReference, performCE);
-		    if (symbol != null) performCE.Procedure = symbol;
-		    symbol = ResolveProcedureName(perform.SymbolTable, performCE.ThroughProcedure as AmbiguousSymbolReference, performCE);
-		    if (symbol != null) performCE.ThroughProcedure = symbol;
-	    }
-	    /// <summary>Disambiguate between section and paragraph names</summary>
+        public static void CheckReferenceToParagraphOrSection(PerformProcedure perform)
+        {
+            var performCE = (PerformProcedureStatement) perform.CodeElement;
+            SymbolReference symbol;
+            symbol = ResolveProcedureName(perform.SymbolTable, performCE.Procedure as AmbiguousSymbolReference, perform);
+            if (symbol != null) performCE.Procedure = symbol;
+            symbol = ResolveProcedureName(perform.SymbolTable, performCE.ThroughProcedure as AmbiguousSymbolReference, perform);
+            if (symbol != null) performCE.ThroughProcedure = symbol;
+        }
+
+        /// <summary>Disambiguate between section and paragraph names</summary>
 	    /// <param name="table">Symbol table used for name resolution</param>
 	    /// <param name="symbol">Symbol to disambiguate</param>
 	    /// <param name="ce">Original CodeElement ; error diagnostics will be added to it if name resolution fails</param>
 	    /// <returns>symbol as a SymbolReference whith a SymbolType properly set</returns>
-	    private static SymbolReference ResolveProcedureName(SymbolTable table, SymbolReference symbol, CodeElement ce) {
+	    private static SymbolReference ResolveProcedureName(SymbolTable table, SymbolReference symbol, Node node) {
 		    if (symbol == null) return null;
 
 		    SymbolReference sname = null, pname = null;
@@ -461,17 +510,17 @@ namespace TypeCobol.Compiler.Diagnostics {
 
 		    if (pname == null) {
 			    if (sname == null) {
-				    DiagnosticUtils.AddError(ce, "Symbol "+symbol.Name+" is not referenced");
+				    DiagnosticUtils.AddError(node, "Symbol "+symbol.Name+" is not referenced");
 			    } else {
-				    if (sfound.Count > 1) DiagnosticUtils.AddError(ce, "Ambiguous reference to section "+symbol.Name);
+				    if (sfound.Count > 1) DiagnosticUtils.AddError(node, "Ambiguous reference to section "+symbol.Name);
 				    return sname;
 			    }
 		    } else {
 			    if (sname == null) {
-				    if (pfound.Count > 1) DiagnosticUtils.AddError(ce, "Ambiguous reference to paragraph "+symbol.Name);
+				    if (pfound.Count > 1) DiagnosticUtils.AddError(node, "Ambiguous reference to paragraph "+symbol.Name);
 				    return pname;
 			    } else {
-				    DiagnosticUtils.AddError(ce, "Ambiguous reference to procedure "+symbol.Name);
+				    DiagnosticUtils.AddError(node, "Ambiguous reference to procedure "+symbol.Name);
 			    }
 		    }
 		    return null;
@@ -479,7 +528,7 @@ namespace TypeCobol.Compiler.Diagnostics {
 
         protected static void Check<T>(T node, [NotNull] IList<T> found) where T : Node
         {
-            if (found.Count > 1) DiagnosticUtils.AddError(node.CodeElement, "Symbol \'" + node.Name + "\' already declared");
+            if (found.Count > 1) DiagnosticUtils.AddError(node, "Symbol \'" + node.Name + "\' already declared");
         }
 
         public static void CheckSection(Section section)
@@ -536,59 +585,73 @@ namespace TypeCobol.Compiler.Diagnostics {
                         string message = string.Format("Cannot write {0} to {1} typed variable {2}:{3}."
                                                       , sending, receiving.RestrictionLevel == RestrictionLevel.STRONG ? "strongly" : "strictly"
                                                       , wname.Head, receiving);
-                        DiagnosticUtils.AddError(node.CodeElement, message, MessageCode.SemanticTCErrorInParser);
+                        DiagnosticUtils.AddError(node, message, MessageCode.SemanticTCErrorInParser);
                     }
 			} else {
 				if (IsUnsafe) {
 					string message = "Useless UNSAFE with non strongly typed receiver.";
-					DiagnosticUtils.AddError(node.CodeElement, message, MessageCode.SyntaxWarningInParser);
+					DiagnosticUtils.AddError(node, message, MessageCode.SyntaxWarningInParser);
 				}
 			}
 		}
 	}
 	private static DataDefinition GetSymbol(SymbolTable table, SymbolReference symbolReference) {
-		var found = table.GetVariable(symbolReference);
+		var found = table.GetVariables(symbolReference);
 		if (found.Count != 1) return null;// symbol undeclared or ambiguous -> not my job
 		return found[0];
 	}
     private static DataDefinition GetSymbol(SymbolTable table, QualifiedName qualifiedName) {
-		var found = table.GetVariable(qualifiedName);
+		var found = table.GetVariables(qualifiedName);
 		if (found.Count != 1) return null;// symbol undeclared or ambiguous -> not my job
 		return found[0];
 	}
 
     //TODO move this method to DataDefinition
-	private static DataType GetTypeDefinition(SymbolTable table, Node symbol) {
-		var data = symbol as DataDefinition;
-		if (data != null) {
-		    var dataCondition = data as DataCondition;
-		    if (dataCondition != null)
-				return dataCondition.CodeElement().DataType;
+        private static DataType GetTypeDefinition(SymbolTable table, Node symbol)
+        {
+            var data = symbol as DataDefinition;
+            if (data != null)
+            {
+                var dataCondition = data as DataCondition;
+                if (dataCondition != null)
+                    return dataCondition.CodeElement().DataType;
 
-			DataDescriptionEntry entry;
-			if (data.CodeElement is DataDescriptionEntry) {
-				entry = (DataDescriptionEntry)data.CodeElement;
-			} else
-			if (data.CodeElement is DataRedefinesEntry) {
-				var redefines = (DataRedefinesEntry)data.CodeElement;
-			    var node = GetSymbol(table, redefines.RedefinesDataName);
-			    if (node is DataDescription) {
-			        entry = (DataDescriptionEntry) node.CodeElement;
-			    } else {
-                    entry = GetDataDescriptionEntry(table, redefines);
-			    }
-			} else throw new NotImplementedException(data.CodeElement.GetType().Name);
-		    if (entry == null) {
-		        return null;
-		    }
-			if (entry.UserDefinedDataType == null) return entry.DataType;//not a custom type
-		}
-        ITypedNode typed = symbol as ITypedNode;
-		if (typed == null) return null;// symbol untyped
-		var types = table.GetType(typed);
-		if (types.Count != 1) return null;// symbol type not found or ambiguous
-		return types[0].DataType;
-	}
+                DataDescriptionEntry entry;
+                if (data.CodeElement is DataDescriptionEntry)
+                {
+                    entry = (DataDescriptionEntry) data.CodeElement;
+                }
+                else if (data.CodeElement is DataRedefinesEntry)
+                {
+                    var redefines = (DataRedefinesEntry) data.CodeElement;
+                    var node = GetSymbol(table, redefines.RedefinesDataName);
+                    if (node is DataDescription)
+                    {
+                        entry = (DataDescriptionEntry) node.CodeElement;
+                    }
+                    else
+                    {
+                        entry = GetDataDescriptionEntry(table, redefines);
+                    }
+                }
+                else if (data is IndexDefinition)
+                {
+                    entry = null;
+                }
+                else
+                    throw new NotImplementedException(data.CodeElement.GetType().Name);
+
+                if (entry == null)
+                    return null;
+
+                if (entry.UserDefinedDataType == null) return entry.DataType; //not a custom type
+            }
+            ITypedNode typed = symbol as ITypedNode;
+            if (typed == null) return null; // symbol untyped
+            var types = table.GetType(typed);
+            if (types.Count != 1) return null; // symbol type not found or ambiguous
+            return types[0].DataType;
+        }
 
         /// <summary>
         /// Quick and dirty method, this checker need to be refactored

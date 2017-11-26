@@ -14,6 +14,19 @@ namespace TypeCobol.Codegen.Actions
     public class Qualifier : EventArgs, Action
     {
         /// <summary>
+        /// Compute the hash+name of the given qualified name index.
+        /// </summary>
+        /// <param name="qualified_name"></param>
+        /// <returns></returns>
+        public static string ComputeIndexHashName(string qualified_name, Node sourceNode)
+        {
+            string[] items = qualified_name.Split('.');
+            string name = items[items.Length - 1];
+            string hash = Tools.Hash.CreateCOBOLNameHash(qualified_name.ToLower(), 8, sourceNode);
+            return hash + name.ToUpper();
+        }
+
+        /// <summary>
         /// Internal visitor class.
         /// </summary>
         internal class TypeCobolCobolQualifierVistor : TypeCobol.Compiler.CodeElements.AbstractAstVisitor
@@ -34,7 +47,7 @@ namespace TypeCobol.Codegen.Actions
             /// <summary>
             /// The Stack of Programs encountered
             /// </summary>
-            public Stack<Program> ProgramStack = null;
+            public Stack<IProcCaller> ProcCallerStack;
             /// <summary>
             /// Constructor
             /// </summary>
@@ -72,13 +85,13 @@ namespace TypeCobol.Codegen.Actions
                 {
                     //Check if the first element is already in
                     SymbolReference first = items[0];
-                    if (Containss(first))
+                    if (AllItemsListContains(first))
                         return true;
-                    if (Contains(first))
+                    if (ItemsContains(first))
                     {
                         foreach (SymbolReference sr in items)
                         {
-                            if (!Contains(sr))
+                            if (!ItemsContains(sr))
                                 Items.Add(sr);
                         }
                     }
@@ -106,7 +119,7 @@ namespace TypeCobol.Codegen.Actions
             /// </summary>
             /// <param name="sr">The Symbol Reference to Check</param>
             /// <returns>True if it is aready in, false otherwise</returns>
-            private bool Contains(SymbolReference sr)
+            private bool ItemsContains(SymbolReference sr)
             {
                 if (Items == null)
                     return false;
@@ -121,7 +134,7 @@ namespace TypeCobol.Codegen.Actions
             /// </summary>
             /// <param name="sr">The Symbol Reference to Check</param>
             /// <returns>True if it is aready in, false otherwise</returns>
-            private bool Containss(SymbolReference sr)
+            private bool AllItemsListContains(SymbolReference sr)
             {
                 if (AllItemsList == null)
                     return false;
@@ -138,15 +151,16 @@ namespace TypeCobol.Codegen.Actions
             {
                 PerformMatch();
                 this.CurrentNode = node;
-                if (node is Program)
-                {
-                    if (this.ProgramStack == null)
-                        this.ProgramStack = new Stack<Program>();
-                    Program program = node as Program;
-                    this.ProgramStack.Push(program);
-                    //Create the Dictionary of ProcStyleCall for this program
-                    program.ProcStyleCalls = new Dictionary<string, Tuple<IList<SymbolReference>, Compiler.Nodes.ProcedureStyleCall>>();
+
+                var procCaller = node as IProcCaller;
+                if (procCaller != null) {
+                    if (this.ProcCallerStack == null)
+                        this.ProcCallerStack = new Stack<IProcCaller>();
+                    this.ProcCallerStack.Push(procCaller);
+                    procCaller.ProcStyleCalls =
+                        new Dictionary<string, Tuple<IList<SymbolReference>, Compiler.Nodes.ProcedureStyleCall>>();
                 }
+                
                 return base.BeginNode(node);
             }
 
@@ -155,9 +169,9 @@ namespace TypeCobol.Codegen.Actions
                 base.EndNode(node);
                 PerformMatch();
                 node.SetFlag(Node.Flag.HasBeenTypeCobolQualifierVisited, true);
-                if (node is Program)
+                if (node is IProcCaller )
                 {
-                    this.ProgramStack.Pop();
+                    this.ProcCallerStack.Pop();
                 }
             }
 
@@ -192,27 +206,27 @@ namespace TypeCobol.Codegen.Actions
             private bool IsProcedureStyleCallItems(IList<SymbolReference> items, out string hashFunction)
             {
                 hashFunction = null;
-                if (CurrentNode is TypeCobol.Compiler.Nodes.ProcedureStyleCall)
+
+                TypeCobol.Compiler.Nodes.ProcedureStyleCall procStyleCall = CurrentNode as TypeCobol.Compiler.Nodes.ProcedureStyleCall;
+                if (procStyleCall != null)
                 {
-                    TypeCobol.Compiler.Nodes.ProcedureStyleCall procStyleCall = CurrentNode as TypeCobol.Compiler.Nodes.ProcedureStyleCall;
-                    if (procStyleCall.CodeElement is TypeCobol.Compiler.CodeElements.ProcedureStyleCallStatement)
+                    ProcedureStyleCallStatement procStyleCallStmt = procStyleCall.CodeElement as ProcedureStyleCallStatement;
+                    if (procStyleCallStmt != null)
                     {
-                        TypeCobol.Compiler.CodeElements.ProcedureStyleCallStatement procStyleCallStmt =
-                            procStyleCall.CodeElement as TypeCobol.Compiler.CodeElements.ProcedureStyleCallStatement;
-                        if (procStyleCallStmt.ProgramOrProgramEntryOrProcedureOrFunctionOrTCProcedureFunction is
-                            TypeCobol.Compiler.CodeElements.TypeCobolQualifiedSymbolReference)
+                        TypeCobolQualifiedSymbolReference tcqsr = procStyleCallStmt.ProgramOrProgramEntryOrProcedureOrFunctionOrTCProcedureFunction as
+                            TypeCobolQualifiedSymbolReference ?? procStyleCallStmt.ProcdurePointerOrTCProcedureFunction as TypeCobolQualifiedSymbolReference;
+
+                        if (tcqsr != null)
                         {
-                            TypeCobol.Compiler.CodeElements.TypeCobolQualifiedSymbolReference tcqsr = procStyleCallStmt.ProgramOrProgramEntryOrProcedureOrFunctionOrTCProcedureFunction as
-                            TypeCobol.Compiler.CodeElements.TypeCobolQualifiedSymbolReference;
                             IList<SymbolReference> names_items = tcqsr.AsList();
                             if (names_items.Count != items.Count)
                                 return false;
                             if (EqualItems(items, names_items))
                             {//This is a reference to a Function Call.
                                 hashFunction = procStyleCall.FunctionDeclaration.Hash;
-                                if (ProgramStack != null && ProgramStack.Count > 0)
-                                {   //Memoïze the (hash,ProcedureStyleCall) In the Program procedure style call dictionary.
-                                    var program = ProgramStack.Peek();
+                                if (ProcCallerStack != null && ProcCallerStack.Count > 0)
+                                {   //Memorize the (hash,ProcedureStyleCall) In the Program procedure style call dictionary.
+                                    var program = ProcCallerStack.Peek();
                                     if (!program.ProcStyleCalls.ContainsKey(hashFunction))
                                         program.ProcStyleCalls[hashFunction] = new Tuple<IList<SymbolReference>, TypeCobol.Compiler.Nodes.ProcedureStyleCall>(items, procStyleCall);
                                 }
@@ -270,6 +284,59 @@ namespace TypeCobol.Codegen.Actions
 
 
             /// <summary>
+            /// Determine if a Data Definition is included a TypeDefintion
+            /// </summary>
+            /// <param name="dataDef">The Data Definition to check</param>
+            /// <returns>true if the DataDefintion is included in a TypeDefinition, false otherwise</returns>
+            internal bool IsTypeDefinition(TypeCobol.Compiler.Nodes.DataDefinition dataDef)
+            {
+                while (dataDef != null)
+                {
+                    if (dataDef is TypeCobol.Compiler.Nodes.TypeDefinition)
+                        return true;
+                    dataDef = dataDef.Parent is TypeCobol.Compiler.Nodes.DataDefinition ? (dataDef.Parent as TypeCobol.Compiler.Nodes.DataDefinition) : null;
+                }
+                return false;
+            }
+
+
+            /// <summary>
+            /// Check if the given items are in the source node qualified storage areas.
+            /// </summary>
+            /// <param name="items">The items to check</param>
+            /// <param name="sourceNode">The source node</param>
+            /// <param name="qualified_name">The qualified name that corresponds the the items.</param>
+            /// <returns>true if the items are in the source node storage areas, false otherwise</returns>
+            internal bool AreItemsInNodeQualifiedStorageAreas(IList<SymbolReference> items, Node sourceNode, out string qualified_name)
+            {
+                qualified_name = null;
+                if (sourceNode.QualifiedStorageAreas == null)
+                    return false;
+                foreach (TypeCobol.Compiler.CodeElements.StorageArea storage_area in sourceNode.QualifiedStorageAreas.Keys)
+                {
+                    if (storage_area.SymbolReference.IsTypeCobolQualifiedReference)
+                    {
+                        TypeCobolQualifiedSymbolReference tc_sr = storage_area.SymbolReference as TypeCobolQualifiedSymbolReference;
+                        IList<SymbolReference> tcsr_items = tc_sr.AsList();
+                        int nCountInner = 0;
+                        foreach (SymbolReference item in items)
+                        {
+                            if (tcsr_items.IndexOf(item) >= 0)
+                                nCountInner++;
+                            else
+                                break;
+                        }
+                        if (nCountInner == items.Count)
+                        {
+                            qualified_name = sourceNode.QualifiedStorageAreas[storage_area];
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            /// <summary>
             /// Perform the qualification action
             /// </summary>
             /// <param name="sourceNode">The source Node on which to perform teh action</param>
@@ -278,6 +345,14 @@ namespace TypeCobol.Codegen.Actions
             {
                 if (sourceNode.IsFlagSet(Node.Flag.HasBeenTypeCobolQualifierVisited))
                     return;
+                    TypeCobol.Compiler.Nodes.DataDescription dataDescription = null;
+                if (sourceNode is TypeCobol.Compiler.Nodes.DataDescription && IsTypeDefinition(sourceNode as TypeCobol.Compiler.Nodes.DataDescription))
+                {
+                    dataDescription = sourceNode as TypeCobol.Compiler.Nodes.DataDescription;
+                    if (dataDescription.QualifiedTokenSubsitutionMap == null)
+                        dataDescription.QualifiedTokenSubsitutionMap = new Dictionary<Compiler.Scanner.Token, string>();                    
+                }
+
                 //Now this Node Is Visited
                 sourceNode.SetFlag(Node.Flag.HasBeenTypeCobolQualifierVisited, true);
                 Tuple<int, int, int, List<int>, List<int>> sourcePositions = this.Generator.FromToPositions(sourceNode);
@@ -322,6 +397,34 @@ namespace TypeCobol.Codegen.Actions
                         bWasProcCall = true;//Remember that we have a Procedure Style Call Node.
                         continue;//Continue
                     }
+                    if (sourceNode.IsFlagSet(Node.Flag.NodeContainsIndex))
+                    {
+                        //So we must know if this qualified name is for an Index Name
+                        string qualified_name;
+                        bool bAreIn = AreItemsInNodeQualifiedStorageAreas(items, sourceNode, out qualified_name);
+                        if (bAreIn)
+                        {
+                            GenerateToken item = null;
+                            string hashName = ComputeIndexHashName(qualified_name, sourceNode);
+                            //Now all items in the qualified name must be replaced with the hash name by the Generator.
+                            //So all items except the last one are replaced by a blank, the last item will be the HashName
+                            for (int r = i; r <= range.Item2 - 1; r++)
+                            {                                
+                                item = new GenerateToken(
+                                    new TokenCodeElement(nodeTokens[r]), "",
+                                    sourcePositions);
+                                item.SetFlag(Node.Flag.HasBeenTypeCobolQualifierVisited, true);
+                                sourceNode.Add(item);
+                             }
+                            item = new GenerateToken(
+                                new TokenCodeElement(nodeTokens[range.Item2]), hashName,
+                                sourcePositions);
+                            item.SetFlag(Node.Flag.HasBeenTypeCobolQualifierVisited, true);
+                            sourceNode.Add(item);
+                            continue;
+                        }
+                    }
+
                     for (int j = 0; j < Items.Count; j++)
                     {
                         SymbolReference sr = Items[Items.Count - j - 1];
@@ -344,17 +447,26 @@ namespace TypeCobol.Codegen.Actions
                                     }
                                 }
                                 //We got It ==> Create our Generate Nodes
-                                GenerateToken item = new GenerateToken(
-                                    new TokenCodeElement(sr.NameLiteral.Token), Items[j].ToString(),
-                                    sourcePositions);
-                                item.SetFlag(Node.Flag.HasBeenTypeCobolQualifierVisited, true);
-                                sourceNode.Add(item);
-                                if (tokenColonColon != null)
+                                if (dataDescription != null)
                                 {
-                                    item = new GenerateToken(new TokenCodeElement(tokenColonColon), string.Intern(" OF "),
+                                    dataDescription.QualifiedTokenSubsitutionMap[sr.NameLiteral.Token] = Items[j].ToString();
+                                    if (tokenColonColon != null)
+                                        dataDescription.QualifiedTokenSubsitutionMap[tokenColonColon] = "OF";
+                                }
+                                else
+                                {
+                                    GenerateToken item = new GenerateToken(
+                                        new TokenCodeElement(sr.NameLiteral.Token), Items[j].ToString(),
                                         sourcePositions);
                                     item.SetFlag(Node.Flag.HasBeenTypeCobolQualifierVisited, true);
                                     sourceNode.Add(item);
+                                    if (tokenColonColon != null)
+                                    {
+                                        item = new GenerateToken(new TokenCodeElement(tokenColonColon), string.Intern(" OF "),
+                                            sourcePositions);
+                                        item.SetFlag(Node.Flag.HasBeenTypeCobolQualifierVisited, true);
+                                        sourceNode.Add(item);
+                                    }
                                 }
                                 break;//We got it
                             }
@@ -417,7 +529,7 @@ namespace TypeCobol.Codegen.Actions
             public string ReplaceCode
             {
                 get;
-                private set;
+                set;
             }
 
 

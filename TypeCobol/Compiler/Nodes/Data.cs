@@ -6,13 +6,16 @@ namespace TypeCobol.Compiler.Nodes {
     using System;
     using System.Collections.Generic;
     using CodeElements.Expressions;
+    using Scanner;
     using TypeCobol.Compiler.CodeElements;
 
 
 
     public class DataDivision: Node, CodeElementHolder<DataDivisionHeader>, Parent<DataSection> {
+
+        public const string NODE_ID = "data-division";
 	    public DataDivision(DataDivisionHeader header): base(header) { }
-	    public override string ID { get { return "data-division"; } }
+	    public override string ID { get { return NODE_ID; } }
 
 	    public override void Add(Node child, int index = -1) {
 		    if (index <= 0) index = WhereShouldIAdd(child.GetType());
@@ -117,16 +120,16 @@ namespace TypeCobol.Compiler.Nodes {
     public abstract class DataDefinition: Node, Parent<DataDefinition>, ITypedNode {
 
         private CommonDataDescriptionAndDataRedefines _ComonDataDesc { get { return this.CodeElement as CommonDataDescriptionAndDataRedefines; } }
-        protected DataDefinition(DataDefinitionEntry entry): base(entry) { References = new List<DataDefinition>(); }
+        protected DataDefinition(DataDefinitionEntry entry): base(entry) {  }
         public override string ID { get { return "data-definition"; } }
         public override string Name { get { return ((DataDefinitionEntry)this.CodeElement).Name; } }
 
-        public List<DataDefinition> References { get; set; }
+
         public override bool VisitNode(IASTVisitor astVisitor) {
             return astVisitor.Visit(this);
         }
 
-        public DataType DataType
+        public virtual DataType DataType
         {
             get
             {
@@ -179,19 +182,26 @@ namespace TypeCobol.Compiler.Nodes {
         /// </summary>
         [CanBeNull]
         public TypeDefinition GetParentTypeDefinition {
-            get {
-                Node currentNode = this;
-                while (currentNode != null) {
-                    var typedNode = currentNode as TypeDefinition;
-                    if (typedNode != null) return typedNode;
+            get { return GetParentTypeDefinitionWithPath(new List<string>()); }
+        }
 
-                    //Stop if we reach a Parent which is not a DataDefinion (Working storage section for example)
-                    if (!(currentNode is DataDefinition)) return null;
+        public TypeDefinition GetParentTypeDefinitionWithPath([NotNull] List<string> qualifiedPath)
+        {
+            Node currentNode = this;
+            while (currentNode != null)
+            {
+                var typedNode = currentNode as TypeDefinition;
+                if (typedNode != null) return typedNode;
+                else
+                    qualifiedPath.Add(currentNode.Name); //Store the path and ignore Type Name
 
-                    currentNode = currentNode.Parent;
-                }
-                return null;
+                //Stop if we reach a Parent which is not a DataDefinion (Working storage section for example)
+                if (!(currentNode is DataDefinition)) return null;
+
+                currentNode = currentNode.Parent;
+                
             }
+            return null;
         }
 
         public bool IsStronglyTyped
@@ -213,6 +223,8 @@ namespace TypeCobol.Compiler.Nodes {
                 return parent != null && parent.IsStrictlyTyped;
             }
         }
+
+        public bool IsIndex { get; internal set; }
 
         #region TypeProperties
         public AlphanumericValue Picture { get {return _ComonDataDesc != null ? _ComonDataDesc.Picture : null;}}
@@ -241,6 +253,10 @@ namespace TypeCobol.Compiler.Nodes {
         {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
+        /// <summary>
+        /// A Dictonary that gives for a Token that appears in a qualified name its subtitution.
+        /// </summary>
+        public Dictionary<Token, string> QualifiedTokenSubsitutionMap;
     }
     public class DataCondition: DataDefinition, CodeElementHolder<DataConditionEntry> 
     {
@@ -300,8 +316,36 @@ namespace TypeCobol.Compiler.Nodes {
         public IntegerValue LevelNumber { get { return _CodeElement.LevelNumber; } }
         public SymbolDefinition DataName { get { return _CodeElement.DataName; } }
 
+        public bool IsOmittable { get { return _CodeElement.IsOmittable; } }
+
 
     }
     // [/TYPECOBOL]
+
+    public class IndexDefinition : DataDefinition
+    {
+        public IndexDefinition(SymbolDefinition symbolDefinition) : base(null)
+        {
+            _SymbolDefinition = symbolDefinition;
+            IsIndex = true;
+        }
+
+        private SymbolDefinition _SymbolDefinition;
+
+        public override string Name
+        {
+            get { return _SymbolDefinition.Name; }
+        }
+
+        public override DataType DataType
+        {
+            get { return DataType.Numeric; }
+        }
+
+        public override bool VisitNode(IASTVisitor astVisitor)
+        {
+            return astVisitor.Visit(this);
+        }
+    }
 
 } // end of namespace TypeCobol.Compiler.Nodes

@@ -64,7 +64,29 @@ namespace TypeCobol.LanguageServices.Editor
         {
             string fileName = Path.GetFileName(fileUri.LocalPath);
             ITextDocument initialTextDocumentLines = new ReadOnlyTextDocument(fileName, TypeCobolConfiguration.Format.Encoding, TypeCobolConfiguration.Format.ColumnsLayout, sourceText);
-            var fileCompiler = new FileCompiler(initialTextDocumentLines, CompilationProject.SourceFileProvider, CompilationProject, CompilationProject.CompilationOptions, CustomSymbols, false, CompilationProject);
+            FileCompiler fileCompiler = null;
+
+#if EUROINFO_RULES //Issue #583
+            SymbolTable arrangedCustomSymbol = null;
+            var inputFileName = fileName.Substring(0, 8);
+            var matchingPgm =
+                CustomSymbols.Programs.Keys.FirstOrDefault(
+                    k => k.Equals(inputFileName, StringComparison.InvariantCultureIgnoreCase));
+            if (matchingPgm != null)
+            {
+                arrangedCustomSymbol = new SymbolTable(CustomSymbols, SymbolTable.Scope.Namespace);
+                var prog = CustomSymbols.Programs.Values.SelectMany(p => p).Where(p => p.Name != matchingPgm);
+                arrangedCustomSymbol.CopyAllPrograms(new List<List<Program>>() {prog.ToList()});
+                arrangedCustomSymbol.Programs.Remove(matchingPgm);
+            }
+            fileCompiler = new FileCompiler(initialTextDocumentLines, CompilationProject.SourceFileProvider,
+                CompilationProject, CompilationProject.CompilationOptions, arrangedCustomSymbol ?? CustomSymbols,
+                false, CompilationProject);
+#else
+            fileCompiler = new FileCompiler(initialTextDocumentLines, CompilationProject.SourceFileProvider, CompilationProject, CompilationProject.CompilationOptions, CustomSymbols, false, CompilationProject);
+#endif
+
+
             fileCompiler.CompilationResultsForProgram.UpdateTokensLines();
 
             lock (OpenedFileCompiler)
@@ -76,8 +98,10 @@ namespace TypeCobol.LanguageServices.Editor
                 fileCompiler.CompilationResultsForProgram.ProgramClassChanged += ProgramClassChanged;
             }
 
-            fileCompiler.CompilationResultsForProgram.SetOwnerThread(Thread.CurrentThread);
-            fileCompiler.StartContinuousBackgroundCompilation(200, 500, 1000, 3000); //TODO: create a better refresh compilation
+            //fileCompiler.CompilationResultsForProgram.SetOwnerThread(Thread.CurrentThread);
+            //fileCompiler.StartContinuousBackgroundCompilation(200, 500, 1000, 3000); //TODO: create a better refresh compilation
+
+            fileCompiler.CompileOnce(); //Let's parse file for the first time after openning. 
         }
 
         /// <summary>
@@ -120,7 +144,7 @@ namespace TypeCobol.LanguageServices.Editor
                 {
                     fileCompilerToClose = OpenedFileCompiler[fileUri];
                     OpenedFileCompiler.Remove(fileUri);
-                    fileCompilerToClose.StopContinuousBackgroundCompilation();
+                    //fileCompilerToClose.StopContinuousBackgroundCompilation();
                     fileCompilerToClose.CompilationResultsForProgram.ProgramClassChanged -= ProgramClassChanged;
                 }
             }            

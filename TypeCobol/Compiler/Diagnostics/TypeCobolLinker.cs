@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TypeCobol.Compiler.CodeElements;
 using TypeCobol.Compiler.CodeElements.Expressions;
+using TypeCobol.Compiler.CodeModel;
 using TypeCobol.Compiler.Nodes;
 
 namespace TypeCobol.Compiler.Diagnostics
@@ -22,7 +23,7 @@ namespace TypeCobol.Compiler.Diagnostics
 
         public override bool Visit(DataDescription dataEntry)
         {
-            TypeReferencer(dataEntry);
+            TypeReferencer(dataEntry, dataEntry.SymbolTable);
             return base.Visit(dataEntry);
         }
 
@@ -35,23 +36,34 @@ namespace TypeCobol.Compiler.Diagnostics
 
             foreach (var dataEntry in parameters)
             {
-                TypeReferencer(dataEntry);
+                TypeReferencer(dataEntry, dataEntry.SymbolTable);
             }
 
             return base.Visit(funcDeclare);
         }
 
-        private void TypeReferencer(DataDescription dataEntry)
+        private void TypeReferencer(DataDescription dataEntry, SymbolTable symbolTable)
         {
-            //Check SymbolTable for dataEntry DataType.Name
-            var types = dataEntry.SymbolTable.GetType(dataEntry.DataType);
+            if (symbolTable == null) return;
+            var types = symbolTable.GetType(dataEntry.DataType);
             if (types.Count != 1) return;
 
-            //Add this dataEntry to type references
-            var typeToUpdate = types.First();
-            if (typeToUpdate == null) return;
+            var type = types.First();
+            if (symbolTable.TypesReferences.ContainsKey(type)) //If datatype already exists, add ref to the list
+            {
+                if (!symbolTable.TypesReferences[type].Contains(dataEntry))
+                    symbolTable.TypesReferences[type].Add(dataEntry);
+            }
+            else
+            {
+                symbolTable.TypesReferences.Add(type, new List<DataDefinition> {dataEntry});
+            }
 
-            typeToUpdate.References.Add(dataEntry);
+            //Also add all the typedChildren to reference list
+            foreach (var dataDescTypeChild in type.Children.Where(c => c is DataDescription))
+            {
+                TypeReferencer(dataDescTypeChild as DataDescription, symbolTable);
+            }
         }
       
     }

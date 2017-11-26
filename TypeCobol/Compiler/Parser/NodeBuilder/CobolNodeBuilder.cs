@@ -12,6 +12,7 @@ using TypeCobol.Compiler.AntlrUtils;
 using TypeCobol.Tools;
 using Analytics;
 using Castle.Core.Internal;
+using TypeCobol.Compiler.Diagnostics;
 
 namespace TypeCobol.Compiler.Parser
 {
@@ -53,9 +54,9 @@ namespace TypeCobol.Compiler.Parser
                     SymbolTable intrinsicTable = value.GetTableFromScope(SymbolTable.Scope.Intrinsic);
                     SymbolTable nameSpaceTable = value.GetTableFromScope(SymbolTable.Scope.Namespace);
 
-                    intrinsicTable.DataEntries.Values.ToList().ForEach(d => d.ForEach(da => da.IsIntrinsic = true));
-                    intrinsicTable.Types.Values.ToList().ForEach(d => d.ForEach(da => da.IsIntrinsic = true));
-                    intrinsicTable.Functions.Values.ToList().ForEach(d => d.ForEach(da => da.IsIntrinsic = true));
+                    intrinsicTable.DataEntries.Values.ToList().ForEach(d => d.ForEach(da => da.SetFlag(Node.Flag.NodeIsIntrinsic, true)));
+                    intrinsicTable.Types.Values.ToList().ForEach(d => d.ForEach(da => da.SetFlag(Node.Flag.NodeIsIntrinsic, true)));
+                    intrinsicTable.Functions.Values.ToList().ForEach(d => d.ForEach(da => da.SetFlag(Node.Flag.NodeIsIntrinsic, true)));
 
                     TableOfIntrisic.CopyAllDataEntries(intrinsicTable.DataEntries.Values);
                     TableOfIntrisic.CopyAllTypes(intrinsicTable.Types);
@@ -100,9 +101,9 @@ namespace TypeCobol.Compiler.Parser
             SyntaxTree.Exit();
         }
 
-        public IList<ParserDiagnostic> GetDiagnostics(ProgramClassParser.CobolCompilationUnitContext context)
+        public List<Diagnostic> GetDiagnostics(ProgramClassParser.CobolCompilationUnitContext context)
         {
-            IList<ParserDiagnostic> diagnostics = new List<ParserDiagnostic>();
+            List<Diagnostic> diagnostics = new List<Diagnostic>();
             AddDiagnosticsAttachedInContext(diagnostics, context);
             if (diagnostics.Count > 0)
             {
@@ -114,14 +115,14 @@ namespace TypeCobol.Compiler.Parser
             }
         }
 
-        private void AddDiagnosticsAttachedInContext(IList<ParserDiagnostic> diagnostics, ParserRuleContext context)
+        private void AddDiagnosticsAttachedInContext(List<Diagnostic> diagnostics, ParserRuleContext context)
         {
             var ruleNodeWithDiagnostics = (ParserRuleContextWithDiagnostics)context;
             if (ruleNodeWithDiagnostics.Diagnostics != null)
             {
                 foreach (var ruleDiagnostic in ruleNodeWithDiagnostics.Diagnostics)
                 {
-                    diagnostics.Add((ParserDiagnostic)ruleDiagnostic);
+                    diagnostics.Add(ruleDiagnostic);
                 }
             }
             if (context.children != null)
@@ -432,7 +433,11 @@ namespace TypeCobol.Compiler.Parser
                     if (node.CodeElement().IsGlobal)
                         table = table.GetTableFromScope(SymbolTable.Scope.Global);
 
-                    table.AddVariable(index.Name, node);
+                    var indexNode = new IndexDefinition(index);
+                    Enter(indexNode, null, table);
+                    if (!indexNode.IsPartOfATypeDef) //If index is inside a Typedef do not add to symboltable
+                        table.AddVariable(indexNode);
+                    Exit();
                 }
             }
 
@@ -441,7 +446,36 @@ namespace TypeCobol.Compiler.Parser
             {
                 data.DataType.RestrictionLevel = types[0].DataType.RestrictionLevel;
             }
-            //else do nothing, it's an error that will be treated by a Checker (Cobol2002Checker obviously).
+            //else do nothing, it's an error that will be handled by Cobol2002Checker
+
+            var parent = node.Parent;
+            while(parent !=null)
+            {
+                if (parent is WorkingStorageSection)
+                {
+                    //Set flag to know that this node belongs to working storage section
+                    node.SetFlag(Node.Flag.WorkingSectionNode, true); 
+                    break;
+                }
+                else if (parent is LinkageSection)
+                {
+                    //Set flag to know that this node belongs to linkage section
+                    node.SetFlag(Node.Flag.LinkageSectionNode, true);
+                    break;
+                }
+                else if (parent is LocalStorageSection)
+                {
+                    //Set flag to know that this node belongs to local storage section
+                    node.SetFlag(Node.Flag.LocalStorageSectionNode, true);
+                    break;
+                }
+                else if (parent is FileSection)
+                {
+                    node.SetFlag(Node.Flag.FileSectionNode, true);
+                    break;
+                }
+                parent = parent.Parent;
+            }
 
             AddToSymbolTable(node);
         }
@@ -558,6 +592,7 @@ namespace TypeCobol.Compiler.Parser
             {
                 var paramNode = new ParameterDescription(parameter);
                 paramNode.SymbolTable = CurrentNode.SymbolTable;
+                paramNode.SetFlag(Node.Flag.LinkageSectionNode, true);
                 funcProfile.InputParameters.Add(paramNode);
                 CurrentNode.SymbolTable.AddVariable(paramNode);
             }
@@ -565,6 +600,7 @@ namespace TypeCobol.Compiler.Parser
             {
                 var paramNode = new ParameterDescription(parameter);
                 paramNode.SymbolTable = CurrentNode.SymbolTable;
+                paramNode.SetFlag(Node.Flag.LinkageSectionNode, true);
                 funcProfile.OutputParameters.Add(paramNode);
                 CurrentNode.SymbolTable.AddVariable(paramNode);
             }
@@ -572,6 +608,7 @@ namespace TypeCobol.Compiler.Parser
             {
                 var paramNode = new ParameterDescription(parameter);
                 paramNode.SymbolTable = CurrentNode.SymbolTable;
+                paramNode.SetFlag(Node.Flag.LinkageSectionNode, true);
                 funcProfile.InoutParameters.Add(paramNode);
                 CurrentNode.SymbolTable.AddVariable(paramNode);
             }
@@ -580,6 +617,7 @@ namespace TypeCobol.Compiler.Parser
             {
                 var paramNode = new ParameterDescription(declaration.Profile.ReturningParameter);
                 paramNode.SymbolTable = CurrentNode.SymbolTable;
+                paramNode.SetFlag(Node.Flag.LinkageSectionNode, true);
                 ((FunctionDeclaration)CurrentNode).Profile.ReturningParameter = paramNode;
                 CurrentNode.SymbolTable.AddVariable(paramNode);
             }

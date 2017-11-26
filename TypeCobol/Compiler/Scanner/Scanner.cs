@@ -281,7 +281,7 @@ namespace TypeCobol.Compiler.Scanner
                 if (concatenatedLine.Length > 0)
                 {
                     // Scan the continuation text, and get its last token so far
-                    TokensLine temporaryTokensLine = TokensLine.CreateVirtualLineForInsertedToken(firstLine.InitialLineIndex, concatenatedLine);
+                    TokensLine temporaryTokensLine = TokensLine.CreateVirtualLineForInsertedToken(firstLine.LineIndex, concatenatedLine);
                     Scanner.ScanTokensLine(temporaryTokensLine, initialScanState, compilerOptions, copyTextNameVariations);
                     Token lastTokenOfConcatenatedLineSoFar = temporaryTokensLine.SourceTokens[temporaryTokensLine.SourceTokens.Count - 1];
 
@@ -350,7 +350,7 @@ namespace TypeCobol.Compiler.Scanner
             }
 
             // Scan the complete continuation text as a whole
-            TokensLine virtualContinuationTokensLine = TokensLine.CreateVirtualLineForInsertedToken(firstLine.InitialLineIndex, concatenatedLine);
+            TokensLine virtualContinuationTokensLine = TokensLine.CreateVirtualLineForInsertedToken(firstLine.LineIndex, concatenatedLine);
             Scanner.ScanTokensLine(virtualContinuationTokensLine, initialScanState, compilerOptions, copyTextNameVariations);
 
             // Then attribute each token and diagnostic to its corresponding tokens line
@@ -635,6 +635,10 @@ namespace TypeCobol.Compiler.Scanner
                     {
                         return ScanOneCharFollowedBySpace(startIndex, TokenType.CommaSeparator, MessageCode.InvalidCharAfterComma, false);
                     }
+                case '?':
+                    //QuestionMark=460,
+                    //TypeCobol
+                    return ScanOneCharFollowedBySpace(startIndex, TokenType.QuestionMark, MessageCode.QuestionMarkShouldBeFollowedBySpace);         
                 case ';':
                     //SemicolonSeparator=3,
                     // p46: A separator semicolon is composed of a semicolon followed by a space.
@@ -1596,8 +1600,21 @@ namespace TypeCobol.Compiler.Scanner
             }
             else
             {
-                // Return a picture character string
-                return new Token(TokenType.PictureCharacterString, startIndex, endIndex, tokensLine);
+                var picToken = new Token(TokenType.PictureCharacterString, startIndex, endIndex, tokensLine);
+                var patternEndIndex = endIndex;
+                var replaceStartIndex = line.Substring(startIndex).IndexOf(":", StringComparison.Ordinal) + startIndex;
+                if (replaceStartIndex > picToken.StartIndex && picToken.EndColumn > replaceStartIndex && CheckForPartialCobolWordPattern(replaceStartIndex, out patternEndIndex)) 
+                { //Check if there is cobol partial word inside the picture declaration. 
+                    picToken.TokenType = TokenType.PartialCobolWord; //Match the whole PictureCharecterString token as a partial cobol word. 
+                    picToken.PreviousTokenType = TokenType.PictureCharacterString; //Save that the token was previously a picture character string token
+                    return picToken;
+                }
+                else
+                {
+                    // Return a picture character string
+                    return picToken;
+                }
+               
             }
         }
 

@@ -27,6 +27,10 @@ namespace TypeCobol.Codegen.Generators
         /// The Set of Exceed Lines over column 72
         /// </summary>
         private HashSet<int> ExceedLines;
+        /// <summary>
+        /// The Set to indicates which line number has alreday been checked for characters that were in column 73-80.
+        /// </summary>
+        private HashSet<int> Lines_73_80_Flags;
 
         /// <summary>
         /// Constructor
@@ -36,7 +40,7 @@ namespace TypeCobol.Codegen.Generators
         /// <param name="skeletons">All skeletons pattern for code generation </param>
         public DefaultGenerator(TypeCobol.Compiler.CompilationDocument document, TextWriter destination, List<Skeleton> skeletons)
             : base(document, destination, skeletons)
-        {
+        {            
         }
 
         /// <summary>
@@ -73,6 +77,8 @@ namespace TypeCobol.Codegen.Generators
             Stack<SourceText> stackLocalBuffer = new Stack<SourceText>();
             //Bit Array of Generated Nodes.
             BitArray generated_node = new BitArray(mapper.NodeCount);
+            //For detecting line having characters in columns [73-80]
+            Lines_73_80_Flags = new HashSet<int>();
             //The previous line generation buffer 
             StringSourceText previousBuffer = null;
             for (int i = 0; i < mapper.LineData.Length; i++)
@@ -300,35 +306,54 @@ namespace TypeCobol.Codegen.Generators
         /// <param name="code">The code to insert</param>
         /// <param name="lineNumber">The current lien number</param>
         private void GenerateIntoBufferCheckLineExceed(Position from, Position to, SourceText buffer, string code, int lineNumber)
-        {
+        {   //Lines_73_80_Map
+            int start = Math.Min(from.Pos, buffer.Size);
+            int end = Math.Min(to.Pos, buffer.Size);
+            if (this.Layout != ColumnsLayout.CobolReferenceFormat)
+            {//Maybe Free Format
+                buffer.Insert(code, start, end);
+                return;
+            }
             int lineLen = -1;
             int lineStartOffset = -1;
             int lineEndOffset = -1;
-            int start = Math.Min(from.Pos, buffer.Size);
-            int end = Math.Min(to.Pos, buffer.Size);
             if (ExceedLines != null)
             {
                 ExceedLines.Remove(lineNumber);
             }
             lineLen = buffer.GetLineInfo(start, out lineStartOffset, out lineEndOffset);
-            buffer.Insert(code, start, end);
-
+            if (!Lines_73_80_Flags.Contains(lineNumber))
+            {//Replace by spaces any characters in columns[73-80]
+                Lines_73_80_Flags.Add(lineNumber);
+                if (lineLen > LEGAL_COBOL_LINE_LENGTH)
+                {
+                    int replace_len = lineLen - LEGAL_COBOL_LINE_LENGTH;
+                    buffer.Insert(new string(' ', replace_len), LEGAL_COBOL_LINE_LENGTH, lineLen);
+                }
+            }
+            buffer.Insert(code, start, end);        
             int delta = -(end - start) + code.Length;
             int newLineLen = lineLen + delta;
             bool newHas73Chars = false;
             if (newLineLen > LEGAL_COBOL_LINE_LENGTH)
             {
-                for (int k = LEGAL_COBOL_LINE_LENGTH; k < newLineLen & !newHas73Chars; k++)
-                    newHas73Chars = !Char.IsWhiteSpace(buffer[lineStartOffset + k]);
+                for (int k = LEGAL_COBOL_LINE_LENGTH; k < newLineLen & !newHas73Chars; k++) {
+                    char ch = buffer[lineStartOffset + k];
+                    newHas73Chars = !(ch == '\r' || ch == '\n' || Char.IsWhiteSpace(ch));
+                }
                 //Error
                 //Emit an error.
-                if ((newLineLen > MAX_COBOL_LINE_LENGTH) || newHas73Chars)
+                if (newHas73Chars)
                 {
                     if (ExceedLines == null)
                     {
                         ExceedLines = new HashSet<int>();
                     }
                     ExceedLines.Add(lineNumber);
+                }
+                else if (newLineLen > MAX_COBOL_LINE_LENGTH)
+                {//Here we know that the line the line exceed with only white characters. ==> Remove extra white characters
+                    buffer.Delete(LEGAL_COBOL_LINE_LENGTH, newLineLen);
                 }
             }
         }
@@ -349,6 +374,33 @@ namespace TypeCobol.Codegen.Generators
         }
 
         /// <summary>
+        /// Get the Lines gnerated for a Node.
+        /// </summary>
+        /// <param name="node">The node to get the lines</param>
+        /// <returns>The Node's lines</returns>
+        IEnumerable<ITextLine> NodeLines(Node node)
+        {
+            node.Layout = Layout;
+            return node.Lines;
+        }
+
+        /// <summary>
+        /// Recursively get all lines of a node and its children.
+        /// </summary>
+        /// <param name="node">The node to get all line</param>
+        /// <param name="all_lines">All line accumulator</param>
+        void RecursiveNodeLines(Node node, BitArray generated_node, List<ITextLine> all_lines)
+        {
+            foreach (var l in NodeLines(node))
+                all_lines.Add(l);
+            foreach (Node child in node.Children)
+            {
+                if (child.NodeIndex >= 0)
+                    generated_node[child.NodeIndex] = true;
+                RecursiveNodeLines(child, generated_node, all_lines);
+            }
+        }
+        /// <summary>
         /// Get all lines to be Generated by a Node. If the Node was inserted by a factory then
         /// all its children as also generated by a factory, they are generated with it.
         /// </summary>
@@ -357,19 +409,32 @@ namespace TypeCobol.Codegen.Generators
         /// <returns></returns>
         public virtual IEnumerable<ITextLine> NodeLines(Node node, BitArray generated_node)
         {
-            foreach (var l in node.Lines)
-                yield return l;
-            if (node.IsFlagSet(Node.Flag.FactoryGeneratedNodeKeepInsertionIndex))
+            if (node.IsFlagSet(Node.Flag.FullyGenerateRecursivelyFactoryGeneratedNode))
             {
-                //All its Children that are not inserted at a specific index are generated with it
-                foreach(Node child in node.Children)
+                List<ITextLine> all_lines = new List<ITextLine>();
+                RecursiveNodeLines(node, generated_node, all_lines);
+                foreach (var l in all_lines)
+                    yield return l;
+            }
+            else
+            {
+                foreach (var l in NodeLines(node))
+                    yield return l;
+                if (node.IsFlagSet(Node.Flag.FactoryGeneratedNodeKeepInsertionIndex))
                 {
-                    if (child.IsFlagSet(Node.Flag.FactoryGeneratedNode) && 
-                        !child.IsFlagSet(Node.Flag.FactoryGeneratedNodeKeepInsertionIndex))
+                    //All its Children that are not inserted at a specific index are generated with it
+                    foreach (Node child in node.Children)
                     {
-                        generated_node[child.NodeIndex] = true;
-                        foreach (var cl in child.Lines)
-                            yield return cl;
+                        if (child.IsFlagSet(Node.Flag.FactoryGeneratedNode) &&
+                            (!child.IsFlagSet(Node.Flag.FactoryGeneratedNodeKeepInsertionIndex)))
+                        {
+                            if (child.NodeIndex >= 0)
+                                generated_node[child.NodeIndex] = true;
+                            foreach (var cl in NodeLines(child))
+                            {
+                                yield return cl;
+                            }
+                        }
                     }
                 }
             }
@@ -440,7 +505,6 @@ namespace TypeCobol.Codegen.Generators
         /// <param name="to">The ending position in the buffer</param>
         private void ReplaceByBlanks(StringSourceText sourceText, int from, int to)
         {
-            int length = to - from;
             for (int i = from; i < to; i++)
             {
                 char c = sourceText[i];
@@ -487,7 +551,7 @@ namespace TypeCobol.Codegen.Generators
             {
                 if (Layout == ColumnsLayout.CobolReferenceFormat)
                 {
-                    var lines = CobolTextLine.Create(line.Text, Layout, line.InitialLineIndex);
+                    var lines = CobolTextLine.Create(line.Text, Layout, line.LineIndex);
                     foreach (var l in lines) results.Add(SetComment(l, isComment));
                 }
                 else
@@ -531,14 +595,15 @@ namespace TypeCobol.Codegen.Generators
             if (cobol != null)
             {
                 StringBuilder text = new StringBuilder(cobol.Text);
-                text[6] = '*';
-                var lines = CobolTextLine.Create("*" + cobol.SourceText, cobol.ColumnsLayout, cobol.InitialLineIndex);
+                if(text.Length > 6) 
+                    text[6] = '*';
+                var lines = CobolTextLine.Create("*" + cobol.SourceText, cobol.ColumnsLayout, cobol.LineIndex);
                 foreach (var l in lines) return l;// there's only one in the collection
                 throw new System.NotImplementedException("I should have at least one item!");
             }
             else
             {
-                return new TextLineSnapshot(line.InitialLineIndex, "*" + line.Text, null);
+                return new TextLineSnapshot(line.LineIndex, "*" + line.Text, null);
             }
         }
 
@@ -554,7 +619,7 @@ namespace TypeCobol.Codegen.Generators
             {
                 StringBuilder text = new StringBuilder(cobol.Text);
                 text[6] = ' ';
-                var lines = CobolTextLine.Create(text.ToString(), cobol.ColumnsLayout, cobol.InitialLineIndex);
+                var lines = CobolTextLine.Create(text.ToString(), cobol.ColumnsLayout, cobol.LineIndex);
                 foreach (var l in lines) 
                     return l;// there's only one in the collection
                 throw new System.NotImplementedException("I should have at least one item!");
@@ -564,7 +629,7 @@ namespace TypeCobol.Codegen.Generators
                 StringBuilder text = new StringBuilder(line.Text);
                 int index = line.Text.IndexOf('*');
                 text[index] = ' ';
-                return new TextLineSnapshot(line.InitialLineIndex, text.ToString(), null);
+                return new TextLineSnapshot(line.LineIndex, text.ToString(), null);
             }
         }
     }

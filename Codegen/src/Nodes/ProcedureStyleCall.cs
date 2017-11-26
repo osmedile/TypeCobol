@@ -1,6 +1,8 @@
 ﻿
 
+using System;
 using TypeCobol.Codegen.Extensions.Compiler.CodeElements.Expressions;
+using TypeCobol.Compiler.Nodes;
 
 namespace TypeCobol.Codegen.Nodes {
 	using System.Collections.Generic;
@@ -76,13 +78,14 @@ internal class ProcedureStyleCall: Compiler.Nodes.Call, Generated {
 			if (_cache == null) {
 				_cache = new List<ITextLine>();
 				var hash = Node.FunctionDeclaration.Hash;
+                var originalProcName = Node.FunctionDeclaration.Name.Substring(0, Math.Min(Node.FunctionDeclaration.Name.Length, 22));
                 //Rule: TCCODEGEN_FIXFOR_ALIGN_FUNCALL
                 TypeCobol.Compiler.Nodes.FunctionDeclaration fun_decl = this.Node.FunctionDeclaration;
                 string callString = null;
 
                 //We don't need end-if anymore, but I let it for now. Because this generated code still need to be tested on production
                 bool bNeedEndIf = false;
-                if (((FunctionDeclarationHeader)fun_decl.CodeElement).Visibility == AccessModifier.Public)
+                if (((FunctionDeclarationHeader)fun_decl.CodeElement).Visibility == AccessModifier.Public && fun_decl.GetProgramNode() != this.GetProgramNode())
                 {
                     if (this.Node.IsNotByExternalPointer || IsNotByExternalPointer)
                     {
@@ -109,7 +112,7 @@ internal class ProcedureStyleCall: Compiler.Nodes.Call, Generated {
                 }
                 else
                 {
-                     callString = string.Format("CALL '{0}'{1}", hash, Node.FunctionCall.Arguments.Length == 0 ? "" : " USING");
+                     callString = string.Format("CALL '{0}{1}'{2}", hash, originalProcName, Node.FunctionCall.Arguments.Length == 0 ? "" : " USING");
                      var callTextLine = new TextLineSnapshot(-1, callString, null);
                      _cache.Add(callTextLine);
 
@@ -181,7 +184,8 @@ internal class ProcedureStyleCall: Compiler.Nodes.Call, Generated {
 	private string ToString(TypeCobol.Compiler.CodeElements.CallSiteParameter parameter, Compiler.CodeModel.SymbolTable table, ArgMode mode,
         ref TypeCobol.Compiler.CodeElements.ParameterSharingMode previousSharingMode, ref int previousSpan) {
         Variable variable = parameter.StorageAreaOrValue;
-		var name = variable.ToString(true);
+        var name = parameter.IsOmitted ? "omitted" : variable.ToString(true);
+
         string share_mode = "";
         int defaultSpan = string.Intern("by reference ").Length;
         if (parameter.SharingMode.Token != null)
@@ -213,15 +217,17 @@ internal class ProcedureStyleCall: Compiler.Nodes.Call, Generated {
             previousSpan = share_mode.Length;
         }
 
-		if (variable.IsLiteral)
-            return share_mode + name;
-		var found = table.GetVariable(variable);
-        if (found.Count < 1) {  //this can happens for special register : LENGTH OF, ADDRESS OF
-            return share_mode + variable.ToCobol85();
-        }
+        if (variable != null) {
+            if (variable.IsLiteral)
+                return share_mode + name;
+            var found = table.GetVariables(variable);
+            if (found.Count < 1) {  //this can happens for special register : LENGTH OF, ADDRESS OF
+                return share_mode + variable.ToCobol85();
+            }
 //		if (found.Count > 1) return "?AMBIGUOUS?";
-		var data = found[0] as Compiler.Nodes.DataDescription;
-		if (data.DataType == DataType.Boolean) name += "-value";
+            var data = found[0] as DataDescription;
+            if (data != null && data.DataType == DataType.Boolean) name += "-value";
+        }
         return share_mode + name;
 	}
 

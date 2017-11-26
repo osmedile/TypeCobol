@@ -206,9 +206,9 @@ namespace TypeCobol.Compiler.Scanner
         {
             // Scan the current line (or continuation lines group)
             MultilineScanState scanState = ScanTokensLineWithContinuations(lineToScanIndex, lineToScan, textSourceInfo, documentLines, prepareDocumentLineForUpdate, compilerOptions, copyTextNameVariations, tokensLinesChanges, initialScanState, out nextLineToScanIndex, out nextLineToScan);
-            
+
             // Scan the following lines until we find that the scan state at the beginning of the next line has been updated
-            while(nextLineToScan != null && nextLineToScan.InitialScanState != null && !nextLineToScan.InitialScanState.Equals(scanState))
+            while (nextLineToScan != null && nextLineToScan.InitialScanState != null && !nextLineToScan.InitialScanState.Equals(scanState))
             {
                 scanState = ScanTokensLineWithContinuations(nextLineToScanIndex, nextLineToScan, textSourceInfo, documentLines, prepareDocumentLineForUpdate, compilerOptions, copyTextNameVariations, tokensLinesChanges, scanState, out nextLineToScanIndex, out nextLineToScan);
             }
@@ -259,7 +259,13 @@ namespace TypeCobol.Compiler.Scanner
                 else
                 {
                     // Get the scan state at the end of the previous line
-                    TokensLine previousLine = documentLines[lineToScanIndex - 1];
+                    int tempLineIndex = lineToScanIndex - 1;
+                    TokensLine previousLine = documentLines[tempLineIndex];
+                    while (previousLine.ScanState == null)
+                    {
+                        tempLineIndex--;
+                        previousLine = documentLines[tempLineIndex];
+                    }
                     // Scan the current line with this initial scan state 
                     Scanner.ScanTokensLine(lineToScan, previousLine.ScanState, compilerOptions, copyTextNameVariations);
                 }

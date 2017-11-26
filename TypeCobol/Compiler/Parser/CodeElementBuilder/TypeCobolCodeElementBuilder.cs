@@ -91,6 +91,7 @@ namespace TypeCobol.Compiler.Parser
                 if (context.functionDataParameter() != null)
                 {
                     var data = CreateFunctionDataParameter(context.functionDataParameter());
+                    AddTokensConsumedAndDiagnosticsAttachedInContext(data.ConsumedTokens, data.Diagnostics ?? new List<Diagnostic>(), context);
                     parameters.Add(data);
                 }
                 else if (context.functionConditionParameter() != null)
@@ -99,6 +100,7 @@ namespace TypeCobol.Compiler.Parser
                     if (parameters.Count < 1)
                     {
                         var data = CreateFunctionDataParameter(condition);
+                        AddTokensConsumedAndDiagnosticsAttachedInContext(data.ConsumedTokens, data.Diagnostics ?? new List<Diagnostic>(), context);
                         parameters.Add(data);
                     }
                     else
@@ -298,6 +300,11 @@ namespace TypeCobol.Compiler.Parser
                 parameter.InitialValue = CobolWordsBuilder.CreateValue(valueClauseContext.value2());
             }
 
+            if (context.QuestionMark() != null)
+            {
+                parameter.Omittable = new SyntaxProperty<bool>(true, ParseTreeUtils.GetTokenFromTerminalNode(context.QuestionMark()));
+            }
+
             return parameter;
         }
 
@@ -421,36 +428,63 @@ namespace TypeCobol.Compiler.Parser
                 foreach (var p in context.callInputParameter())
                 {
                     CreateSharingMode(p, ref mode); // TCRFUN_INPUT_BY
-                    inputs.Add(new CallSiteParameter
+                    var callSiteParameter = new CallSiteParameter
                     {
                         SharingMode = mode,
-                        StorageAreaOrValue =
-                            CobolExpressionsBuilder.CreateSharedVariableOrFileName(p.sharedVariableOrFileName()),
-                    });
+                    };
+                    
+                    
+                    if (p.sharedVariableOrFileName() != null) {
+                        callSiteParameter.StorageAreaOrValue = CobolExpressionsBuilder.CreateSharedVariableOrFileName(p.sharedVariableOrFileName());
+                    } else if (p.OMITTED() != null) {
+                        callSiteParameter.Omitted = new SyntaxProperty<bool>(true, ParseTreeUtils.GetFirstToken(p.OMITTED()));
+                    }
+
+                    if (p.sharedVariableOrFileName() != null || p.OMITTED() != null)
+                        inputs.Add(callSiteParameter);
                 }
 
-                foreach (var p in context.callInoutParameter())
-                {
-                    inouts.Add(new CallSiteParameter
+                foreach (var p in context.callInoutParameter()) {
+                    var callSiteParameter = new CallSiteParameter
                     {
                         // TCRFUN_CALL_INOUT_AND_OUTPUT_BY_REFERENCE
                         SharingMode =
                             new SyntaxProperty<ParameterSharingMode>(ParameterSharingMode.ByReference, null),
-                        StorageAreaOrValue =
-                            new Variable(CobolExpressionsBuilder.CreateSharedStorageArea(p.sharedStorageArea1())),
-                    });
+                    };
+
+                    if (p.sharedStorageArea1() != null)
+                    {
+                        callSiteParameter.StorageAreaOrValue = new Variable(CobolExpressionsBuilder.CreateSharedStorageArea(p.sharedStorageArea1()));
+                    }
+                    else if (p.OMITTED() != null)
+                    {
+                        callSiteParameter.Omitted = new SyntaxProperty<bool>(true, ParseTreeUtils.GetFirstToken(p.OMITTED()));
+                    }
+
+                    if (p.sharedStorageArea1() != null || p.OMITTED() != null)
+                        inouts.Add(callSiteParameter);
                 }
 
                 foreach (var p in context.callOutputParameter())
                 {
-                    outputs.Add(new CallSiteParameter
+                    var callSiteParameter = new CallSiteParameter
                     {
                         // TCRFUN_CALL_INOUT_AND_OUTPUT_BY_REFERENCE
                         SharingMode =
                             new SyntaxProperty<ParameterSharingMode>(ParameterSharingMode.ByReference, null),
-                        StorageAreaOrValue =
-                            new Variable(CobolExpressionsBuilder.CreateSharedStorageArea(p.sharedStorageArea1())),
-                    });
+                    };
+
+                    if (p.sharedStorageArea1() != null)
+                    {
+                        callSiteParameter.StorageAreaOrValue = new Variable(CobolExpressionsBuilder.CreateSharedStorageArea(p.sharedStorageArea1()));
+                    }
+                    else if (p.OMITTED() != null)
+                    {
+                        callSiteParameter.Omitted = new SyntaxProperty<bool>(true, ParseTreeUtils.GetFirstToken(p.OMITTED()));
+                    }
+
+                    if (p.sharedStorageArea1() != null || p.OMITTED() != null)
+                        outputs.Add(callSiteParameter);
                 }
 
                 int parametersCount = inputs.Count + outputs.Count + inouts.Count;
@@ -564,10 +598,14 @@ namespace TypeCobol.Compiler.Parser
                     //Maybe just define CandidatesTypes for the Head...
                     if (ambiguousSymbolReference.MainSymbolReference.IsQualifiedReference) {
                         var qualifiedSymbolReference = (QualifiedSymbolReference) ambiguousSymbolReference.MainSymbolReference;
-                        if (qualifiedSymbolReference.Head.IsAmbiguous) {
-                            ((AmbiguousSymbolReference) qualifiedSymbolReference.Head).CandidateTypes = new[]{SymbolType.DataName, SymbolType.TCFunctionName};
+
+                        
+                        AmbiguousSymbolReference.ApplyCandidatesTypes(qualifiedSymbolReference, new[] { SymbolType.DataName, SymbolType.ProgramName });
+                        //Adjust candidate types only for the first element
+                        if (qualifiedSymbolReference.First.IsAmbiguous) {
+                            ((AmbiguousSymbolReference) qualifiedSymbolReference.First).CandidateTypes = new[]{SymbolType.DataName, SymbolType.TCFunctionName};
                         }
-                        AmbiguousSymbolReference.ApplyCandidatesTypes(qualifiedSymbolReference.Tail, new[] {SymbolType.DataName, SymbolType.ProgramName});
+                        
 
                     } else {
                         ((AmbiguousSymbolReference) ambiguousSymbolReference.MainSymbolReference).CandidateTypes = new[] {SymbolType.DataName, SymbolType.TCFunctionName};
