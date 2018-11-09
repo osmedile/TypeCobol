@@ -27,18 +27,10 @@ namespace TypeCobol.Compiler.CodeElements
         /// </summary>
         public CodeElementType Type { get; private set; }
 
-        private IList<Token> _consumedTokens;
         /// <summary>
         /// All significant tokens consumed in the source document to build this code element
         /// </summary>
-        public IList<Token> ConsumedTokens
-        {
-            get { return this._consumedTokens; }
-            set {
-                this._consumedTokens = value;
-                ResetLazyProperties();
-            } 
-        }
+        public IList<Token> ConsumedTokens { get; set; }
 
         /// <summary>
         /// Is the token is a UserDefinedWord or a literal, it could be a symbol definition or a symbol reference.
@@ -125,6 +117,15 @@ namespace TypeCobol.Compiler.CodeElements
             ce.Diagnostics = this.Diagnostics;
             ce.SymbolInformationForTokens = this.SymbolInformationForTokens;
             ce.StorageAreaReads = this.StorageAreaReads;
+            ce.StorageAreaWrites = this.StorageAreaWrites;
+            ce.CallSites = CallSites;
+            ce.CallTarget = CallTarget;
+            ce.SymbolInformationForTokens = SymbolInformationForTokens;
+            ce._isAcrossSourceFile = _isAcrossSourceFile;
+            ce._isInsideCopy = _isInsideCopy;
+            ce.FirstCopyDirective = FirstCopyDirective;
+            ce.StorageAreaDefinitions = StorageAreaDefinitions;
+            ce.StorageAreaGroupsCorrespondingImpact = StorageAreaGroupsCorrespondingImpact;
         }
         
 		/// <summary>
@@ -164,31 +165,95 @@ namespace TypeCobol.Compiler.CodeElements
             return this.Line == codeElement.Line &&
                    this.Type == codeElement.Type &&
                    this.Column == codeElement.Column &&
+                   this.FirstCopyDirective == codeElement.FirstCopyDirective &&
                    this.StartIndex == codeElement.StartIndex &&
                    this.StopIndex == codeElement.StopIndex &&
                    this.Text == codeElement.Text;
         }
 
-        private bool? _isInsideCopy = null; 
-        public CopyDirective FirstCopyDirective { get; private set; }
+        public override int GetHashCode()
+        {
+            var hashCode = 1884673908;
+            hashCode = hashCode * -1521134295 + EqualityComparer<CopyDirective>.Default.GetHashCode(FirstCopyDirective);
+            hashCode = hashCode * -1521134295 + Line.GetHashCode();
+            hashCode = hashCode * -1521134295 + Column.GetHashCode();
+            return hashCode;
+        }
+
+
+
+        private CopyDirective _firstCopyDirective;
+        /// <summary>
+        /// If this CodeElement is partially or totally inside a COPY file,
+        /// this property return the first Copy directive used to load this CodeElement.
+        /// 
+        /// If this property is "null", it means this CodeElement is in the main source file
+        /// 
+        /// Can only be call after the list of ConsumedTokens contains all Tokens
+        /// </summary>
+        public CopyDirective FirstCopyDirective {
+            get
+            {
+                CalculateFirstCopyDirective();
+                return _firstCopyDirective;
+            }
+            private set
+            {
+                _firstCopyDirective = value;
+            }
+        }
 
         /// <summary>
-        /// Return true if this CodeElement is inside a COPY
+        /// Can only be call after the list of ConsumedTokens contains all Tokens.
+        /// Null : the variable has not been calculated.
         /// </summary>
-        /// <returns></returns>
+        private bool? _isInsideCopy = null;
+
+        /// <summary>
+        /// Return true if this CodeElement is inside a COPY.
+        /// 
+        /// Can only be call after the list of ConsumedTokens contains all Tokens.
+        /// </summary>
         public bool IsInsideCopy() {
-            CalculateIsAcrossSourceFile();
+            CalculateFirstCopyDirective();
             return _isInsideCopy.Value;
         }
 
+        /// <summary>
+        /// Can only be calculated once ConsumedTokens has been set.
+        /// Null : the variable has not been calculated.
+        /// </summary>
         private bool? _isAcrossSourceFile = null;
 
-        private void CalculateIsAcrossSourceFile() {
-            if (_isAcrossSourceFile == null || _isInsideCopy == null) {
-                FirstCopyDirective = null;
-                CopyDirective firstSource = null; //null = in the main source file
+        /// <summary>
+        /// Return true if this CodeElement is across 2 source file.
+        /// Eg: 
+        ///  - in a program source file and a copy
+        ///  - In 2 different copy
+        ///  
+        /// Can only be call after the list of ConsumedTokens contains all Tokens.
+        /// </summary>
+        public bool IsAcrossSourceFile()
+        {
+            CalculateFirstCopyDirective();
+            return _isAcrossSourceFile.Value;
+        }
 
-                if (ConsumedTokens != null && ConsumedTokens.Count > 1)
+        /// <summary>
+        /// Determine value of properties:
+        ///   - FirstCopyDirective
+        ///   - IsAcrossSourceFile
+        ///   - IsInsideCopy
+        ///   
+        /// Can only be call after the list of ConsumedTokens contains all Tokens.
+        /// </summary>
+        private void CalculateFirstCopyDirective() {
+            if(_isAcrossSourceFile == null || _isInsideCopy == null)
+            { 
+                _firstCopyDirective = null;
+                CopyDirective firstSource = null; //null means: this CodeElement is in the main source file
+
+                if (ConsumedTokens.Count > 0)
                 {
                     //Get CopyDirective of first ConsumedToken
                     var firstConsumedToken = ConsumedTokens[0] as ImportedToken;
@@ -197,47 +262,28 @@ namespace TypeCobol.Compiler.CodeElements
                         firstSource = firstConsumedToken.CopyDirective;
                     }
 
-                    foreach (var consumedToken in ConsumedTokens)
+                    //Start at 1, because firstConsumedToken has already been checked
+                    for (int i = 1; i < ConsumedTokens.Count; i++)
                     {
-                        var it = consumedToken as ImportedToken;
-                        CopyDirective copyDirective = it != null ? it.CopyDirective : null;
+                        var importedToken = ConsumedTokens[i] as ImportedToken;
+                        CopyDirective copyDirective = importedToken?.CopyDirective;
                         if (copyDirective != firstSource)
                         {
                             _isAcrossSourceFile = true;
                             _isInsideCopy = true;
-                            FirstCopyDirective = copyDirective ?? firstSource;
+                            _firstCopyDirective = copyDirective ?? firstSource;
                             return;
                         }
-                        
                     }
                     _isAcrossSourceFile = false;
                     _isInsideCopy = firstSource != null;
-                    FirstCopyDirective = firstSource;
+                    _firstCopyDirective = firstSource;
                 } else {
                     _isInsideCopy = false;
                     _isAcrossSourceFile = false;
                 }
             }
-        }
-
-
-        /// <summary>
-        /// Return true if this CodeElement is across 2 source file.
-        /// Eg: 
-        ///  - in a program source file and a copy
-        ///  - In 2 different copy
-        /// </summary>
-        /// <returns></returns>
-        public bool IsAcrossSourceFile() {
-            CalculateIsAcrossSourceFile();
-            return _isAcrossSourceFile.Value;
-        }
-
-
-        protected void ResetLazyProperties() {
-            _isInsideCopy = null;
-            _isAcrossSourceFile = null;
-        }
+        }        
 
         public string SourceText {
 			get {
