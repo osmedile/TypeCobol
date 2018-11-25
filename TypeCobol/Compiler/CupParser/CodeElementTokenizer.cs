@@ -51,7 +51,7 @@ namespace TypeCobol.Compiler.CupParser
         }
 
         /// <summary>
-        /// Any first Code Eelement
+        /// Any first Code Element
         /// </summary>
         private CodeElement[] FirstCodeElements
         {
