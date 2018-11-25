@@ -21,7 +21,10 @@ namespace TypeCobol.Codegen.Nodes
         private DataDescription Node;
         public TypedDataNode(DataDescription node) : base(null) { this.Node = node; }
 
-        public override CodeElement CodeElement { get { return this.Node.CodeElement; } }
+
+        public override DataDefinitionEntry InternalDataDefinitionEntry => Node.CodeElement;
+
+        public new DataDescriptionEntry CodeElement => this.Node.CodeElement;
 
         private List<ITextLine> _cache = null;
         public override IEnumerable<ITextLine> Lines
