@@ -433,15 +433,6 @@ namespace TypeCobol.Compiler.Nodes {
             return children.OfType<N>().ToList();
         }
 
-        public IList<CodeElementHolder<T>> GetCodeElementHolderChildren<T>() where T : CodeElement {
-            var results = new List<CodeElementHolder<T>>();
-            foreach (var child in children) {
-                if (child.CodeElement == null) continue;
-                if (Reflection.IsTypeOf(child.CodeElement.GetType(), typeof(T)))
-                    results.Add((CodeElementHolder<T>) child);
-            }
-            return results;
-        }
 
 
         private Program _programNode;
