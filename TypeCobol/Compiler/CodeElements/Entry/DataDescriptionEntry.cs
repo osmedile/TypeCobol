@@ -906,9 +906,9 @@ namespace TypeCobol.Compiler.CodeElements {
         {
             get
             {
-                return Strong.Value
+                return Strong?.Value == true
                     ? RestrictionLevel.STRONG
-                    : Strict.Value ? RestrictionLevel.STRICT : RestrictionLevel.WEAK;
+                    : Strict?.Value == true ? RestrictionLevel.STRICT : RestrictionLevel.WEAK;
             }
         }
 
