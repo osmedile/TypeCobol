@@ -240,7 +240,7 @@ namespace TypeCobol.Compiler.Nodes {
             get
             {
                 if (_name != null) return _name;
-                _name = ((DataDefinitionEntry) this.CodeElement).Name;
+                _name = this.InternalDataDefinitionEntry.Name;
                 return _name;
             }
         }
@@ -288,7 +288,7 @@ namespace TypeCobol.Compiler.Nodes {
             {
                 if (_dataType != null) return _dataType;
 
-                _dataType = this.CodeElement != null ? ((DataDefinitionEntry) this.CodeElement).DataType : DataType.Unknown;
+                _dataType = this.CodeElement != null ?  this.CodeElement.DataType : DataType.Unknown;
                 return _dataType;
             }
         }
@@ -326,7 +326,7 @@ namespace TypeCobol.Compiler.Nodes {
                 if (_length != null) return _length.Value;
                 if (this.CodeElement != null)
                 {
-                    _length = ((DataDefinitionEntry) this.CodeElement).Length;
+                    _length = this.CodeElement.Length;
                 }
                 else
                     return 0;
