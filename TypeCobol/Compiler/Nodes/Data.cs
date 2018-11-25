@@ -32,7 +32,7 @@ namespace TypeCobol.Compiler.Nodes {
             int ilocal = -2;
             int ilinkage = -2;
             int c = 0;
-            foreach(var child in this.Children()) {
+            foreach(var child in this.Children) {
                 if (Tools.Reflection.IsTypeOf(child.GetType(), typeof(FileSection))) ifile = c;
                 else
                 if (Tools.Reflection.IsTypeOf(child.GetType(), typeof(WorkingStorageSection))) iworking = c;
