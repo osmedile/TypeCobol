@@ -13,7 +13,7 @@ namespace TypeCobol.Compiler.Nodes {
 
 
 
-    public class DataDivision: Node, CodeElementHolder<DataDivisionHeader>, Parent<DataSection> {
+    public class DataDivision: GenericNode<DataDivisionHeader>,   Parent<DataSection> {
 
         public const string NODE_ID = "data-division";
 	    public DataDivision(DataDivisionHeader header): base(header) { }
@@ -30,7 +30,7 @@ namespace TypeCobol.Compiler.Nodes {
             int ilocal = -2;
             int ilinkage = -2;
             int c = 0;
-            foreach(var child in this.Children()) {
+            foreach(var child in this.Children) {
                 if (Tools.Reflection.IsTypeOf(child.GetType(), typeof(FileSection))) ifile = c;
                 else
                 if (Tools.Reflection.IsTypeOf(child.GetType(), typeof(WorkingStorageSection))) iworking = c;
@@ -52,7 +52,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
     }
 
-        public abstract class DataSection: Node, CodeElementHolder<DataSectionHeader>, Child<DataDivision>{
+        public abstract class DataSection: GenericNode<DataSectionHeader>,   Child<DataDivision>{
 	    protected DataSection(DataSectionHeader header): base(header) { }
 	    public virtual bool IsShared { get { return false; } }
         public override bool VisitNode(IASTVisitor astVisitor)
@@ -60,7 +60,7 @@ namespace TypeCobol.Compiler.Nodes {
             return astVisitor.Visit(this);
         }
     }
-    public class FileSection: DataSection, CodeElementHolder<FileSectionHeader>{
+    public class FileSection: DataSection {
 	    public FileSection(FileSectionHeader header): base(header) { }
 	    public override string ID { get { return "file"; } }
 	    public override bool IsShared { get { return true; } }
@@ -70,7 +70,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
     }
 
-    public class FileDescriptionEntryNode : Node, CodeElementHolder<FileDescriptionEntry> {
+    public class FileDescriptionEntryNode : GenericNode<FileDescriptionEntry> {
 	    public FileDescriptionEntryNode(FileDescriptionEntry entry): base(entry) { }
         public override bool VisitNode(IASTVisitor astVisitor)
         {
@@ -78,7 +78,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
    } 
 
-    public class GlobalStorageSection : DataSection, CodeElementHolder<GlobalStorageSectionHeader>, Parent<DataDefinition>
+    public class GlobalStorageSection : DataSection,   Parent<DataDefinition>
     {
         public GlobalStorageSection(GlobalStorageSectionHeader header) : base(header) { }
         public override string ID { get { return "global-storage"; } }
@@ -89,7 +89,7 @@ namespace TypeCobol.Compiler.Nodes {
     }
 
 
-    public class WorkingStorageSection: DataSection, CodeElementHolder<WorkingStorageSectionHeader>, Parent<DataDefinition>
+    public class WorkingStorageSection: DataSection,   Parent<DataDefinition>
     {
         public WorkingStorageSection(WorkingStorageSectionHeader header) : base(header) { }
 
@@ -121,7 +121,7 @@ namespace TypeCobol.Compiler.Nodes {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
     }
-    public class LocalStorageSection: DataSection, CodeElementHolder<LocalStorageSectionHeader>, Parent<DataDefinition>
+    public class LocalStorageSection: DataSection,   Parent<DataDefinition>
         {
 	    public LocalStorageSection(LocalStorageSectionHeader header): base(header) { }
 
@@ -153,7 +153,7 @@ namespace TypeCobol.Compiler.Nodes {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
     }
-    public class LinkageSection: DataSection, CodeElementHolder<LinkageSectionHeader>, Parent<DataDefinition>
+    public class LinkageSection: DataSection,   Parent<DataDefinition>
     {
 	    public LinkageSection(LinkageSectionHeader header): base(header) { }
 
@@ -188,22 +188,51 @@ namespace TypeCobol.Compiler.Nodes {
     }
 
     /// <summary>
-    /// DataDefinition
-    ///   DataDescription
-    ///      ParameterDescription
-    ///      TypedDataNode
-    ///   DataCondition
-    ///   DataRedefines
-    ///   DataRenames
-    ///   TypeDefinition
-    ///   IndexDefinition
-    ///   GeneratedDefinition
+    /// DataDefinition                  -> DataDefinitionEntry
+    ///   IndexDefinition               -> DataDefinitionEntry
+    ///   GeneratedDefinition           -> DataDefinitionEntry
+    ///                                         CommonDataDescriptionAndDataRedefines
+    ///   DataDescription               ->          DataDescriptionEntry
+    ///      ParameterDescription       ->          DataDescriptionEntry
+    ///      TypedDataNode              ->          DataDescriptionEntry
+    ///   TypeDefinition                ->          DataTypeDescriptionEntry
+    ///   DataRedefines                 ->          DataRedefinesEntry
+    ///   DataCondition                 ->      DataConditionEntry
+    ///   DataRenames                   ->      DataRenamesEntry
+
+    ///
+    ///
+    ///
+    ///   DataDefinitionEntry
+    ///     DataConditionEntry
+    ///     CommonDataDescriptionAndDataRedefines
+    ///         DataDescriptionEntry
+    ///             DataTypeDescriptionEntry
+    ///             SpecialRegisterDescriptionEntry
+    ///             ParameterDescriptionEntry
+    ///             FunctionCallResultDescriptionEntry
+    ///         DataRedefinesEntry
+    ///     DataRenamesEntry
     /// </summary>
-    public abstract class DataDefinition: Node, Parent<DataDefinition>, ITypedNode {
+    public abstract class DataDefinition: Node, Parent<DataDefinition>
+    {
 
-        private CommonDataDescriptionAndDataRedefines _ComonDataDesc { get { return this.CodeElement as CommonDataDescriptionAndDataRedefines; } }
+        private CommonDataDescriptionAndDataRedefines _ComonDataDesc { get { return this.InternalDataDefinitionEntry as CommonDataDescriptionAndDataRedefines; } }
 
-        protected DataDefinition(DataDefinitionEntry entry) : base(entry) { }
+        protected DataDefinition()
+        {
+        }
+
+        protected override CodeElement InternalCodeElement => InternalDataDefinitionEntry;
+        /// <summary>
+        /// Just here to implement CodeElement at this level
+        /// </summary>
+        public abstract DataDefinitionEntry InternalDataDefinitionEntry { get; }
+
+        public new DataDefinitionEntry CodeElement => InternalDataDefinitionEntry;
+
+
+
         public override string ID { get { return "data-definition"; } }
         private string _name;
 
@@ -212,7 +241,7 @@ namespace TypeCobol.Compiler.Nodes {
             get
             {
                 if (_name != null) return _name;
-                _name = ((DataDefinitionEntry) this.CodeElement).Name;
+                _name = this.InternalDataDefinitionEntry.Name;
                 return _name;
             }
         }
@@ -260,7 +289,7 @@ namespace TypeCobol.Compiler.Nodes {
             {
                 if (_dataType != null) return _dataType;
 
-                _dataType = this.CodeElement != null ? ((DataDefinitionEntry) this.CodeElement).DataType : DataType.Unknown;
+                _dataType = this.InternalDataDefinitionEntry != null ? this.InternalDataDefinitionEntry.DataType : DataType.Unknown;
                 return _dataType;
             }
         }
@@ -296,9 +325,9 @@ namespace TypeCobol.Compiler.Nodes {
             get
             {
                 if (_length != null) return _length.Value;
-                if (this.CodeElement != null)
+                if (this.InternalDataDefinitionEntry != null)
                 {
-                    _length = ((DataDefinitionEntry) this.CodeElement).Length;
+                    _length = this.InternalDataDefinitionEntry.Length;
                 }
                 else
                     return 0;
@@ -394,9 +423,31 @@ namespace TypeCobol.Compiler.Nodes {
         public SymbolReference ObjectReferenceClass { get { if (_ComonDataDesc != null) return _ComonDataDesc.ObjectReferenceClass; else return null; } }
         #endregion
     }
+    /*
+    public abstract class GDataDefinition<CE> : DataDefinition, Parent<DataDefinition>
+        where CE : DataDefinitionEntry
+    {
+        public GDataDefinition(CE codeElement) : base(codeElement)
+        {
+            GCodeElement = codeElement;
+        }
 
-    public class DataDescription: DataDefinition, CodeElementHolder<DataDescriptionEntry>, Parent<DataDescription>{
-        public DataDescription(DataDescriptionEntry entry): base(entry) { }
+        public new CE GCodeElement { get; private set; }
+    }*/
+
+    public class DataDescription: DataDefinition,   Parent<DataDescription>{
+
+        private DataDescriptionEntry DataDescriptionEntry { get; set; }
+
+        public DataDescription(DataDescriptionEntry entry)
+        {
+            this.DataDescriptionEntry = entry;
+        }
+        
+
+        public override DataDefinitionEntry InternalDataDefinitionEntry => DataDescriptionEntry;
+
+        public new DataDescriptionEntry CodeElement => DataDescriptionEntry;
 
         public override bool VisitNode(IASTVisitor astVisitor)
         {
@@ -407,36 +458,80 @@ namespace TypeCobol.Compiler.Nodes {
         /// </summary>
         public Dictionary<Token, string> QualifiedTokenSubsitutionMap;
 
+
         
     }
-    public class DataCondition: DataDefinition, CodeElementHolder<DataConditionEntry> 
+    public class DataCondition: DataDefinition 
     {
-        public DataCondition(DataConditionEntry entry): base(entry) { }
+        private DataConditionEntry DataConditionEntry { get; set; }
+
+        public DataCondition(DataConditionEntry entry)
+        {
+            this.DataConditionEntry = entry;
+        }
+
+        public override DataDefinitionEntry InternalDataDefinitionEntry => DataConditionEntry;
+
+        public new DataConditionEntry CodeElement => DataConditionEntry;
+
 
         public override bool VisitNode(IASTVisitor astVisitor)
         {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
     }
-    public class DataRedefines: DataDefinition, CodeElementHolder<DataRedefinesEntry> {
-        public DataRedefines(DataRedefinesEntry entry): base(entry) { }
+    public class DataRedefines: DataDefinition {
+
+        private DataRedefinesEntry DataRedefinesEntry { get; set; }
+
+        public DataRedefines(DataRedefinesEntry entry)
+        {
+            this.DataRedefinesEntry = entry;
+        }
+
+        public override DataDefinitionEntry InternalDataDefinitionEntry => DataRedefinesEntry;
+
+        public new DataRedefinesEntry CodeElement => DataRedefinesEntry;
+
         public override bool VisitNode(IASTVisitor astVisitor)
         {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
     }
-    public class DataRenames: DataDefinition, CodeElementHolder<DataRenamesEntry> {
-        public DataRenames(DataRenamesEntry entry): base(entry) { }
+    public class DataRenames: DataDefinition {
+
+        private DataRenamesEntry DataRenamesEntry { get; set; }
+
+        public DataRenames(DataRenamesEntry entry)
+        {
+            this.DataRenamesEntry = entry;
+        }
+
+        public override DataDefinitionEntry InternalDataDefinitionEntry => DataRenamesEntry;
+
+        public new DataRenamesEntry CodeElement => DataRenamesEntry;
+
         public override bool VisitNode(IASTVisitor astVisitor)
         {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
     }
     // [COBOL 2002]
-    public class TypeDefinition: DataDefinition, CodeElementHolder<DataTypeDescriptionEntry>, Parent<DataDescription>
+    public class TypeDefinition: DataDefinition
     {
-        public TypeDefinition(DataTypeDescriptionEntry entry): base(entry) { }
-        public RestrictionLevel RestrictionLevel { get { return this.CodeElement().RestrictionLevel; } }
+        private DataTypeDescriptionEntry DataTypeDescriptionEntry { get; set; }
+
+        public TypeDefinition(DataTypeDescriptionEntry entry)
+        {
+            this.DataTypeDescriptionEntry = entry;
+        }
+
+        public override DataDefinitionEntry InternalDataDefinitionEntry => DataTypeDescriptionEntry;
+
+        public new DataTypeDescriptionEntry CodeElement => DataTypeDescriptionEntry;
+
+
+        public RestrictionLevel RestrictionLevel { get { return this.CodeElement.RestrictionLevel; } }
         public override bool VisitNode(IASTVisitor astVisitor)
         {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
@@ -467,16 +562,26 @@ namespace TypeCobol.Compiler.Nodes {
             }
             return false;
         }
+
+        public override int GetHashCode()
+        {
+            var hashCode = 250917736;
+            hashCode = hashCode * -1521134295 + RestrictionLevel.GetHashCode();
+            hashCode = hashCode * -1521134295 + IsPartOfATypeDef.GetHashCode();
+            return hashCode;
+        }
     }
     // [/COBOL 2002]
 
     // [TYPECOBOL]
-    public class ParameterDescription: TypeCobol.Compiler.Nodes.DataDescription, CodeElementHolder<ParameterDescriptionEntry>, Parent<ParametersProfileNode> {
+    public class ParameterDescription: TypeCobol.Compiler.Nodes.DataDescription,   Parent<ParametersProfileNode> {
 
         private readonly ParameterDescriptionEntry _CodeElement;
 
-        public ParameterDescription(ParameterDescriptionEntry entry): base(entry) { _CodeElement = (ParameterDescriptionEntry)this.CodeElement; }
-       
+        public ParameterDescription(ParameterDescriptionEntry entry): base(entry) { _CodeElement = entry; }
+
+        public new ParameterDescriptionEntry CodeElement => _CodeElement;
+
         public override bool VisitNode(IASTVisitor astVisitor)
         {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
@@ -493,11 +598,14 @@ namespace TypeCobol.Compiler.Nodes {
 
     public class IndexDefinition : DataDefinition
     {
-        public IndexDefinition(SymbolDefinition symbolDefinition) : base(null)
+        public IndexDefinition(SymbolDefinition symbolDefinition)
         {
             _SymbolDefinition = symbolDefinition;
             IsIndex = true;
         }
+        
+        public override DataDefinitionEntry InternalDataDefinitionEntry => null;
+        
 
         private SymbolDefinition _SymbolDefinition;
 
@@ -536,11 +644,14 @@ namespace TypeCobol.Compiler.Nodes {
         public static GeneratedDefinition FloatingPointGeneratedDefinition = new GeneratedDefinition("FloatingPoint", DataType.FloatingPoint);
         public static GeneratedDefinition OccursGeneratedDefinition =        new GeneratedDefinition("Occurs", DataType.Occurs);
         public static GeneratedDefinition StringGeneratedDefinition =        new GeneratedDefinition("String", DataType.String);
-        public GeneratedDefinition(string name, DataType dataType) : base(null)
+        public GeneratedDefinition(string name, DataType dataType)
         {
             _Name = name;
             _DataType = dataType;
         }
+        
+        public override DataDefinitionEntry InternalDataDefinitionEntry => null;
+        
 
         public override string Name
         {

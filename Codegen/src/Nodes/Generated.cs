@@ -1,4 +1,6 @@
-﻿namespace TypeCobol.Codegen.Nodes
+﻿using TypeCobol.Compiler.Nodes;
+
+namespace TypeCobol.Codegen.Nodes
 {
 
     using System.Collections.Generic;
@@ -32,8 +34,8 @@
         /// Code Element to appy to this Generated Node
         /// </summary>
         private CodeElement ApplyCodeElement;
-        public GeneratedNode(Solver solver) : base(null) { this.Solver = solver; }
-        public GeneratedNode(Solver solver, CodeElement codelement) : base(null)
+        public GeneratedNode(Solver solver)  { this.Solver = solver; }
+        public GeneratedNode(Solver solver, CodeElement codelement)
         {
             this.Solver = solver;
             ApplyCodeElement = codelement;
@@ -62,13 +64,15 @@
         /// <summary>
         /// Get Associated Code Element
         /// </summary>
-        public override CodeElement CodeElement
+        public new CodeElement CodeElement
         {
             get
             {
-                return ApplyCodeElement != null ? ApplyCodeElement : base.CodeElement;
+                return ApplyCodeElement;
             }
         }
+
+        protected override CodeElement InternalCodeElement => ApplyCodeElement;
 
         public bool IsLeaf { get { return false; } }
 
@@ -82,7 +86,7 @@
 
     internal class GeneratedNode2 : Compiler.Nodes.Node, Generated
     {
-        public GeneratedNode2(string text, bool isLeaf) : base(null) {
+        public GeneratedNode2(string text, bool isLeaf) {
             this.Text = text;
             this.IsLeaf = isLeaf;
         }
@@ -110,6 +114,9 @@
             }
         }
 
+
+        protected override CodeElement InternalCodeElement => null;
+
         public override bool VisitNode(IASTVisitor astVisitor)
         {
             //Generated Node doesn't need to be visited
@@ -117,7 +124,7 @@
         }
     }
 
-    internal abstract class FakeGeneratedNode : Compiler.Nodes.Node, Generated
+    internal abstract class FakeGeneratedNode : GenericNode<CodeElement>, Generated
     {
         public FakeGeneratedNode(CodeElement CodeElement) : base(CodeElement) { }
 
