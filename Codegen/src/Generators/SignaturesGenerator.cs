@@ -93,7 +93,7 @@ namespace TypeCobol.Codegen.Generators
 
         public override bool Visit(FunctionDeclaration node)
         {
-            if (node.CodeElement().Visibility != AccessModifier.Public) {
+            if (node.CodeElement.Visibility != AccessModifier.Public) {
                 node.Remove();
                 return false;
             }
@@ -151,7 +151,7 @@ namespace TypeCobol.Codegen.Generators
             foreach (var child in children)
             {
                 var typeDefinition = child as TypeDefinition;
-                if (typeDefinition == null || typeDefinition.CodeElement().Visibility != AccessModifier.Public)
+                if (typeDefinition == null || typeDefinition.CodeElement.Visibility != AccessModifier.Public)
                 {
                     child.Remove();
                 }

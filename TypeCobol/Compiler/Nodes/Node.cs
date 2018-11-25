@@ -917,7 +917,7 @@ namespace TypeCobol.Compiler.Nodes {
         public override string ID {
             get { return "class";  }
         }
-        public override string Name { get { return this.CodeElement().ClassName.Name; } }
+        public override string Name { get { return this.CodeElement.ClassName.Name; } }
 
         public override bool VisitNode(IASTVisitor astVisitor) {
             return astVisitor.Visit(this);
@@ -944,7 +944,7 @@ namespace TypeCobol.Compiler.Nodes {
             get { return "Method"; }
         }
 
-        public override string Name { get { return this.CodeElement().MethodName.Name; } }
+        public override string Name { get { return this.CodeElement.MethodName.Name; } }
 
         public override bool VisitNode(IASTVisitor astVisitor)
         {

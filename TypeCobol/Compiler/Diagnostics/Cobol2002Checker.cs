@@ -87,7 +87,7 @@ namespace TypeCobol.Compiler.Diagnostics
                 DiagnosticUtils.AddError(typeDefinition, message, MessageCode.SemanticTCErrorInParser);
             }
 
-            if (typeDefinition.CodeElement().Picture == null && typeDefinition.Children.Count < 1 &&
+            if (typeDefinition.CodeElement.Picture == null && typeDefinition.Children.Count < 1 &&
                 !typeDefinition.Usage.HasValue)
             {
                 string message = "TYPEDEF \'" + typeDefinition.Name + "\' has no description.";
@@ -128,7 +128,7 @@ namespace TypeCobol.Compiler.Diagnostics
                     MessageCode.SemanticTCErrorInParser);
             }
 
-            var redefinesSymbolReference = redefinesNode.CodeElement().RedefinesDataName;
+            var redefinesSymbolReference = redefinesNode.CodeElement.RedefinesDataName;
             var redefinedVariable = redefinesNode.SymbolTable.GetRedefinedVariable(redefinesNode, redefinesSymbolReference);
 
             if (redefinedVariable == null)
@@ -156,10 +156,10 @@ namespace TypeCobol.Compiler.Diagnostics
             {
                 return; //not my job
             }
-            if (renames?.CodeElement()?.RenamesFromDataName != null)
-                Check(renames.CodeElement().RenamesFromDataName, renames);
-            if(renames?.CodeElement()?.RenamesToDataName != null)
-                Check(renames.CodeElement().RenamesToDataName, renames);
+            if (renames.CodeElement?.RenamesFromDataName != null)
+                Check(renames.CodeElement.RenamesFromDataName, renames);
+            if(renames.CodeElement?.RenamesToDataName != null)
+                Check(renames.CodeElement.RenamesToDataName, renames);
         }
 
         private static void Check(SymbolReference renames, Node node)
@@ -179,7 +179,7 @@ namespace TypeCobol.Compiler.Diagnostics
             }
 
             var found = founds.First();
-            var foundCodeElement = found.CodeElement as DataDefinitionEntry;
+            var foundCodeElement = found.CodeElement;
            
             if (found.IsStronglyTyped || found.IsStrictlyTyped)
             {

@@ -66,7 +66,7 @@ namespace TypeCobol.Compiler.CodeModel
             get
             {
                 if (_identificaton != null) return _identificaton;
-                _identificaton = (ProgramIdentification) this.CodeElement;
+                _identificaton = this.CodeElement;
                 return _identificaton;
             }
         }

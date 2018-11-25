@@ -410,7 +410,7 @@ namespace TypeCobol.Codegen.Actions
                 TypeCobol.Compiler.Nodes.ProcedureStyleCall procStyleCall = CurrentNode as TypeCobol.Compiler.Nodes.ProcedureStyleCall;
                 if (procStyleCall != null)
                 {
-                    ProcedureStyleCallStatement procStyleCallStmt = procStyleCall.CodeElement as ProcedureStyleCallStatement;
+                    ProcedureStyleCallStatement procStyleCallStmt = procStyleCall.CodeElement;
                     if (procStyleCallStmt != null)
                     {
                         TypeCobolQualifiedSymbolReference tcqsr = procStyleCallStmt.ProgramOrProgramEntryOrProcedureOrFunctionOrTCProcedureFunction as

@@ -46,7 +46,7 @@ namespace TypeCobol.Compiler.Diagnostics
 
         private static void checkReadOnly(Node node, [NotNull] Node receiving)
         {
-            var rtype = receiving.Parent as ITypedNode;
+            var rtype = receiving.Parent as DataDefinition;
             if (rtype == null) return;
             foreach (var type in READONLY_DATATYPES)
             {
@@ -580,7 +580,7 @@ namespace TypeCobol.Compiler.Diagnostics
      
         public static void OnNode(FunctionDeclaration functionDeclaration)
         {
-            var header = functionDeclaration?.CodeElement as FunctionDeclarationHeader;
+            var header = functionDeclaration?.CodeElement;
             if (header == null) return; //not my job
 
             var filesection = functionDeclaration.Get<FileSection>("file");
@@ -608,7 +608,7 @@ namespace TypeCobol.Compiler.Diagnostics
         private static void CheckNoGlobalOrExternal(DataDivision node)
         {
             if (node == null) return; // no DATA DIVISION
-            foreach (var section in node.Children())
+            foreach (var section in node.Children)
             {
                 // "storage" sections
                 foreach (var child in section.Children)
@@ -832,7 +832,7 @@ namespace TypeCobol.Compiler.Diagnostics
                     }
             }
 
-		    var pdiv = procedureDivision.CodeElement as ProcedureDivisionHeader;
+		    var pdiv = procedureDivision.CodeElement;
 
             //TCRFUN_LIBRARY_PROCEDURE_NO_USING 
             if (pdiv?.UsingParameters != null && pdiv.UsingParameters.Count > 0)
@@ -860,17 +860,17 @@ namespace TypeCobol.Compiler.Diagnostics
                     if (receiver.Usage == DataUsage.Pointer)
                     {
                         containsPointers = true;
-                        var levelNumber = ((DataDefinitionEntry) receiver.CodeElement).LevelNumber;
+                        var levelNumber = (receiver.CodeElement).LevelNumber;
                         if (levelNumber != null && levelNumber.Value > 49)
                         {
                             DiagnosticUtils.AddError(node,
-                                "Only pointer declared in level 01 to 49 can be use in instructions SET UP BY and SET DOWN BY.", (DataDefinitionEntry)receiver.CodeElement); 
+                                "Only pointer declared in level 01 to 49 can be use in instructions SET UP BY and SET DOWN BY.", receiver.CodeElement); 
                         }
 
                         if (receiver.Name.Length > 22)
                         {
                             DiagnosticUtils.AddError(node,
-                                "Pointer name '" + receiver.Name + "' is over 22 characters.", (DataDefinitionEntry)receiver.CodeElement);
+                                "Pointer name '" + receiver.Name + "' is over 22 characters.", receiver.CodeElement);
                         }
 
                         if (receiver.IsInsideCopy())
@@ -955,7 +955,7 @@ namespace TypeCobol.Compiler.Diagnostics
             if (dataDefinition == null) return;
 
             //Check variable LevelNumber Rule - GLOBALSS_LIMIT48 
-            var data = dataDefinition.CodeElement as DataDefinitionEntry;
+            var data = dataDefinition.CodeElement;
             if (data?.LevelNumber != null && data.LevelNumber.Value == 77)
                 DiagnosticUtils.AddError(node,
                     "Level 77 is forbidden in global-storage section.", data);
