@@ -366,9 +366,7 @@ namespace TypeCobol.Compiler.Diagnostics
 
             var parentTypeDefinition = (node as DataDefinition)?.ParentTypeDefinition;
             var foundQualified =
-                node.SymbolTable.GetVariablesExplicitWithQualifiedName(area.SymbolReference != null
-                        ? area.SymbolReference.URI
-                        : new URI(area.ToString()),
+                node.SymbolTable.GetVariablesExplicitWithQualifiedName(area.SymbolReference.URI,
                     parentTypeDefinition);
             var found = foundQualified.Select(v => v.Value);
 

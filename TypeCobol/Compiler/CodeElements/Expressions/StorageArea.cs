@@ -25,6 +25,13 @@ namespace TypeCobol.Compiler.CodeElements
 
         public StorageAreaKind Kind { get; protected set;  }
 
+        /// <summary>
+        /// This property can be null for StorageArea that use another StorageArea.
+        /// Like StorageAreaPropertySpecialRegister used for expression like "length of myVar".
+        /// 
+        /// If you want to be sure that is property is NOT null, use a StorageArea from
+        /// GetStorageAreaThatNeedDeclaration.
+        /// </summary>
         [CanBeNull]
         public SymbolReference SymbolReference { get; set; }
 
@@ -56,6 +63,10 @@ namespace TypeCobol.Compiler.CodeElements
             get { return true; }
         }
 
+        /// <summary>
+        /// Return a storageArea that have a SymbolReference.
+        /// This StorageArea need to be declared in the Cobol source.
+        /// </summary>
         public virtual StorageArea GetStorageAreaThatNeedDeclaration
         {
             get { return this; }
