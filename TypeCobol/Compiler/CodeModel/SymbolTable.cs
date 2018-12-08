@@ -908,9 +908,14 @@ namespace TypeCobol.Compiler.CodeModel
             }
         }
 
+        public IList<TypeDefinition> emptyTypeDefinitionList = new List<TypeDefinition>();
         public IList<TypeDefinition> GetType(ITypedNode symbol)
         {
-            return GetType(symbol.DataType);
+            if (symbol.DataType.CobolLanguageLevel > CobolLanguageLevel.Cobol85)
+            {
+                return GetType(symbol.DataType);
+            }
+            return emptyTypeDefinitionList;
         }
 
         public List<TypeDefinition> GetType(SymbolReference symbolReference)
