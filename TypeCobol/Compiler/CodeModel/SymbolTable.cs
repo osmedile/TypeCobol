@@ -974,10 +974,7 @@ namespace TypeCobol.Compiler.CodeModel
             return GetFunction(storageArea.SymbolReference, profile);
         }
 
-        public List<FunctionDeclaration> GetFunction(VariableBase variable, ParameterList profile = null)
-        {
-            return GetFunction(new URI(variable.ToString()), profile);
-        }
+        
 
         public List<FunctionDeclaration> GetFunction(SymbolReference symbolReference, ParameterList profile = null)
         {
@@ -1124,43 +1121,10 @@ namespace TypeCobol.Compiler.CodeModel
         public void AddProgram(Program program)
         {
             Add(Programs, program);
-        }
-
-        /// <summary>
-        /// Add Multiple programs to SymbolTable
-        /// </summary>
-        /// <param name="programs"></param>
-        public void AddPrograms(List<Program> programs)
-        {
-            foreach (var program in programs)
-            {
-                AddProgram(program);
-            }
-        }
-
-        public List<Program> GetProgram(StorageArea storageArea, ParameterList profile = null)
-        {
-            return GetProgram(storageArea.SymbolReference, profile);
-        }
-
-        public List<Program> GetProgram(VariableBase variable, ParameterList profile = null)
-        {
-            return GetProgram(new URI(variable.ToString()), profile);
-        }
-
-        public List<Program> GetProgram(SymbolReference symbolReference, ParameterList profile = null)
-        {
-            var uri = new URI(symbolReference.Name);
-            return GetProgram(uri, profile);
-        }
-
-        public List<Program> GetProgram(QualifiedName name, ParameterList profile = null)
-        {
-            var found = GetProgram(name.Head);
-            found = Get(found, name);
-
-            return found;
-        }
+        } 
+        
+        
+        
 
         [NotNull]
         private List<Program> GetProgram(string name)
