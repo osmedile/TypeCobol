@@ -89,22 +89,29 @@ namespace TypeCobol.Compiler.Diagnostics
             var type = types.First();
             dataEntry.TypeDefinition = type; //Set the TypeDefinition on DataDefinition Node so to avoid symbolTable access
 
-            var circularRefInsideChildren = type.Children.Any(c =>
+            //Check circular type reference
+            if (dataEntry.IsPartOfATypeDef)
             {
-                var dataChild = c as DataDescription;
-                if (dataChild == null) return false;
-                var childrenType = symbolTable.GetType(dataChild.DataType).FirstOrDefault();
-                if (childrenType == null) return false;
-                return dataEntry.ParentTypeDefinition == childrenType; //Circular reference detected will return true
-            });
-            if (type == dataEntry.ParentTypeDefinition || circularRefInsideChildren) 
-            {
-                DiagnosticUtils.AddError(dataEntry, "Type circular reference detected", 
-                    (DataDefinitionEntry) dataEntry.CodeElement, code: MessageCode.SemanticTCErrorInParser);
-                return; //Do not continue to prevent further work/crash with circular references
+                var circularRefInsideChildren = type.Children.Any(c =>
+                {
+                    var dataChild = c as DataDefinition;
+                    if (dataChild == null) return false;
+                    var childrenType = symbolTable.GetType(dataChild.DataType).FirstOrDefault();
+                    if (childrenType == null) return false;
+                    return dataEntry.ParentTypeDefinition ==
+                           childrenType; //Circular reference detected will return true
+                });
+
+
+                if (type == dataEntry.ParentTypeDefinition || circularRefInsideChildren)
+                {
+                    DiagnosticUtils.AddError(dataEntry, "Type circular reference detected",
+                        (DataDefinitionEntry) dataEntry.CodeElement, code: MessageCode.SemanticTCErrorInParser);
+                    return; //Do not continue to prevent further work/crash with circular references
+                }
             }
 
-            if ((dataEntry.CodeElement as DataDescriptionEntry).IsGlobal)
+            if (((DataDescriptionEntry) dataEntry.CodeElement).IsGlobal)
                 symbolTable = symbolTable.GetTableFromScope(SymbolTable.Scope.Global);
 
             
