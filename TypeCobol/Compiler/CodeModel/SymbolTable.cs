@@ -101,7 +101,7 @@ namespace TypeCobol.Compiler.CodeModel
         /// <param name="getTableFunction"></param>
         /// <param name="maxScope"></param>
         /// <returns></returns>
-        [CanBeNull]
+        [NotNull]
         private List<T> GetFromTableAndEnclosing<T>(string head,
             Func<SymbolTable, IDictionary<string, List<T>>> getTableFunction, Scope maxScope = Scope.Intrinsic) where T : Node
         {
