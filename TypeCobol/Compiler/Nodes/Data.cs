@@ -15,7 +15,7 @@ namespace TypeCobol.Compiler.Nodes {
 
 
 
-    public class DataDivision: GenericNode<DataDivisionHeader>, CodeElementHolder<DataDivisionHeader>, Parent<DataSection> {
+    public class DataDivision: GenericNode<DataDivisionHeader>, Parent<DataSection> {
 
         public const string NODE_ID = "data-division";
 	    public DataDivision(DataDivisionHeader header): base(header) { }
@@ -54,7 +54,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
     }
 
-        public abstract class DataSection: GenericNode<DataSectionHeader>, CodeElementHolder<DataSectionHeader>, Child<DataDivision>{
+        public abstract class DataSection: GenericNode<DataSectionHeader>, Child<DataDivision>{
 	    protected DataSection(DataSectionHeader header): base(header) { }
 	    public virtual bool IsShared { get { return false; } }
         public override bool VisitNode(IASTVisitor astVisitor)
@@ -62,7 +62,7 @@ namespace TypeCobol.Compiler.Nodes {
             return astVisitor.Visit(this);
         }
     }
-    public class FileSection: DataSection, CodeElementHolder<FileSectionHeader> {
+    public class FileSection: DataSection {
         public FileSection(FileSectionHeader header): base(header) { }
 	    public override string ID { get { return "file"; } }
 	    public override bool IsShared { get { return true; } }
@@ -72,7 +72,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
     }
 
-    public class FileDescriptionEntryNode : GenericNode<FileDescriptionEntry>, CodeElementHolder<FileDescriptionEntry> {
+    public class FileDescriptionEntryNode : GenericNode<FileDescriptionEntry> {
         public FileDescriptionEntryNode(FileDescriptionEntry entry): base(entry) { }
         public override bool VisitNode(IASTVisitor astVisitor)
         {
@@ -80,7 +80,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
    } 
 
-    public class GlobalStorageSection : DataSection, CodeElementHolder<GlobalStorageSectionHeader>, Parent<DataDefinition>
+    public class GlobalStorageSection : DataSection, Parent<DataDefinition>
     {
         public GlobalStorageSection(GlobalStorageSectionHeader header) : base(header) { }
         public override string ID { get { return "global-storage"; } }
@@ -91,7 +91,7 @@ namespace TypeCobol.Compiler.Nodes {
     }
 
 
-    public class WorkingStorageSection: DataSection, CodeElementHolder<WorkingStorageSectionHeader>, Parent<DataDefinition>
+    public class WorkingStorageSection: DataSection, Parent<DataDefinition>
     {
         public WorkingStorageSection(WorkingStorageSectionHeader header) : base(header) { }
 
@@ -123,7 +123,7 @@ namespace TypeCobol.Compiler.Nodes {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
     }
-    public class LocalStorageSection: DataSection, CodeElementHolder<LocalStorageSectionHeader>, Parent<DataDefinition>
+    public class LocalStorageSection: DataSection, Parent<DataDefinition>
         {
 	    public LocalStorageSection(LocalStorageSectionHeader header): base(header) { }
 
@@ -155,7 +155,7 @@ namespace TypeCobol.Compiler.Nodes {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
     }
-    public class LinkageSection: DataSection, CodeElementHolder<LinkageSectionHeader>, Parent<DataDefinition>
+    public class LinkageSection: DataSection, Parent<DataDefinition>
     {
 	    public LinkageSection(LinkageSectionHeader header): base(header) { }
 
@@ -423,7 +423,7 @@ namespace TypeCobol.Compiler.Nodes {
         #endregion
     }
 
-    public class DataDescription: DataDefinition, CodeElementHolder<DataDescriptionEntry>, Parent<DataDescription>{
+    public class DataDescription: DataDefinition, Parent<DataDescription>{
 
         private DataDescriptionEntry DataDescriptionEntry { get; set; }
 
@@ -449,7 +449,7 @@ namespace TypeCobol.Compiler.Nodes {
 
         
     }
-    public class DataCondition: DataDefinition, CodeElementHolder<DataConditionEntry> 
+    public class DataCondition: DataDefinition 
     {
         private DataConditionEntry DataConditionEntry { get; set; }
 
@@ -468,7 +468,7 @@ namespace TypeCobol.Compiler.Nodes {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
     }
-    public class DataRedefines: DataDefinition, CodeElementHolder<DataRedefinesEntry> {
+    public class DataRedefines: DataDefinition {
 
         private DataRedefinesEntry DataRedefinesEntry { get; set; }
 
@@ -486,7 +486,7 @@ namespace TypeCobol.Compiler.Nodes {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
     }
-    public class DataRenames: DataDefinition, CodeElementHolder<DataRenamesEntry> {
+    public class DataRenames: DataDefinition {
 
         private DataRenamesEntry DataRenamesEntry { get; set; }
 
@@ -505,7 +505,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
     }
     // [COBOL 2002]
-    public class TypeDefinition: DataDefinition, CodeElementHolder<DataTypeDescriptionEntry>, Parent<DataDescription>, IDocumentable
+    public class TypeDefinition: DataDefinition, Parent<DataDescription>, IDocumentable
     {
         private DataTypeDescriptionEntry DataTypeDescriptionEntry { get; set; }
 
@@ -554,7 +554,7 @@ namespace TypeCobol.Compiler.Nodes {
     // [/COBOL 2002]
 
     // [TYPECOBOL]
-    public class ParameterDescription: TypeCobol.Compiler.Nodes.DataDescription, CodeElementHolder<ParameterDescriptionEntry>, Parent<ParametersProfileNode> {
+    public class ParameterDescription: TypeCobol.Compiler.Nodes.DataDescription, Parent<ParametersProfileNode> {
         public ParameterDescription(ParameterDescriptionEntry entry): base(entry) { CodeElement = entry; }
 
         public new ParameterDescriptionEntry CodeElement { get; }

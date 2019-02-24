@@ -827,20 +827,6 @@ namespace TypeCobol.Compiler.Nodes {
     }
 
 
-    public interface CodeElementHolder<T> where T : CodeElement {}
-
-    public static class CodeElementHolderExtension {
-        /// <summary>CodeElement data (strongly-typed)</summary>
-        /// <typeparam name="T">Class (derived from <see cref="CodeElement" />) of the data.</typeparam>
-        /// <param name="holder">We want this <see cref="Node" />'s data.</param>
-        /// <returns>This <see cref="Node" />'s CodeElement data, but strongly-typed.</returns>
-        public static T CodeElement<T>(this CodeElementHolder<T> holder) where T : CodeElement {
-            var node = holder as Node;
-            if (node == null) throw new ArgumentException("CodeElementHolder must be a Node.");
-            return (T) node.CodeElement;
-        }
-    }
-
     /// <summary>A <see cref="Node" /> who can type its parent more strongly should inherit from this.</summary>
     /// <typeparam name="C">Class (derived from <see cref="Node{T}" />) of the parent node.</typeparam>
     public interface Child<P> where P : Node {}
@@ -893,7 +879,7 @@ namespace TypeCobol.Compiler.Nodes {
 
 
     /// <summary>SourceFile of any Node tree, with null CodeElement.</summary>
-    public class SourceFile : GenericNode<CodeElement>, CodeElementHolder<CodeElement> {
+    public class SourceFile : GenericNode<CodeElement> {
         public SourceFile() : base(null)
         {
             GeneratedCobolHashes = new Dictionary<string, string>();
@@ -938,7 +924,7 @@ namespace TypeCobol.Compiler.Nodes {
 
     }
 
-    public class LibraryCopy : GenericNode<LibraryCopyCodeElement>, CodeElementHolder<LibraryCopyCodeElement>, Child<Program> {
+    public class LibraryCopy : GenericNode<LibraryCopyCodeElement>, Child<Program> {
         public LibraryCopy(LibraryCopyCodeElement ce) : base(ce) {}
 
         public override string ID {
@@ -951,7 +937,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
     }
 
-    public class Class : GenericNode<ClassIdentification>, CodeElementHolder<ClassIdentification> {
+    public class Class : GenericNode<ClassIdentification> {
         public Class(ClassIdentification identification) : base(identification) {}
 
         public override string ID {
@@ -964,7 +950,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
     }
 
-    public class Factory : GenericNode<FactoryIdentification>, CodeElementHolder<FactoryIdentification> {
+    public class Factory : GenericNode<FactoryIdentification> {
         public Factory(FactoryIdentification identification) : base(identification) {}
 
         public override string ID {
@@ -977,7 +963,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
     }
 
-    public class Method : GenericNode<MethodIdentification>, CodeElementHolder<MethodIdentification> {
+    public class Method : GenericNode<MethodIdentification> {
         public Method(MethodIdentification identification) : base(identification) {}
 
         public override string ID {
@@ -992,7 +978,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
     }
 
-    public class Object : GenericNode<ObjectIdentification>, CodeElementHolder<ObjectIdentification> {
+    public class Object : GenericNode<ObjectIdentification> {
         public Object(ObjectIdentification identification) : base(identification) {}
 
         public override string ID {
@@ -1005,7 +991,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
     }
 
-    public class End : GenericNode<CodeElementEnd>, CodeElementHolder<CodeElementEnd> {
+    public class End : GenericNode<CodeElementEnd> {
         public End(CodeElementEnd end) : base(end) {}
 
         public override string ID {
