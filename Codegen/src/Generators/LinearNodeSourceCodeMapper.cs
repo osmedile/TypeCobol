@@ -169,7 +169,7 @@ namespace TypeCobol.Codegen.Generators
             /// <summary>
             /// Empty constructor.
             /// </summary>
-            public LinearGeneratedNode()
+            public LinearGeneratedNode() : base(null)
             {
             }
 
@@ -183,7 +183,6 @@ namespace TypeCobol.Codegen.Generators
             }
 
 
-            protected override CodeElement InternalCodeElement => null;
 
             public override bool VisitNode(TypeCobol.Compiler.CodeElements.IASTVisitor astVisitor)
             {

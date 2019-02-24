@@ -412,11 +412,10 @@
         }
     }
     public class Then: Node, StatementCondition {
-	    public Then()
+	    public Then() : base(null)
         {
             SetFlag(Node.Flag.GeneratorCanIgnoreIt, true);
         }
-        protected override CodeElement InternalCodeElement => null;
         public override bool VisitNode(IASTVisitor astVisitor)
         {
             return astVisitor.Visit(this);
@@ -473,9 +472,8 @@
         }
     }
     public class WhenGroup: Node, StatementCondition {
-	    public WhenGroup() { }
-
-        protected override CodeElement InternalCodeElement => null;
+	    public WhenGroup() :base(null){ }
+        
         public override bool VisitNode(IASTVisitor astVisitor)
         {
             return astVisitor.Visit(this);

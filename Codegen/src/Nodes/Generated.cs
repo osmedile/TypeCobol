@@ -30,15 +30,11 @@ namespace TypeCobol.Codegen.Nodes
     internal class GeneratedNode : Compiler.Nodes.Node, Generated
     {
         private Solver Solver;
-        /// <summary>
-        /// Code Element to appy to this Generated Node
-        /// </summary>
-        private CodeElement ApplyCodeElement;
-        public GeneratedNode(Solver solver)  { this.Solver = solver; }
-        public GeneratedNode(Solver solver, CodeElement codelement)
+
+        public GeneratedNode(Solver solver) : base(null)  { this.Solver = solver; }
+        public GeneratedNode(Solver solver, CodeElement codelement) : base(codelement)
         {
             this.Solver = solver;
-            ApplyCodeElement = codelement;
         }
 
         private IList<ITextLine> _cache = null;
@@ -60,8 +56,7 @@ namespace TypeCobol.Codegen.Nodes
                 return _cache;
             }
         }
-
-        protected override CodeElement InternalCodeElement => ApplyCodeElement;
+        
 
         public bool IsLeaf { get { return false; } }
 
@@ -78,18 +73,16 @@ namespace TypeCobol.Codegen.Nodes
         /// <summary>
         /// Code Element to appy to this Generated Node
         /// </summary>
-        private CodeElement ApplyCodeElement;
 
-        public GeneratedNode2(string text, bool isLeaf) {
+        public GeneratedNode2(string text, bool isLeaf) : base(null) {
             this.Text = text;
             this.IsLeaf = isLeaf;
         }
 
-        public GeneratedNode2(string text, bool isLeaf, CodeElement codelement) 
+        public GeneratedNode2(string text, bool isLeaf, CodeElement codelement) : base(codelement)
         {
             this.Text = text;
             this.IsLeaf = isLeaf;
-            ApplyCodeElement = codelement;
         }
 
         public bool IsLeaf { get; internal set; }
@@ -116,7 +109,6 @@ namespace TypeCobol.Codegen.Nodes
         }
 
 
-        protected override CodeElement InternalCodeElement => ApplyCodeElement;
 
         public override bool VisitNode(IASTVisitor astVisitor)
         {

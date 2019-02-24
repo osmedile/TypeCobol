@@ -23,15 +23,11 @@ namespace TypeCobol.Compiler.Nodes {
         /// <summary>TODO: Codegen should do its stuff without polluting this class.</summary>
         public bool? Comment = null;
 
-        protected Node() {
-            
+        protected Node(CodeElement codeElement) {
+            this.CodeElement = codeElement;
         }
 
-        /// <summary>
-        /// This property is here just to implement CodeElement property at Node level.
-        /// </summary>
-        [CanBeNull]
-        protected abstract CodeElement InternalCodeElement { get; }
+        
 
         /// <summary>
         /// Return the CodeElement associated with this Node.
@@ -45,7 +41,7 @@ namespace TypeCobol.Compiler.Nodes {
         /// </summary>
         /// <see cref="InternalCodeElement"/>
         [CanBeNull]
-        public CodeElement CodeElement => InternalCodeElement;
+        public CodeElement CodeElement { get; set; }
 
         /// <summary>Parent node (weakly-typed)</summary>
         public Node Parent { get; private set; }
@@ -801,15 +797,13 @@ namespace TypeCobol.Compiler.Nodes {
     public abstract class GenericNode<CE> : Node where CE : CodeElement {
 
 
-        protected GenericNode(CE CodeElement) 
+        protected GenericNode(CE codeElement) : base (codeElement)
         {
-            this.CodeElement = CodeElement;
         }
 
-        protected sealed override CodeElement InternalCodeElement => CodeElement;
 
         [NotNull]
-        public new CE CodeElement { get; private set; }
+        public new CE CodeElement => (CE) base.CodeElement;
     }
 
     /// <summary>Implementation of the GoF Visitor pattern.</summary>

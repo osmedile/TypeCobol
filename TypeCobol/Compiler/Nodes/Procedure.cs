@@ -194,7 +194,7 @@ namespace TypeCobol.Compiler.Nodes {
     }
 
     public class Sentence: Node {
-	    public Sentence() { }
+	    public Sentence() : base(null) { }
 	    public override string ID {
 		    get {
 			    string id = "sentence-";
@@ -203,8 +203,7 @@ namespace TypeCobol.Compiler.Nodes {
 			    return id;
 		    }
 	    }
-
-        protected override CodeElement InternalCodeElement => null;
+        
 
         public override bool VisitNode(IASTVisitor astVisitor)
         {

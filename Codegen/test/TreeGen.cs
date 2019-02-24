@@ -67,7 +67,7 @@ namespace TypeCobol.Codegen {
 
 
 	public class Node: TypeCobol.Compiler.Nodes.Node, TypeCobol.Codegen.Nodes.Generated {
-		public Node(string Text = ".", bool GenerateChildren = true) {
+		public Node(string Text = ".", bool GenerateChildren = true) : base(null) {
 			this._lines.Add(new TextLineSnapshot(-1, Text, null));
 			this.IsLeaf = GenerateChildren;
 		}
@@ -77,8 +77,6 @@ namespace TypeCobol.Codegen {
 		}
 		public bool IsLeaf { get; private set; }
 
-
-	    protected override CodeElement InternalCodeElement => null;
 
         public override bool VisitNode(IASTVisitor astVisitor)
         {

@@ -19,10 +19,9 @@ namespace TypeCobol.Codegen.Nodes
     {
 
         private DataDescription Node;
-        public TypedDataNode(DataDescription node) : base(null) { this.Node = node; }
+        public TypedDataNode(DataDescription node) : base(node.CodeElement) { this.Node = node; }
 
 
-        public override DataDefinitionEntry InternalDataDefinitionEntry => Node.CodeElement;
 
         public new DataDescriptionEntry CodeElement => this.Node.CodeElement;
 
