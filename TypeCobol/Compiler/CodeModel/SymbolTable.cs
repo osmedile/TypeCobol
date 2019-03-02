@@ -323,9 +323,7 @@ namespace TypeCobol.Compiler.CodeModel
             var childrens = redefinesNode.Parent.Children;
             int index = redefinesNode.Parent.IndexOf(redefinesNode);
 
-            bool redefinedVariableFound = false;
-
-            while (!redefinedVariableFound && index >= 0)
+            while (index >= 0)
             {
                 CommonDataDescriptionAndDataRedefines child = childrens[index].CodeElement as CommonDataDescriptionAndDataRedefines;
 
