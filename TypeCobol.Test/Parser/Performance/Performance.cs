@@ -33,11 +33,18 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Incremental")]
         [TestProperty("Time", "long")]
-        [Ignore]
         public void IncrementalPerformance()
         {
             IncrementalPerformance2(PlatformUtils.GetPathForProjectFile("ThirdParty" + Path.DirectorySeparatorChar + "CNAF" + Path.DirectorySeparatorChar + "Batch"), "CGMV01.COB",
                  55987, "           MOVE LOW-VALUE     TO C1M010R.                               CGZPARAK");
+        }
+        [TestMethod]
+        [TestCategory("Incremental")]
+        [TestProperty("Time", "long")]
+        public void IncrementalTcblPerformance()
+        {
+            IncrementalPerformance2(PlatformUtils.GetPathForProjectFile("ThirdParty" + Path.DirectorySeparatorChar + "CNAF" + Path.DirectorySeparatorChar + "Batch"), "CGM110.tcbl",
+                 30714, "           MOVE WS-CMM010-MOIS-BIN TO WS-CMM010-MM");
         }
 
         private void IncrementalPerformance2(string folder, string textName, int newLineIndex, string newLineText)
@@ -106,14 +113,22 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Parsing")]
         [TestProperty("Time", "long")]
-        [Ignore]
-        public void FullParsingAndGenerationTest()
+        public void FullParsing_Cobol85()
         {
             string pwd = Directory.GetCurrentDirectory();
-            FullParsingAndGenerationTest2(Directory.GetParent(pwd)?.Parent?.FullName + "\\TypeCobol.Test\\ThirdParty\\CNAF\\Batch\\CGMV01.COB");
+            FullParsing(Directory.GetParent(pwd)?.Parent?.FullName + "\\TypeCobol.Test\\ThirdParty\\CNAF\\Batch\\CGMV01.COB");
         }
 
-        private void FullParsingAndGenerationTest2(string path, params string[] copiesFolder)
+        [TestMethod]
+        [TestCategory("Parsing")]
+        [TestProperty("Time", "long")]
+        public void FullParsing_TC_BigTypes()
+        {
+            string pwd = Directory.GetCurrentDirectory();
+            FullParsing(Directory.GetParent(pwd)?.Parent?.FullName + "\\TypeCobol.Test\\ThirdParty\\CNAF\\Batch\\CGM110.tcbl");
+        }
+
+        private void FullParsing(string path, params string[] copiesFolder)
         { 
             var format = TypeCobol.Compiler.DocumentFormat.RDZReferenceFormat;
 
