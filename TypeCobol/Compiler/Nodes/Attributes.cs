@@ -122,7 +122,7 @@ namespace TypeCobol.Compiler.Nodes {
                 foreach (var data in setStatement.StorageAreaWrites)
                 {
                     variablesWrittenRaw.Add(
-                        node.SymbolTable.GetVariablesExplicitWithQualifiedName(data.MainSymbolReference.URI).Select(x => x.Value).ToList());
+                        node.SymbolTable.GetVariablesExplicitWithQualifiedName(data.MainSymbolReference).Select(x => x.Value).ToList());
                 }
 
                 foreach (var varWritten in variablesWrittenRaw)
