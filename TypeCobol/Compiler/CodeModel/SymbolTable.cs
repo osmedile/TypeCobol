@@ -188,7 +188,7 @@ namespace TypeCobol.Compiler.CodeModel
 
         public IEnumerable<DataDefinition> GetVariables(SymbolReference symbolReference)
         {
-            return GetVariablesExplicit(symbolReference.URI);
+            return GetVariablesExplicit(symbolReference);
         }
 
         private IList<DataDefinition> GetVariables(string name)
@@ -352,6 +352,30 @@ namespace TypeCobol.Compiler.CodeModel
         }
 
         /// <summary>
+        /// Try to get variable base on the given qualifiedName. 
+        /// It will search in DataDefinition or Type (using references) to know is variable is declared and initialized
+        /// </summary>
+        /// <param name="name">QualifiedName of the variable looked for</param>
+        /// <returns></returns>
+        public IEnumerable<DataDefinition> GetVariablesExplicit(SymbolReference name)
+        {
+            return GetVariablesExplicitWithQualifiedName(name).Select(v => v.Value); //Just Ignore CompleteQualifiedName stored as a key
+        }
+
+        /// <summary>
+        /// Try to get variable base on the given qualifiedName. 
+        /// It will search in DataDefinition or Type (using references) to know is variable is declared and initialized
+        /// </summary>
+        /// <param name="name">QualifiedName of the variable looked for</param>
+        /// <returns></returns>
+        public IEnumerable<DataDefinition> GetVariablesExplicit(IList<string> name)
+        {
+            return GetVariablesExplicitWithQualifiedName(name).Select(v => v.Value); //Just Ignore CompleteQualifiedName stored as a key
+        }
+
+
+
+        /// <summary>
         /// Try to get variable base on the given qualifiedName. It could also scope onto typedef context. 
         /// </summary>
         /// <param name="name">Qualified name of the seeked variable</param>
@@ -401,14 +425,35 @@ namespace TypeCobol.Compiler.CodeModel
 
         //After that, the algorithm will rapidly return to the first foreach done on candidates inside GetVariablesExplicitWithQualifiedName
         //And launch the same mechanic, but this time with no success, because we are going to immediately find a terminal variable. 
-        public List<KeyValuePair<string, DataDefinition>> GetVariablesExplicitWithQualifiedName(QualifiedName name,
+
+        public List<KeyValuePair<string, DataDefinition>> GetVariablesExplicitWithQualifiedName(SymbolReference name,
+                    TypeDefinition typeDefContext = null)
+        {
+            IList<string> names;
+            if (name.IsQualifiedReference)
+            {
+                names = ((QualifiedSymbolReference)name).AsStringList();
+                
+            }
+            else
+            {
+                names = new List<string>();
+                names.Add(name.Name);
+            }
+            return GetVariablesExplicitWithQualifiedName(names, typeDefContext);
+        }
+
+        public List<KeyValuePair<string, DataDefinition>> GetVariablesExplicitWithQualifiedName(IList<string> symbolReferences,
             TypeDefinition typeDefContext = null)
         {
             List<KeyValuePair<string, DataDefinition>> foundedVariables = new List<KeyValuePair<string, DataDefinition>>();
+
+
+
             //Get variable name declared into typedef declaration
-            var candidates = GetCustomTypesSubordinatesNamed(name.Head);
+            var candidates = GetCustomTypesSubordinatesNamed(symbolReferences[0]);
             //Get all variables that corresponds to the given head of QualifiedName    
-            candidates.AddRange(GetVariables(name.Head));
+            candidates.AddRange(GetVariables(symbolReferences[0]));
             
             var found = new List<DataDefinition>();
             int foundCount = 0;
@@ -416,7 +461,7 @@ namespace TypeCobol.Compiler.CodeModel
             foreach (var candidate in candidates.Distinct())
             {
                 completeQualifiedNames.Add(new List<string>());
-                MatchVariable(found, candidate, name, name.Count - 1, candidate, completeQualifiedNames,
+                MatchVariable(found, candidate, symbolReferences, symbolReferences.Count - 1, candidate, completeQualifiedNames,
                     typeDefContext);
 
                 if (foundCount == found.Count && completeQualifiedNames.Count > 0)
@@ -455,7 +500,7 @@ namespace TypeCobol.Compiler.CodeModel
         /// <param name="currentDataDefinition">Currently checked DataDefinition</param>
         /// <param name="completeQualifiedNames">List of list of string that allows to store all the different path for the founded possibilities</param>
         /// <param name="typeDefContext">TypeDefinition context to force the algorithm to only work inside the typedef scope</param>
-        public void MatchVariable(IList<DataDefinition> found, DataDefinition headDataDefinition, QualifiedName name,
+        public void MatchVariable(IList<DataDefinition> found, DataDefinition headDataDefinition, IList<string> name,
             int nameIndex, DataDefinition currentDataDefinition, List<List<string>> completeQualifiedNames, TypeDefinition typeDefContext) {
 
             completeQualifiedNames.Last().Add(currentDataDefinition.Name);
@@ -1203,17 +1248,16 @@ namespace TypeCobol.Compiler.CodeModel
         private void Add<T>([NotNull] IDictionary<string, List<T>> table, [NotNull] T symbol) where T : Node
         {
             //QualifiedName of symbol can be null - if we have a filler in the type definition
-            if (symbol.QualifiedName == null)
+            if (symbol.Name == null)
             {
                 return;
             }
-            string key = symbol.QualifiedName.Head;
             List<T> found;
-            bool present = table.TryGetValue(key, out found);
+            bool present = table.TryGetValue(symbol.Name, out found);
             if (!present)
             {
                 found = new List<T>();
-                table.Add(key, found);
+                table.Add(symbol.Name, found);
             }
             found.Add(symbol);
         }
