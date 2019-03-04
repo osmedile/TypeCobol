@@ -310,7 +310,19 @@ namespace TypeCobol.Compiler.CodeElements
 			return refs;
 		}
 
-	    public override bool AcceptASTVisitor(IASTVisitor astVisitor) {
+        public IList<string> AsStringList()
+        {
+            var refs = new List<string>();
+            if (Head is QualifiedSymbolReference qhead)
+                refs.AddRange(qhead.AsStringList());
+            else refs.Add(Head.Name);
+            if (Tail is QualifiedSymbolReference qtail)
+                refs.AddRange(qtail.AsStringList());
+            else refs.Add(Tail.Name);
+            return refs;
+        }
+
+        public override bool AcceptASTVisitor(IASTVisitor astVisitor) {
 	        return base.AcceptASTVisitor(astVisitor) && astVisitor.Visit(this)
                 && this.ContinueVisitToChildren(astVisitor, Head, Tail);
 	    }
