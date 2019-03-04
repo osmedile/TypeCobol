@@ -89,9 +89,9 @@ namespace TypeCobol.Compiler.Diagnostics
             return base.Visit(funcDeclare);
         }
 
-        private void TypeReferencer(DataDefinition dataEntry)
+        private void TypeReferencer(DataDefinition dataEntry, SymbolTable symbolTable = null)
         {
-            SymbolTable symbolTable = dataEntry.SymbolTable;
+            symbolTable = symbolTable ?? dataEntry.SymbolTable;
             var types = symbolTable.GetType(dataEntry.DataType);
             if (types.Count != 1)
             {
@@ -138,6 +138,15 @@ namespace TypeCobol.Compiler.Diagnostics
             else
             {
                 symbolTable.TypesReferences.Add(type, new List<DataDefinition> {dataEntry});
+            }
+
+            if (type.SymbolTable != symbolTable)
+            {
+                //Also add all the typedChildren to reference list
+                foreach (var dataDescTypeChild in type.Children.Where(c => c is DataDescription))
+                {
+                    TypeReferencer(dataDescTypeChild as DataDescription, symbolTable);
+                }
             }
         }
       

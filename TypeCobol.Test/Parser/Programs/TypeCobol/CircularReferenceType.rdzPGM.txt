@@ -1,17 +1,7 @@
-﻿--- Diagnostics ---
-Line 8[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:renjgrn]<UserDefinedWord>
-Line 13[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:yhrtger]<UserDefinedWord>
-Line 13[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:yhrtger]<UserDefinedWord>
-Line 13[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:yhrtger]<UserDefinedWord>
-Line 13[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:yhrtger]<UserDefinedWord>
-Line 13[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:yhrtger]<UserDefinedWord>
-Line 14[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:ezgoerk]<UserDefinedWord>
-Line 14[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:ezgoerk]<UserDefinedWord>
-Line 14[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:ezgoerk]<UserDefinedWord>
-Line 14[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:ezgoerk]<UserDefinedWord>
-Line 14[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:ezgoerk]<UserDefinedWord>
+--- Diagnostics ---
+Line 13[13,14] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[13,14:05]<LevelNumber>{5}
 Line 17[15,20] <30, Error, Semantics> - Semantic error: Variable 'MyVar1' has to be limited to level 47 because of 'myType' maximum estimated children level OffendingSymbol=[15,20:MyVar1]<UserDefinedWord>
-Line 24[16,22] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[16,22:SelfRef]<UserDefinedWord>
+Line 24[13,14] <30, Error, Semantics> - Semantic error: Type circular reference detected OffendingSymbol=[13,14:05]<LevelNumber>{5}
 
 --- Program ---
 PROGRAM: CircularRefCheck common:False initial:False recursive:False
