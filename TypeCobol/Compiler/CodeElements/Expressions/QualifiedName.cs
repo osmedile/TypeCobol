@@ -11,10 +11,7 @@ namespace TypeCobol.Compiler.CodeElements.Expressions
         char Separator { get; }
         string Head { get; }
         string Tail { get; }
-        QualifiedName Parent { get; }
         bool IsExplicit { get; }
-        bool Matches(string uri);
-        bool Matches(QualifiedName name);
     }
 
 
@@ -32,7 +29,6 @@ namespace TypeCobol.Compiler.CodeElements.Expressions
         public virtual string Tail { get; }
 
         
-        public abstract QualifiedName Parent { get; }
         public abstract int Count { get; }
         public abstract IEnumerator<string> GetEnumerator();
 
@@ -106,22 +102,12 @@ namespace TypeCobol.Compiler.CodeElements.Expressions
                 hash = hash * 7 + part.GetHashCode();
             return hash;
         }
-
-        public bool Matches(string uri)
-        {
-            return this.ToString().EndsWith(uri);
-        }
-        public bool Matches(QualifiedName name)
-        {
-            return this.Matches(name.ToString());
-        }
     }
 
 
 
     public class URI : AbstractQualifiedName
     {
-        public string Value { get { return this.ToString(); } }
         private IEnumerable<string> parts;
 
         public URI(IEnumerable<string> UriParts, char separator = '.')
@@ -149,23 +135,12 @@ namespace TypeCobol.Compiler.CodeElements.Expressions
         public override string Tail {get { return parts.First(); }}
 
         public override string Head { get { return parts.Last(); } }
-        public override QualifiedName Parent
-        {
-            get
-            {
-                if (parts.Count() > 1)
-                    return new URI(parts.Take(parts.Count() - 1));
-                else
-                    return null;
-            }
-        }
 
         public override IEnumerator<string> GetEnumerator()
         {
             foreach (string part in parts) yield return part;
         }
-
-
+        
         public override bool IsExplicit { get { return false; } }
 
         public override int Count { get { return parts.Count(); } }
