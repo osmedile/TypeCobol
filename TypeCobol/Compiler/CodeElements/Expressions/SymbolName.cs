@@ -313,13 +313,17 @@ namespace TypeCobol.Compiler.CodeElements
         public IList<string> AsStringList()
         {
             var refs = new List<string>();
+            AsStringList(refs);
+            return refs;
+        }
+        protected void AsStringList(List<string> refs)
+        {
             if (Head is QualifiedSymbolReference qhead)
-                refs.AddRange(qhead.AsStringList());
+                qhead.AsStringList(refs);
             else refs.Add(Head.Name);
             if (Tail is QualifiedSymbolReference qtail)
-                refs.AddRange(qtail.AsStringList());
+                qtail.AsStringList(refs);
             else refs.Add(Tail.Name);
-            return refs;
         }
 
         public override bool AcceptASTVisitor(IASTVisitor astVisitor) {
