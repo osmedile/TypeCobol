@@ -108,11 +108,11 @@ namespace TypeCobol.Compiler.CodeElements.Expressions
 
     public class URI : AbstractQualifiedName
     {
-        private IEnumerable<string> parts;
+        private IList<string> parts;
 
         public URI(IEnumerable<string> UriParts, char separator = '.')
         {
-            parts = UriParts;
+            parts = UriParts.ToList();
             _separator = separator;
         }
 
@@ -143,6 +143,6 @@ namespace TypeCobol.Compiler.CodeElements.Expressions
         
         public override bool IsExplicit { get { return false; } }
 
-        public override int Count { get { return parts.Count(); } }
+        public override int Count { get { return parts.Count; } }
     }
 }
