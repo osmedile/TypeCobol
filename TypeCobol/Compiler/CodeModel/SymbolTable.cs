@@ -715,17 +715,7 @@ namespace TypeCobol.Compiler.CodeModel
         {
             if (found.Count < 1) return found;
             int max = name.Count - 1;
-            if (name.IsExplicit)
-            {
-                for (int c = 0; c < max; c++)
-                {
-                    string pname = name[max - c - 1];
-                    found = Filter(found, pname, c + 1);
-                    if (found.Count < 1) return found;
-                }
-            }
-            else
-            {
+            
                 var matches = new List<T>();
                 foreach (var candidate in found)
                 {
@@ -733,7 +723,7 @@ namespace TypeCobol.Compiler.CodeModel
                     if (Match(candidate.QualifiedName, name)) matches.Add(candidate);
                 }
                 found = matches;
-            }
+            
             return found;
         }
 
@@ -745,7 +735,6 @@ namespace TypeCobol.Compiler.CodeModel
                 string part1 = name1[c];
                 string part2 = name2[offset];
                 if (part1.Equals(part2, StringComparison.OrdinalIgnoreCase)) offset++;
-                else if (name1.IsExplicit) return false;
                 if (offset == name2.Count) return true;
             }
             return offset == name2.Count;

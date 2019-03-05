@@ -11,14 +11,12 @@ namespace TypeCobol.Compiler.CodeElements.Expressions
         char Separator { get; }
         string Head { get; }
         string Tail { get; }
-        bool IsExplicit { get; }
     }
 
 
 
     public abstract class AbstractQualifiedName : QualifiedName
     {
-        public virtual bool IsExplicit { get { return false; } }
         public virtual char Separator
         {
             get { return '.'; }
@@ -141,7 +139,6 @@ namespace TypeCobol.Compiler.CodeElements.Expressions
             foreach (string part in parts) yield return part;
         }
         
-        public override bool IsExplicit { get { return false; } }
 
         public override int Count { get { return parts.Count; } }
     }
