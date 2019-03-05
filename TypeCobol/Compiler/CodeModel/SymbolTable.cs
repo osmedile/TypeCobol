@@ -716,13 +716,13 @@ namespace TypeCobol.Compiler.CodeModel
             if (found.Count < 1) return found;
             int max = name.Count - 1;
             
-                var matches = new List<T>();
-                foreach (var candidate in found)
-                {
-                    if (candidate == null) continue;
-                    if (Match(candidate.QualifiedName, name)) matches.Add(candidate);
-                }
-                found = matches;
+            var matches = new List<T>();
+            foreach (var candidate in found)
+            {
+                if (candidate == null) continue;
+                if (Match(candidate.QualifiedName, name)) matches.Add(candidate);
+            }
+            found = matches;
             
             return found;
         }
@@ -872,40 +872,46 @@ namespace TypeCobol.Compiler.CodeModel
 
         public List<TypeDefinition> GetType(SymbolReference symbolReference)
         {
-            return GetType(symbolReference.URI);
+            if(symbolReference.IsQualifiedReference)
+            {
+                IList<string> typeRef = ((QualifiedSymbolReference)symbolReference).AsStringList();
+                System.Diagnostics.Debug.Assert(typeRef.Count == 2);
+                
+                return GetType(typeRef[1], typeRef[0]);
+            }
+            else
+            {
+                return GetType(symbolReference.Name);
+            }
+           
         }
 
-      
 
-        public List<TypeDefinition> GetType(DataType dataType, string pgmName = null)
+        public List<TypeDefinition> GetType(DataType dataType)
         {
-            var uri = new URI(dataType.Name);
-            var types = GetType(uri);
-            if (types.Count > 0)
-                return types; //If Types found return it
-
-            if (!string.IsNullOrEmpty(pgmName)) //If Program is specified seek type into given program
-                types = GetType(uri, pgmName); //Try to find the types in specific program
-
-            return types;
+            var parts = dataType.Name.Split('.');
+            if (parts.Length == 1)
+            {
+                return GetType(parts[0]);
+            }
+            else if (parts.Length == 2)
+            {
+                return GetType(parts[1], parts[0]); //Try to find the types in specific program
+            }
+            throw new NotImplementedException("should not have a datatype with more than 2 parts");
         }
 
-        /// <summary>
-        /// Get type for the current program, then check in other program by using QualifiedName Tail propertie
-        /// </summary>
-        /// <param name="name">Qualified name of the wated type</param>
-        /// <returns></returns>
-        [NotNull]
-        public List<TypeDefinition> GetType(QualifiedName name)
+        public List<TypeDefinition> GetType(DataType dataType, string pgmName)
         {
-            var found = GetType(name.Head);
-
-            if (string.IsNullOrEmpty(name.Tail) || found.Any(f => string.Compare(f.QualifiedName.Tail, name.Tail, StringComparison.OrdinalIgnoreCase) == 0))
-                return Get(found, name);
-
-            found = GetType(name, name.Tail, found); //Pass name.Tail as a program name 
-
-            return found;
+            
+            if(pgmName == null)
+            {
+                return GetType(dataType.Name);
+            }
+            else
+            {
+                return GetType(dataType.Name, pgmName); //Try to find the types in specific program
+            }
         }
 
         public IEnumerable<TypeDefinition> GetTypes(Expression<Func<TypeDefinition, bool>> predicate, Scope maximalScope)
@@ -951,7 +957,7 @@ namespace TypeCobol.Compiler.CodeModel
         /// <param name="name">Qualified name of the wated type</param>
         /// <param name="pgmName">Name of the program tha tmay contains the type</param>
         /// <returns></returns>
-        public List<TypeDefinition> GetType(QualifiedName name, string pgmName, List<TypeDefinition> found = null)
+        protected List<TypeDefinition> GetType(string typeName, string pgmName, List<TypeDefinition> found = null)
         {
             found = found ?? new List<TypeDefinition>();
             var program = GetProgramHelper(pgmName); //Get the program corresponding to the given namespace
@@ -960,12 +966,20 @@ namespace TypeCobol.Compiler.CodeModel
                 //Get all TYPEDEF PUBLIC from this program
                 var programTypes = GetPublicTypes(program.SymbolTable.GetTableFromScope(Scope.Declarations).Types);
 
-                found = GetFromTable(name.Head, programTypes); //Check if there is a type that correspond to the given name (head)
+                found = GetFromTable(typeName, programTypes); //Check if there is a type that correspond to the given name (head)
 
                 //Get all GLOBAL TYPEDEF PUBLIC from this program
                 var globalTypedef = GetPublicTypes(program.SymbolTable.GetTableFromScope(Scope.Global).Types);
 
-                found.AddRange(GetFromTable(name.Head, globalTypedef)); //Check if there is a type that correspond to the given name (head)
+                found.AddRange(GetFromTable(typeName, globalTypedef)); //Check if there is a type that correspond to the given name (head)
+            }
+
+            //Check types on the current program
+            var types = GetType(typeName);
+
+            foreach(var type in types)
+            {
+
             }
 
             return found;
