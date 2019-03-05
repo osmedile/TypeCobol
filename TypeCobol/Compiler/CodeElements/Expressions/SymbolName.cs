@@ -318,12 +318,14 @@ namespace TypeCobol.Compiler.CodeElements
         }
         protected void AsStringList(List<string> refs)
         {
-            if (Head is QualifiedSymbolReference qhead)
-                qhead.AsStringList(refs);
-            else refs.Add(Head.Name);
             if (Tail is QualifiedSymbolReference qtail)
                 qtail.AsStringList(refs);
             else refs.Add(Tail.Name);
+
+            if (Head is QualifiedSymbolReference qhead)
+                qhead.AsStringList(refs);
+            else refs.Add(Head.Name);
+            
         }
 
         public override bool AcceptASTVisitor(IASTVisitor astVisitor) {

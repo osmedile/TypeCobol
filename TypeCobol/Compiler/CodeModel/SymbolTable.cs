@@ -449,11 +449,11 @@ namespace TypeCobol.Compiler.CodeModel
             List<KeyValuePair<string, DataDefinition>> foundedVariables = new List<KeyValuePair<string, DataDefinition>>();
 
 
-
+            var head = symbolReferences[symbolReferences.Count - 1];
             //Get variable name declared into typedef declaration
-            var candidates = GetCustomTypesSubordinatesNamed(symbolReferences[0]);
+            var candidates = GetCustomTypesSubordinatesNamed(head);
             //Get all variables that corresponds to the given head of QualifiedName    
-            candidates.AddRange(GetVariables(symbolReferences[0]));
+            candidates.AddRange(GetVariables(head));
             
             var found = new List<DataDefinition>();
             int foundCount = 0;
