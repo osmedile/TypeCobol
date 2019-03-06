@@ -73,10 +73,9 @@ namespace TypeCobol.Compiler.Diagnostics
 
     class FunctionCallChecker
     {
-        public static void OnNode(Node node)
+        public static void OnNode([NotNull] Node node, [NotNull] FunctionCaller functionCaller)
         {
-            var functionCaller = node as FunctionCaller;
-            if (functionCaller == null || functionCaller.FunctionCall == null ||
+            if ( functionCaller.FunctionCall == null ||
                 !functionCaller.FunctionCall.NeedDeclaration)
                 return;
 
