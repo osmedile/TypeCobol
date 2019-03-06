@@ -56,7 +56,7 @@
 
         public override bool VisitNode(IASTVisitor astVisitor)
         {
-            return astVisitor.Visit(this);
+            return astVisitor.Visit(this) && astVisitor.VisitFunctionCaller(this);
         }
     }
 
@@ -193,7 +193,7 @@
 
         public override bool VisitNode(IASTVisitor astVisitor)
         {
-            return astVisitor.Visit(this) && astVisitor.VisitVariableWriter(this);
+            return astVisitor.Visit(this) && astVisitor.VisitVariableWriter(this) && astVisitor.VisitFunctionCaller(this);
         }
     }
 
