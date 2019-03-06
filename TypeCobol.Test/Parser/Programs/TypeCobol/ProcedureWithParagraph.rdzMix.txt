@@ -1,0 +1,32 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. ProcedureCall.
+
+
+
+       PROCEDURE DIVISION.
+
+       INIT.
+           continue
+           .       
+       INIT-2.
+           continue
+           .
+       DECLARE PROCEDURE MyProc PRIVATE.
+       PROCEDURE DIVISION.
+      *     Ko, paragraph not defined in procedure
+Line 17[20,23] <27, Error, Syntax> - Syntax error : Symbol INIT is not referenced
+           perform INIT
+      *     Ok, no ambiguity, will call paragraph in the procedure
+           perform INIT-2
+      *     Ok, will call paragraph in the procedure
+           perform INIT-3
+           .
+       INIT-2.
+            exit
+           .
+       INIT-3.
+           exit
+           .
+
+       END-DECLARE.
+       END PROGRAM ProcedureCall.
