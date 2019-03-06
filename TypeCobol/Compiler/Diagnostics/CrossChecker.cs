@@ -45,7 +45,6 @@ namespace TypeCobol.Compiler.Diagnostics
                 CheckVariable(node, codeElement.StorageAreaGroupsCorrespondingImpact.ReceivingGroupItem, false);
             }
 
-            FunctionCallChecker.OnNode(node);
 
             return true;
         }
@@ -363,6 +362,14 @@ namespace TypeCobol.Compiler.Diagnostics
 
             DataDefinitionChecker.OnNode(dataDefinition, commonDataDataDefinitionCodeElement);
 
+
+
+            return true;
+        }
+
+        public override bool VisitFunctionCaller(FunctionCaller functionCaller)
+        {
+            FunctionCallChecker.OnNode(CurrentNode, functionCaller);
             return true;
         }
 
