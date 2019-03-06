@@ -219,19 +219,19 @@ namespace TypeCobol.Compiler.Parser
 //                var occursClauseContext = context.occursClause()[0];
 //                if (occursClauseContext.minNumberOfOccurences != null)
 //                {
-//                    parameter.MinOccurencesCount = CobolWordsBuilder.CreateIntegerValue(occursClauseContext.minNumberOfOccurences);
+//                    parameter.MinOccurrencesCount = CobolWordsBuilder.CreateIntegerValue(occursClauseContext.minNumberOfOccurences);
 //                }
 //                if (occursClauseContext.maxNumberOfOccurences != null)
 //                {
-//                    parameter.MaxOccurencesCount = CobolWordsBuilder.CreateIntegerValue(occursClauseContext.maxNumberOfOccurences);
+//                    parameter.MaxOccurrencesCount = CobolWordsBuilder.CreateIntegerValue(occursClauseContext.maxNumberOfOccurences);
 //                }
-//                if (parameter.MinOccurencesCount == null && parameter.MaxOccurencesCount != null)
+//                if (parameter.MinOccurrencesCount == null && parameter.MaxOccurrencesCount != null)
 //                {
-//                    parameter.MinOccurencesCount = parameter.MaxOccurencesCount;
+//                    parameter.MinOccurrencesCount = parameter.MaxOccurrencesCount;
 //                }
 //                if (occursClauseContext.UNBOUNDED() != null)
 //                {
-//                    parameter.HasUnboundedNumberOfOccurences = new SyntaxProperty<bool>(true,
+//                    parameter.HasUnboundedNumberOfOccurrences = new SyntaxProperty<bool>(true,
 //                        ParseTreeUtils.GetFirstToken(occursClauseContext.UNBOUNDED()));
 //                }
 //                if (occursClauseContext.varNumberOfOccurences != null)

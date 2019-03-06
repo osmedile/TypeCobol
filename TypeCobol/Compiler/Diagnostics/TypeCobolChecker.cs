@@ -81,7 +81,7 @@ namespace TypeCobol.Compiler.Diagnostics
 
             if (functionCaller.FunctionDeclaration == null)
             {
-                //Get Funtion by name and profile (matches on precise parameters)
+                //Get Function by name and profile (matches on precise parameters)
                 var parameterList = functionCaller.FunctionCall.AsProfile(node);
                 var functionDeclarations =
                     node.SymbolTable.GetFunction(new URI(functionCaller.FunctionCall.FunctionName),
@@ -199,10 +199,9 @@ namespace TypeCobol.Compiler.Diagnostics
         private static void Check(Node node, [NotNull] FunctionCall call,
             [NotNull] FunctionDeclaration definition)
         {
-            var table = node.SymbolTable;
             var parameters = definition.Profile.Parameters;
             var callerProfile = call.AsProfile(node);
-            var callArgsCount = call.Arguments != null ? call.Arguments.Length : 0;
+            var callArgsCount = call.Arguments?.Length ?? 0;
             if (callArgsCount > parameters.Count)
             {
                 var m = string.Format("Function '{0}' only takes {1} parameter(s)", call.FunctionName,
@@ -244,15 +243,14 @@ namespace TypeCobol.Compiler.Diagnostics
 
                     var callArgName = actual.StorageArea.ToString();
                     var found = node.GetDataDefinitionFromStorageAreaDictionary(actual.StorageArea);
-                   if (found == null)
+                    if (found == null)
                     {
                         continue;
                     }
 
                     var actualDataDefinition = found;
 
-                    var actualSpecialRegister = actual.StorageArea as StorageAreaPropertySpecialRegister;
-                    if (actualSpecialRegister != null)
+                    if (actual.StorageArea is StorageAreaPropertySpecialRegister actualSpecialRegister)
                     {
                         var tokenType = actualSpecialRegister.SpecialRegisterName.TokenType;
                         if (tokenType == TokenType.LENGTH)
@@ -309,16 +307,15 @@ namespace TypeCobol.Compiler.Diagnostics
 
                     //If the actual dataDefinition is a table occurence try to match it with subscripts
                     //If the actual dataDefinition is under a table occurence, then don't care about subscripts 
-                    long actualMinOccurencesCount = actualDataDefinition.MinOccurencesCount;
-                    long actualMaxOccurencesCount = actualDataDefinition.MaxOccurencesCount;
-                    bool actualHasUnboundedNumberOfOccurences = actualDataDefinition.HasUnboundedNumberOfOccurences;
+                    long actualMinOccurrenceCount = actualDataDefinition.MinOccurrencesCount;
+                    long actualMaxOccurrenceCount = actualDataDefinition.MaxOccurrencesCount;
+                    bool actualHasUnboundedNumberOfOccurrences = actualDataDefinition.HasUnboundedNumberOfOccurrences;
                     NumericVariable actualOccursDependingOn = actualDataDefinition.OccursDependingOn;
                     bool actualIsTableOccurence = actualDataDefinition.IsTableOccurence;
 
                     if (actualDataDefinition.IsTableOccurence)
                     {
-                        var subscriptedStorageArea = actual.StorageArea as DataOrConditionStorageArea;
-                        if (subscriptedStorageArea != null && subscriptedStorageArea.Subscripts.Count > 0)
+                        if (actual.StorageArea is DataOrConditionStorageArea subscriptedStorageArea && subscriptedStorageArea.Subscripts.Count > 0)
                         {
                             //if there are subscripts
 
@@ -330,9 +327,9 @@ namespace TypeCobol.Compiler.Diagnostics
                                 return;
                             }
 
-                            actualMinOccurencesCount = 0;
-                            actualMaxOccurencesCount = 0;
-                            actualHasUnboundedNumberOfOccurences = false;
+                            actualMinOccurrenceCount = 0;
+                            actualMaxOccurrenceCount = 0;
+                            actualHasUnboundedNumberOfOccurrences = false;
                             actualOccursDependingOn = null;
                             actualIsTableOccurence = false;
                         }
@@ -454,23 +451,23 @@ namespace TypeCobol.Compiler.Diagnostics
                     }
                     else if (actualIsTableOccurence && expected.IsTableOccurence)
                     {
-                        if (actualMinOccurencesCount != expected.MinOccurencesCount)
+                        if (actualMinOccurrenceCount != expected.MinOccurrencesCount)
                         {
                             var m =
                                 string.Format(
                                     "Function '{0}' expected parameter '{1}' to have at least {2} occurences and received '{3}' with a minimum of {4} occurences",
-                                    call.FunctionName, expected.Name, expected.MinOccurencesCount,
-                                    callArgName ?? string.Format("position {0}", c + 1), actualMinOccurencesCount);
+                                    call.FunctionName, expected.Name, expected.MinOccurrencesCount,
+                                    callArgName ?? string.Format("position {0}", c + 1), actualMinOccurrenceCount);
                             DiagnosticUtils.AddError(node, m);
                         }
 
-                        if (actualMaxOccurencesCount != expected.MaxOccurencesCount)
+                        if (actualMaxOccurrenceCount != expected.MaxOccurrencesCount)
                         {
                             var m =
                                 string.Format(
                                     "Function '{0}' expected parameter '{1}' to have at most {2} occurences and received '{3}' with a maximum of {4} occurences",
-                                    call.FunctionName, expected.Name, expected.MaxOccurencesCount,
-                                    callArgName ?? string.Format("position {0}", c + 1), actualMaxOccurencesCount);
+                                    call.FunctionName, expected.Name, expected.MaxOccurrencesCount,
+                                    callArgName ?? string.Format("position {0}", c + 1), actualMaxOccurrenceCount);
                             DiagnosticUtils.AddError(node, m);
                         }
                     }
@@ -485,17 +482,17 @@ namespace TypeCobol.Compiler.Diagnostics
                         DiagnosticUtils.AddError(node, m);
                     }
 
-                    if (actualHasUnboundedNumberOfOccurences != expected.HasUnboundedNumberOfOccurences)
+                    if (actualHasUnboundedNumberOfOccurrences != expected.HasUnboundedNumberOfOccurrences)
                     {
                         var m =
                            string.Format(
                                "Function '{0}' expected parameter '{1}' {2} and received '{3}' {4}",
                                 call.FunctionName, expected.Name,
-                                expected.HasUnboundedNumberOfOccurences
+                                expected.HasUnboundedNumberOfOccurrences
                                     ? "has unbounded number of occurences"
                                     : "hasn't unbounded number of occurences",
                                 callArgName ?? string.Format("position {0}", c + 1),
-                                actualHasUnboundedNumberOfOccurences
+                                actualHasUnboundedNumberOfOccurrences
                                     ? "has unbounded number of occurences"
                                     : "hasn't unbounded number of occurences");
                         DiagnosticUtils.AddError(node, m);
@@ -508,11 +505,11 @@ namespace TypeCobol.Compiler.Diagnostics
                            string.Format(
                                "Function '{0}' expected parameter '{1}' {2} and received '{3}' {4}",
                                 call.FunctionName, expected.Name,
-                                expected.HasUnboundedNumberOfOccurences
+                                expected.HasUnboundedNumberOfOccurrences
                                     ? "has unbounded number of occurences"
                                     : "hasn't unbounded number of occurences",
                                 callArgName ?? string.Format("position {0}", c + 1),
-                                actualDataDefinition.HasUnboundedNumberOfOccurences
+                                actualDataDefinition.HasUnboundedNumberOfOccurrences
                                     ? "has unbounded number of occurences"
                                     : "hasn't unbounded number of occurences");
                         DiagnosticUtils.AddError(node, m);
@@ -854,11 +851,7 @@ namespace TypeCobol.Compiler.Diagnostics
 
 
         //If the procedure division contains a PUBLIC procedure or function then it's considered as a "Library"
-	    bool isLibrary = procedureDivision.Children.Any(c =>
-		{
-		    var f = c.CodeElement as FunctionDeclarationHeader;
-                return f != null && f.Visibility == AccessModifier.Public;
-            });
+	    bool isLibrary = procedureDivision.Children.Any(c => c.CodeElement is FunctionDeclarationHeader f && f.Visibility == AccessModifier.Public);
 
 	    if (isLibrary)
         {
@@ -908,8 +901,7 @@ namespace TypeCobol.Compiler.Diagnostics
     {
         public static void CheckStatement([NotNull] Set node)
         {
-            var statement = node.CodeElement as SetStatementForIndexes;
-            if (statement != null)
+            if (node.CodeElement is SetStatementForIndexes statement)
             {
                 // Check receivers (incremented) 
                 var receivers = node.StorageAreaWritesDataDefinition?.Values;

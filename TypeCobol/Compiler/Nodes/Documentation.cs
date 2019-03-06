@@ -668,7 +668,7 @@ namespace TypeCobol.Compiler.Nodes
         public DocumentationDataType(DataDefinition dataDef)
         {
             Usage = dataDef.Usage;
-            MaxOccurence = dataDef.MaxOccurencesCount;
+            MaxOccurence = dataDef.MaxOccurrencesCount;
             TypeName = dataDef.TypeDefinition?.Name;
             Picture = dataDef.Picture?.Value;
             var ce = dataDef.CodeElement as DataDescriptionEntry;

@@ -370,7 +370,7 @@ namespace TypeCobol.Compiler.CodeElements {
         /// p195 (Variable-length tables):
         /// The minimum number of occurrences.
         /// The value (..) must be greater than or equal to zero, and it must
-        /// also be less than the value of [MaxOccurencesCount].
+        /// also be less than the value of [MaxOccurrencesCount].
         /// If (..) omitted, a value of 1 is assumed (..).
         /// </summary>
         public IntegerValue MinOccurencesCount { get; set; }
@@ -378,7 +378,7 @@ namespace TypeCobol.Compiler.CodeElements {
         /// <summary>
         /// p195 (Variable-length tables):
         /// The maximum number of occurrences.
-        /// [It] must be greater than [MinOccurencesCount].
+        /// [It] must be greater than [MinOccurrencesCount].
         /// ---
         /// Fixed-length tables are specified using the OCCURS clause.
         /// The length of the subject item is fixed. Only the number of repetitions of the subject

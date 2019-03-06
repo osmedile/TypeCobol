@@ -63,8 +63,8 @@ namespace TypeCobol.Compiler.Diagnostics
                 if (typedef.InitialValue != null)
                 {
                     string message = "STRONG TYPEDEF cannot contain VALUE clause:";
-                    foreach (var valeuClause in context.valueClause())
-                        DiagnosticUtils.AddError(typedef, message, valeuClause);
+                    foreach (var valueClause in context.valueClause())
+                        DiagnosticUtils.AddError(typedef, message, valueClause);
                 }
 
                 if (typedef.Picture != null)
@@ -119,7 +119,7 @@ namespace TypeCobol.Compiler.Diagnostics
         private static void CheckForValueClause(Node node, string typedefName)
         {
             var codeElement = node.CodeElement as DataDescriptionEntry;
-            if (codeElement != null && codeElement.InitialValue != null)
+            if (codeElement?.InitialValue != null)
             {
                 string message = "Illegal VALUE clause for subordinate \'" + node.Name + "\' of STRONG TYPEDEF \'" +
                                  typedefName + "\'";
@@ -165,9 +165,9 @@ namespace TypeCobol.Compiler.Diagnostics
     {
         public static void OnNode([NotNull] DataRenames renames)
         {
-            if (renames?.CodeElement()?.RenamesFromDataName != null)
+            if (renames.CodeElement()?.RenamesFromDataName != null)
                 Check(renames.CodeElement().RenamesFromDataName, renames);
-            if(renames?.CodeElement()?.RenamesToDataName != null)
+            if(renames.CodeElement()?.RenamesToDataName != null)
                 Check(renames.CodeElement().RenamesToDataName, renames);
         }
 
@@ -233,7 +233,7 @@ namespace TypeCobol.Compiler.Diagnostics
             TypeDefinition foundedType = null;
             TypeDefinitionHelper.Check(dataDefinition, type, out foundedType); //Check if the type exists and is not ambiguous
 
-            if (foundedType == null || data == null || data.LevelNumber == null)
+            if (foundedType == null || data?.LevelNumber == null)
                 return;
 
             if (data.LevelNumber.Value == 88 || data.LevelNumber.Value == 66)
