@@ -401,22 +401,23 @@ namespace TypeCobol.Compiler.Nodes {
         }
 
         #region TypeProperties
-        public AlphanumericValue Picture { get {return _ComonDataDesc != null ? _ComonDataDesc.Picture : null;}}
-        public bool IsJustified { get {  if(_ComonDataDesc != null && _ComonDataDesc.IsJustified != null) return _ComonDataDesc.IsJustified.Value; else return false; } }
-        public DataUsage? Usage { get { if (_ComonDataDesc != null && _ComonDataDesc.Usage != null) return _ComonDataDesc.Usage.Value; else return null; } }
-        public bool IsGroupUsageNational { get { if (_ComonDataDesc != null && _ComonDataDesc.IsGroupUsageNational != null) return _ComonDataDesc.IsGroupUsageNational.Value; else return false; } }
-        public long MinOccurencesCount { get { if (_ComonDataDesc != null && _ComonDataDesc.MinOccurencesCount != null) return _ComonDataDesc.MinOccurencesCount.Value; else return 1; } }
-        public long MaxOccurencesCount { get {return _ComonDataDesc != null && _ComonDataDesc.MaxOccurencesCount != null ? _ComonDataDesc.MaxOccurencesCount.Value : 1;}}
+        public AlphanumericValue Picture => _ComonDataDesc?.Picture;
+        public bool IsJustified => _ComonDataDesc?.IsJustified != null && _ComonDataDesc.IsJustified.Value;
+        public DataUsage? Usage => _ComonDataDesc?.Usage?.Value;
+        public bool IsGroupUsageNational => _ComonDataDesc?.IsGroupUsageNational != null && _ComonDataDesc.IsGroupUsageNational.Value;
+        public long MinOccurrencesCount => _ComonDataDesc?.MinOccurencesCount?.Value ?? 1;
+        public long MaxOccurrencesCount => _ComonDataDesc?.MaxOccurencesCount?.Value ?? 1;
 
 
-        public NumericVariable OccursDependingOn { get {return _ComonDataDesc != null ? _ComonDataDesc.OccursDependingOn : null;}}
-        public bool HasUnboundedNumberOfOccurences { get { if (_ComonDataDesc != null && _ComonDataDesc.HasUnboundedNumberOfOccurences != null) return _ComonDataDesc.HasUnboundedNumberOfOccurences.Value; else return false; } }
-        public bool IsTableOccurence { get { if (_ComonDataDesc != null) return _ComonDataDesc.IsTableOccurence; else return false; } }
-        public CodeElementType? Type { get { if (_ComonDataDesc != null) return _ComonDataDesc.Type; else return null; } }
-        public bool SignIsSeparate { get { if (_ComonDataDesc != null && _ComonDataDesc.SignIsSeparate != null) return _ComonDataDesc.SignIsSeparate.Value; else return false;  } }
-        public SignPosition? SignPosition { get { if (_ComonDataDesc != null && _ComonDataDesc.SignPosition != null) return _ComonDataDesc.SignPosition.Value; else return null; } }
-        public bool IsSynchronized { get { if (_ComonDataDesc != null && _ComonDataDesc.IsSynchronized != null) return _ComonDataDesc.IsSynchronized.Value; else return false;  } }
-        public SymbolReference ObjectReferenceClass { get { if (_ComonDataDesc != null) return _ComonDataDesc.ObjectReferenceClass; else return null; } }
+        public NumericVariable OccursDependingOn => _ComonDataDesc?.OccursDependingOn;
+        public bool HasUnboundedNumberOfOccurrences => _ComonDataDesc?.HasUnboundedNumberOfOccurences != null && _ComonDataDesc.HasUnboundedNumberOfOccurences.Value;
+        public bool IsTableOccurence => _ComonDataDesc != null && _ComonDataDesc.IsTableOccurence;
+        public CodeElementType? Type => _ComonDataDesc?.Type;
+        public bool SignIsSeparate => _ComonDataDesc?.SignIsSeparate != null && _ComonDataDesc.SignIsSeparate.Value;
+        public SignPosition? SignPosition => _ComonDataDesc?.SignPosition?.Value;
+        public bool IsSynchronized => _ComonDataDesc?.IsSynchronized != null && _ComonDataDesc.IsSynchronized.Value;
+        public SymbolReference ObjectReferenceClass => _ComonDataDesc?.ObjectReferenceClass;
+
         #endregion
     }
 
