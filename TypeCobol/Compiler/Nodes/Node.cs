@@ -412,7 +412,27 @@ namespace TypeCobol.Compiler.Nodes {
         /// <summary>
         /// Allows to store the used storage areas and their fully qualified Name. 
         /// </summary>
-        public Dictionary<StorageArea, string> QualifiedStorageAreas { get; set; }
+        public Dictionary<StorageArea, List<string>> QualifiedStorageAreas { get; set; }
+
+        /// <summary>
+        /// Get the fully qualified name used to reference the DataDefinition referenced by this StorageArea
+        ///
+        /// For a DataDefinition outside a typedef, this its qualified name
+        /// For a DataDefinition in a typedef, this is its qualified name inside the typedef and the qualified name of the DataDefinition that use this type
+        /// </summary>
+        /// <param name="storageArea"></param>
+        /// <returns></returns>
+        public string GetQualifiedName(StorageArea storageArea)
+        {
+            if (this.QualifiedStorageAreas[storageArea] == null)
+            {
+                return GetDataDefinitionFromStorageAreaDictionary(storageArea).QualifiedName.ToString();
+            }
+            else
+            {
+                return string.Join(".", this.QualifiedStorageAreas[storageArea]);
+            }
+        }
 
         private List<Diagnostic> _Diagnostics;
 
@@ -717,13 +737,15 @@ namespace TypeCobol.Compiler.Nodes {
         /// The tuple stores the complete qualified name of the corresponding node (as string) and the DataDefintion.
         /// Node properties are context dependent and the tuple ensures the retrieved DataDefintion is consistent with the context
         /// </summary>
-        public IDictionary<StorageArea, Tuple<string,DataDefinition>> StorageAreaReadsDataDefinition { get; internal set; }
+        public IDictionary<StorageArea, DataDefinition> StorageAreaReadsDataDefinition { get; internal set; }
         /// <summary>
         /// Dictionary that contains pairs of StorageArea and Tuple "string,DataDefintion" for the Write Area
         /// The tuple stores the complete qualified name of the corresponding node (as string) and the DataDefintion.
         /// Node properties are context dependent and the tuple ensures the retrieved DataDefintion is consistent with the context
         /// </summary>
-        public IDictionary<StorageArea, Tuple<string,DataDefinition>> StorageAreaWritesDataDefinition { get; internal set; }
+        public IDictionary<StorageArea, DataDefinition> StorageAreaWritesDataDefinition { get; internal set; }
+
+
 
         /// <summary>
         /// Search both dictionaries for a given StorageArea
@@ -735,7 +757,7 @@ namespace TypeCobol.Compiler.Nodes {
         /// <returns>Correpsonding DataDefinition</returns>
         public DataDefinition GetDataDefinitionFromStorageAreaDictionary(StorageArea searchedStorageArea, bool? isReadDataDefiniton=null)
         {
-            Tuple<string, DataDefinition> searchedElem = null;
+            DataDefinition searchedElem = null;
             if (isReadDataDefiniton == null)
             {
                 StorageAreaReadsDataDefinition?.TryGetValue(
@@ -757,12 +779,12 @@ namespace TypeCobol.Compiler.Nodes {
                 StorageAreaWritesDataDefinition?.TryGetValue(
                     searchedStorageArea, out searchedElem);
             }
-            return searchedElem?.Item2;
+            return searchedElem;
         }
         
         public DataDefinition GetDataDefinitionForQualifiedName(QualifiedName qualifiedName, bool? isReadDictionary=null)
         {
-            Tuple<string, DataDefinition> searchedElem = null;
+            DataDefinition searchedElem = null;
             if (isReadDictionary.HasValue)
             {
                 searchedElem = isReadDictionary.Value
@@ -778,7 +800,7 @@ namespace TypeCobol.Compiler.Nodes {
 
             }
 
-            return searchedElem?.Item2;
+            return searchedElem;
         }
     }
 

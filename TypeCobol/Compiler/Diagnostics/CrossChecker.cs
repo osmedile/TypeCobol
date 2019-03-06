@@ -448,7 +448,8 @@ namespace TypeCobol.Compiler.Diagnostics
                     // Multiline Version
                     //errorMessage += Environment.NewLine + "\t" + symbol.Key.Replace(".", "::");
                     // Inline version
-                    errorMessage += (isFirst ? "" : " | ") + symbol.Key.Replace(".", "::");
+                    //                                        if qualified name list is not null, create a string          otherwise is the qualified name of the DataDefinition
+                    errorMessage += (isFirst ? "" : " | ") + (symbol.Key != null ? string.Join("::", symbol.Key) : symbol.Value.QualifiedName.ToString().Replace(".", "::"));
                     isFirst = false;
                 }
                 DiagnosticUtils.AddError(node, errorMessage, area.SymbolReference);
@@ -456,7 +457,7 @@ namespace TypeCobol.Compiler.Diagnostics
             else if (foundCount == 1)
             {
                 var dataDefinitionFound = found.First();
-                string completeQualifiedName = foundQualified.First().Key;
+                var completeQualifiedName = foundQualified.First().Key;
 
                 if (foundQualified.Count == 1)
                 {
@@ -468,18 +469,18 @@ namespace TypeCobol.Compiler.Diagnostics
                     //need to initialize the dictionaries
                     if (node.StorageAreaReadsDataDefinition == null)
                     {
-                        node.StorageAreaReadsDataDefinition = new Dictionary<StorageArea, Tuple<string, DataDefinition>>();
+                        node.StorageAreaReadsDataDefinition = new Dictionary<StorageArea, DataDefinition>();
                     }
-                    node.StorageAreaReadsDataDefinition.Add(storageArea,new Tuple<string, DataDefinition>(completeQualifiedName,dataDefinitionFound));
+                    node.StorageAreaReadsDataDefinition.Add(storageArea,dataDefinitionFound);
                 }
                 else
                 {
                     //need to initialize the dictionaries
                     if (node.StorageAreaWritesDataDefinition == null)
                     {
-                        node.StorageAreaWritesDataDefinition = new Dictionary<StorageArea, Tuple<string, DataDefinition>>();
+                        node.StorageAreaWritesDataDefinition = new Dictionary<StorageArea, DataDefinition>();
                     }
-                    node.StorageAreaWritesDataDefinition.Add(storageArea,new Tuple<string, DataDefinition>(completeQualifiedName,dataDefinitionFound));
+                    node.StorageAreaWritesDataDefinition.Add(storageArea,dataDefinitionFound);
                 }
 
                 return dataDefinitionFound;
@@ -488,7 +489,7 @@ namespace TypeCobol.Compiler.Diagnostics
             return null;
         }
 
-        private static void IndexAndFlagDataDefiniton(string completeQualifiedName, DataDefinition dataDefinition,
+        private static void IndexAndFlagDataDefiniton(List<string> completeQualifiedName, DataDefinition dataDefinition,
             Node node, StorageArea area, StorageArea storageArea)
         {
             if (dataDefinition.IsIndex)
@@ -611,11 +612,11 @@ namespace TypeCobol.Compiler.Diagnostics
         }
 
         private static void FlagNodeAndCreateQualifiedStorageAreas(Node.Flag flag, Node node, StorageArea storageArea,
-            string completeQualifiedName)
+            List<string> completeQualifiedName)
         {
             node.SetFlag(flag, true);
             if (node.QualifiedStorageAreas == null)
-                node.QualifiedStorageAreas = new Dictionary<StorageArea, string>();
+                node.QualifiedStorageAreas = new Dictionary<StorageArea, List<string>>();
 
             if (!node.QualifiedStorageAreas.ContainsKey(storageArea))
                 node.QualifiedStorageAreas.Add(storageArea, completeQualifiedName);
@@ -715,13 +716,13 @@ namespace TypeCobol.Compiler.Diagnostics
 
             if (sent == null || wname == null) return; //Both items needed
             //var wsymbol = CrossCompleteChecker.CheckVariable(node, wname,false);
-            Tuple<string, DataDefinition> searchExistingDataDefinition;
+            DataDefinition searchExistingDataDefinition;
             DataDefinition wsymbol = null;
             //check if dico not null
             if (node.StorageAreaWritesDataDefinition != null)
             {
                 node.StorageAreaWritesDataDefinition.TryGetValue(wname, out searchExistingDataDefinition);
-                wsymbol = searchExistingDataDefinition?.Item2;
+                wsymbol = searchExistingDataDefinition;
             }
 
 
@@ -742,7 +743,7 @@ namespace TypeCobol.Compiler.Diagnostics
                 if (node.StorageAreaReadsDataDefinition != null)
                 {
                     node.StorageAreaReadsDataDefinition.TryGetValue((StorageArea)sent, out searchExistingDataDefinition);
-                    rsymbol = searchExistingDataDefinition?.Item2;
+                    rsymbol = searchExistingDataDefinition;
                 }
 
                 if (rsymbol != null)
