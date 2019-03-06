@@ -415,10 +415,10 @@ namespace TypeCobol.Compiler.CodeModel
 
         //After that, the algorithm will rapidly return to the first foreach done on candidates inside GetVariablesExplicitWithQualifiedName
         //And launch the same mechanic, but this time with no success, because we are going to immediately find a terminal variable. 
-        public List<KeyValuePair<string, DataDefinition>> GetVariablesExplicitWithQualifiedName(QualifiedName name,
+        public List<KeyValuePair<List<string>, DataDefinition>> GetVariablesExplicitWithQualifiedName(QualifiedName name,
             TypeDefinition typeDefContext = null)
         {
-            List<KeyValuePair<string, DataDefinition>> foundedVariables = new List<KeyValuePair<string, DataDefinition>>();
+            var foundedVariables = new List<KeyValuePair<List<string>, DataDefinition>>();
 
 
             #region Get variables declared under Type
@@ -444,8 +444,7 @@ namespace TypeCobol.Compiler.CodeModel
             {
                 completeQualifiedNames[i].Reverse();
                 foundedVariables.Add(
-                    new KeyValuePair<string, DataDefinition>(string.Join(".", completeQualifiedNames[i]),
-                        foundedVar));
+                    new KeyValuePair<List<string>, DataDefinition>(completeQualifiedNames[i], foundedVar));
                 i++;
 
                 if (completeQualifiedNames.Count == i)
@@ -482,7 +481,7 @@ namespace TypeCobol.Compiler.CodeModel
         /// <param name="name">QualifiedName of the symbol looked for</param>
         /// <param name="nameIndex">Total count of the parts of the qualifiedName 'name' </param>
         /// <param name="currentDataDefinition">Currently checked DataDefinition</param>
-        public void MatchVariableOutsideType(List<KeyValuePair<string, DataDefinition>> found, in DataDefinition headDataDefinition, in QualifiedName name,
+        public void MatchVariableOutsideType(List<KeyValuePair<List<string>, DataDefinition>> found, in DataDefinition headDataDefinition, in QualifiedName name,
             int nameIndex, in DataDefinition currentDataDefinition)
         {
 
@@ -494,7 +493,7 @@ namespace TypeCobol.Compiler.CodeModel
                 { //We reached the end of the name : it's a complete match
                     
                     //we are on a variable
-                    found.Add(new KeyValuePair<string, DataDefinition>(headDataDefinition.QualifiedName.ToString(), headDataDefinition));
+                    found.Add(new KeyValuePair<List<string>, DataDefinition>(null, headDataDefinition));
 
                     //End here
                     return;
