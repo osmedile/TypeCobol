@@ -46,11 +46,19 @@ namespace TypeCobol.Compiler.Diagnostics
             }
 
             FunctionCallChecker.OnNode(node);
-            TypedDeclarationChecker.OnNode(node);
-            RenamesChecker.OnNode(node);
-            ReadOnlyPropertiesChecker.OnNode(node);
-            GlobalStorageSectionChecker.OnNode(node);
 
+            return true;
+        }
+
+        
+        public override bool Visit(GlobalStorageSection globalStorageSection)
+        {
+            GlobalStorageSectionChecker.OnNode(globalStorageSection);
+            return true;
+        }
+        public override bool Visit(DataRenames dataRenames)
+        {
+            RenamesChecker.OnNode(dataRenames);
             return true;
         }
 
@@ -267,11 +275,15 @@ namespace TypeCobol.Compiler.Diagnostics
         public override bool VisitVariableWriter(VariableWriter variableWriter)
         {
             WriteTypeConsistencyChecker.OnNode(variableWriter, CurrentNode);
+            ReadOnlyPropertiesChecker.OnNode(variableWriter, CurrentNode);
+
             return true;
         }
 
         public override bool Visit(DataDefinition dataDefinition)
         {
+            TypedDeclarationChecker.OnNode(dataDefinition);
+
             CommonDataDescriptionAndDataRedefines commonDataDataDefinitionCodeElement =
                 dataDefinition.CodeElement as CommonDataDescriptionAndDataRedefines;
             if (commonDataDataDefinitionCodeElement!=null)
@@ -349,7 +361,7 @@ namespace TypeCobol.Compiler.Diagnostics
                 return true;
             }
 
-            DataDefinitionChecker.OnNode(dataDefinition);
+            DataDefinitionChecker.OnNode(dataDefinition, commonDataDataDefinitionCodeElement);
 
             return true;
         }
@@ -698,12 +710,8 @@ namespace TypeCobol.Compiler.Diagnostics
 
     class WriteTypeConsistencyChecker
     {
-        public static void OnNode(VariableWriter variableWriter, Node node)
+        public static void OnNode([NotNull] VariableWriter variableWriter, Node node)
         {
-            if (variableWriter == null)
-            {
-                return; //not our job
-            }
             var variables = variableWriter.VariablesWritten;
             foreach (var variable in variables) CheckVariable(node, variable.Key, variable.Value);
         }

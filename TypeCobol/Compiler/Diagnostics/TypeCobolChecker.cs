@@ -21,14 +21,8 @@ namespace TypeCobol.Compiler.Diagnostics
     {
         private static string[] READONLY_DATATYPES = {"DATE",};
 
-        public static void OnNode([NotNull] Node node)
+        public static void OnNode([NotNull] VariableWriter variableWriter, [NotNull] Node node)
         {
-            VariableWriter variableWriter = node as VariableWriter;
-            if (variableWriter == null)
-            {
-                return; //not our job
-            }
-
             var element = node.CodeElement as VariableWriter;
             if (element?.VariablesWritten != null)
                 foreach (var pair in element.VariablesWritten)
@@ -58,15 +52,15 @@ namespace TypeCobol.Compiler.Diagnostics
 
     class DataDefinitionChecker
     {
-        public static void OnNode(Node node, DataDescriptionEntry dataEntry = null)
+        public static void OnNode(Node node, [CanBeNull] CommonDataDescriptionAndDataRedefines dataEntry)
         {
-            if (dataEntry == null && node is DataDefinition)
+            if (dataEntry == null)
             {
-                dataEntry = node.CodeElement as DataDescriptionEntry;
+                return;//not my job
             }
 
 
-            if (dataEntry?.Usage != null &&
+            if (dataEntry.Usage != null &&
                 (dataEntry.Usage.Value == DataUsage.FloatingPoint || dataEntry.Usage.Value == DataUsage.LongFloatingPoint) &&
                 dataEntry.Picture != null)
             {
@@ -913,13 +907,13 @@ namespace TypeCobol.Compiler.Diagnostics
 
     public class SetStatementChecker
     {
-        public static void CheckStatement(Node node)
+        public static void CheckStatement([NotNull] Set node)
         {
             var statement = node.CodeElement as SetStatementForIndexes;
             if (statement != null)
             {
                 // Check receivers (incremented) 
-                var receivers = node?.StorageAreaWritesDataDefinition?.Values;
+                var receivers = node.StorageAreaWritesDataDefinition?.Values;
                 if (receivers == null)
                     return;
                 bool containsPointers = false;
@@ -1001,14 +995,12 @@ namespace TypeCobol.Compiler.Diagnostics
 
     public class GlobalStorageSectionChecker
     {
-        public static void OnNode([NotNull] Node node)
+        public static void OnNode([NotNull] GlobalStorageSection globalStorageSection)
         {
-            var globalStorageSection = node as GlobalStorageSection;
-            if (globalStorageSection == null) return;
 
             //Check if GlobalStorageSection is declared in main program Rule - GLOBALSS_ONLY_IN_MAIN 
             if (!globalStorageSection.GetProgramNode().IsMainProgram)
-                DiagnosticUtils.AddError(node,
+                DiagnosticUtils.AddError(globalStorageSection,
                     "GLOBAL-STORAGE SECTION is only authorized in the main program of this source file.");
 
             //Check every GlobalStorageSection DataDefinition (children)
