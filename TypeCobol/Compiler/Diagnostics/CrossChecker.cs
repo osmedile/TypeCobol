@@ -366,6 +366,15 @@ namespace TypeCobol.Compiler.Diagnostics
             return true;
         }
 
+        public override bool Visit(DataDescription dataDescription)
+        {
+            if (dataDescription.IsFlagSet(Node.Flag.GlobalStorageSection))
+            {
+                GlobalStorageSectionChecker.CheckGlobalStorageChildren(dataDescription, dataDescription.CodeElement());
+            }
+            return true;
+        }
+
         /// <summary>
         /// Test if the received DataDefinition has other children than DataConditionEntry or DataRenamesEntry
         /// </summary>

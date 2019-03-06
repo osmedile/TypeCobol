@@ -997,48 +997,33 @@ namespace TypeCobol.Compiler.Diagnostics
     {
         public static void OnNode([NotNull] GlobalStorageSection globalStorageSection)
         {
-
             //Check if GlobalStorageSection is declared in main program Rule - GLOBALSS_ONLY_IN_MAIN 
             if (!globalStorageSection.GetProgramNode().IsMainProgram)
                 DiagnosticUtils.AddError(globalStorageSection,
                     "GLOBAL-STORAGE SECTION is only authorized in the main program of this source file.");
-
-            //Check every GlobalStorageSection DataDefinition (children)
-            foreach (var child in globalStorageSection.Children)
-            {
-                CheckGlobalStorageChildren(child);
-            }
         }
 
-        private static void CheckGlobalStorageChildren(Node node)
+        public static void CheckGlobalStorageChildren([NotNull] DataDefinition dataDefinition, [NotNull] CommonDataDescriptionAndDataRedefines commonDataDescription)
         {
-            var dataDefinition = node as DataDefinition;
-            if (dataDefinition == null) return;
-
             //Check variable LevelNumber Rule - GLOBALSS_LIMIT48 
-            var data = dataDefinition.CodeElement as DataDefinitionEntry;
-            if (data?.LevelNumber != null && data.LevelNumber.Value == 77)
-                DiagnosticUtils.AddError(node,
-                    "Level 77 is forbidden in global-storage section.", data);
+            if (commonDataDescription.LevelNumber?.Value == 77)
+            {
+                DiagnosticUtils.AddError(dataDefinition,
+                    "Level 77 is forbidden in global-storage section.", commonDataDescription);
+            }
 
             //Check variable no Global / External keyword 
             // Rules : - GLOBALSS_NO_GLOBAL_KEYWORD - GLOBALSS_NO_EXTERNAL 
-            var dataDescription = dataDefinition.CodeElement as DataDescriptionEntry;
-            if (dataDescription != null)
+            if (commonDataDescription.IsGlobal)
             {
-                if (dataDescription.IsGlobal) // GLOBALSS_NO_GLOBAL_KEYWORD 
-                    DiagnosticUtils.AddError(dataDefinition, "Illegal GLOBAL clause in GLOBAL-STORAGE SECTION.", dataDescription);
-                if (dataDescription.IsExternal) //GLOBALSS_NO_EXTERNAL
-                    DiagnosticUtils.AddError(dataDefinition, "Illegal EXTERNAL clause in GLOBAL-STORAGE SECTION.", dataDescription);
+                DiagnosticUtils.AddError(dataDefinition, "Illegal GLOBAL clause in GLOBAL-STORAGE SECTION.", commonDataDescription);
             }
 
-
-            if (node.Children.Count > 0)
+            //Check level 1 to avoid an unnecessary cast
+            if (commonDataDescription.LevelNumber?.Value == 1 && dataDefinition.CodeElement is DataDescriptionEntry dataDescriptionEntry)
             {
-                foreach (var child in node.Children)
-                {
-                    CheckGlobalStorageChildren(child);
-                }
+                if (dataDescriptionEntry.IsExternal) //GLOBALSS_NO_EXTERNAL
+                    DiagnosticUtils.AddError(dataDefinition, "Illegal EXTERNAL clause in GLOBAL-STORAGE SECTION.", dataDescriptionEntry);
             }
         }
 
