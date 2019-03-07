@@ -432,7 +432,7 @@ namespace TypeCobol.Compiler.CodeModel
             IList<string> names;
             if (name.IsQualifiedReference)
             {
-                names = ((QualifiedSymbolReference)name).AsStringList();
+                names = ((QualifiedSymbolReference)name).AsStringListHeadLast();
                 
             }
             else
@@ -874,7 +874,7 @@ namespace TypeCobol.Compiler.CodeModel
         {
             if(symbolReference.IsQualifiedReference)
             {
-                IList<string> typeRef = ((QualifiedSymbolReference)symbolReference).AsStringList();
+                IList<string> typeRef = ((QualifiedSymbolReference)symbolReference).AsStringListHeadLast();
                 System.Diagnostics.Debug.Assert(typeRef.Count == 2);
                 
                 return GetType(typeRef[1], typeRef[0]);

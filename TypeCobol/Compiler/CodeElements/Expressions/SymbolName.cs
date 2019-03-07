@@ -310,7 +310,14 @@ namespace TypeCobol.Compiler.CodeElements
 			return refs;
 		}
 
-        public IList<string> AsStringList()
+        /// <summary>
+        ///           Tail  <-----> Head
+        ///           Var1::Var10::Var100
+        ///           MyPgm::MyType
+        ///           MyPgm::MyProcedure
+        /// </summary>
+        /// <returns></returns>
+        public IList<string> AsStringListHeadLast()
         {
             var refs = new List<string>();
             AsStringList(refs);
