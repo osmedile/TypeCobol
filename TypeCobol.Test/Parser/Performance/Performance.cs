@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TypeCobol.Compiler;
+using TypeCobol.Compiler.Diagnostics;
 using TypeCobol.Compiler.Directives;
 using TypeCobol.Compiler.Text;
 using TypeCobol.Test.Compiler.Parser;
@@ -103,7 +104,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestProperty("Time", "long")]
         public void Incremental_Cobol85_NoRedefines()
         {
-            IncrementalPerformance2(Cobol85, 65811, "           MOVE WS-CMM010-MOIS-BIN TO WS-CMM010-MM                      CMM010AK");
+            IncrementalPerformance2(Cobol85, 65809, "           MOVE WS-CMM010-MOIS-BIN TO WS-CMM010-MM       ");
         }
 
         [TestMethod]
@@ -185,6 +186,12 @@ namespace TypeCobol.Test.Parser.Performance
                 
                 // Execute a second (incremental) compilation
                 compiler.CompileOnce();
+                //Be sure that there is no error, otherwise parsing can be incomplete
+                if(compiler.CompilationResultsForProgram.AllDiagnostics().Any(d => d.Info.Severity == Severity.Error))
+                {
+                    throw new Exception("Error diagnostics Detected");
+                }
+
                 //Accumulate results
                 stats.AverageTextUpdateTime                 += compiler.CompilationResultsForProgram.PerfStatsForText.LastRefreshTime;
                 stats.AverageScannerTime                    += compiler.CompilationResultsForProgram.PerfStatsForScanner.LastRefreshTime;
@@ -271,7 +278,7 @@ namespace TypeCobol.Test.Parser.Performance
             stats.IterationNumber = 20;
             //Warmup before measurement
             var documentWarmup = new TypeCobol.Parser();
-            var optionsWarmup = new TypeCobolOptions
+            var options = new TypeCobolOptions
             {
                 ExecToStep = ExecutionStep.CrossCheck,
 #if EUROINFO_RULES
@@ -280,23 +287,23 @@ namespace TypeCobol.Test.Parser.Performance
             };
             
 
+
+            //Warmup
+            documentWarmup = new TypeCobol.Parser();
+            documentWarmup.Init(fullPath, options, format, copiesFolder);
+            documentWarmup.Parse(fullPath);
+            //Be sure that there is no error, otherwise parsing can be incomplete
+            if (documentWarmup.Results.AllDiagnostics().Any(d => d.Info.Severity == Severity.Error))
+            {
+                throw new Exception("Error diagnostics Detected");
+            }
+
             for (int i = 0; i < stats.IterationNumber; i++)
             {
-
-                documentWarmup = new TypeCobol.Parser();
-                documentWarmup.Init(fullPath, optionsWarmup, format, copiesFolder);
-                documentWarmup.Parse(fullPath);
-
                 var document = new TypeCobol.Parser();
-                var options = new TypeCobolOptions
-                {
-                    ExecToStep = ExecutionStep.CrossCheck,
-#if EUROINFO_RULES
-                    AutoRemarksEnable = true
-#endif
-                };
                 document.Init(fullPath, options, format, copiesFolder);
                 document.Parse(fullPath);
+
                 stats.AverageTextUpdateTime += document.Results.PerfStatsForText.FirstCompilationTime;
                 stats.AverageScannerTime += document.Results.PerfStatsForScanner.FirstCompilationTime;
                 stats.AveragePreprocessorTime += document.Results.PerfStatsForPreprocessor.FirstCompilationTime;
