@@ -83,6 +83,31 @@ namespace TypeCobol.Test.Parser.Performance
         private static readonly string UseALotOfTypes_100Times = CNAF_TC_FOLDER + "CGMV01-UseAlotOfTypes-100Times.tcbl";
 
 
+        /// <summary>
+        /// Cobol85 with deep variables declaration
+        ///
+        /// The goal is to see if variable resolution is fast.
+        ///
+        /// All variables referenced are from the last part (which is the deepest type of DeepTypes TC file).
+        /// 
+        /// </summary>
+        private static readonly string DeepVariables = CNAF_TC_FOLDER + "CGMV01-DeepVariables.cbl";
+        /// <summary>
+        /// TypeCobol with deep types linked between each other.
+        /// This is the TypeCobol version of DeppVariables.
+        ///
+        /// The goal is to see if type linking, type max depth checking and variable resolution is fast.
+        /// All variable resolution are the same that DeppVariables.
+        ///
+        /// All variables referenced are from the deepest type.
+        /// 
+        /// </summary>
+        private static readonly string DeepTypes = CNAF_TC_FOLDER + "CGMV01-DeepTypes.tcbl";
+
+
+        
+
+
 
 
         [TestMethod]
@@ -145,6 +170,22 @@ namespace TypeCobol.Test.Parser.Performance
         public void Incremental_TC_UseALotOfTypes_100Times()
         {
             IncrementalPerformance2(UseALotOfTypes_100Times,50, "                                                                                ");
+        }
+
+        [TestMethod]
+        [TestCategory("Performance")]
+        [TestProperty("Time", "long")]
+        public void Incremental_Cobol85_DeepVariables()
+        {
+            IncrementalPerformance2(DeepVariables,20535, "                                                                                ");
+        }
+
+        [TestMethod]
+        [TestCategory("Performance")]
+        [TestProperty("Time", "long")]
+        public void Incremental_TC_DeepTypes()
+        {
+            IncrementalPerformance2(DeepTypes,20692, "                                                                                ");
         }
 
         private void IncrementalPerformance2(string relativePath, int newLineIndex, string newLineText)
@@ -261,6 +302,22 @@ namespace TypeCobol.Test.Parser.Performance
         public void FullParsing_TC_UseALotOfTypes_100Times()
         {
             FullParsing(UseALotOfTypes_100Times);
+        }
+
+        [TestMethod]
+        [TestCategory("Performance")]
+        [TestProperty("Time", "long")]
+        public void FullParsing_Cobol85_DeepVariables()
+        {
+            FullParsing(DeepVariables);
+        }
+
+        [TestMethod]
+        [TestCategory("Performance")]
+        [TestProperty("Time", "long")]
+        public void FullParsing_TC_DeepTypes()
+        {
+            FullParsing(DeepTypes);
         }
 
 
