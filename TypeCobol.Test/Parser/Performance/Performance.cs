@@ -32,13 +32,13 @@ namespace TypeCobol.Test.Parser.Performance
         /// With this program we can compare performance pure Cobol85 and a program written with
         /// TypeCobol features(typedef, procedure, global-storage, operator ::, ...)
         /// </summary>
-        private static readonly string Cobol85 = CNAF_TC_FOLDER + "CGMV01-Cobol85-NoRedefines.cbl";
+        private static readonly string Cobol85_NoRedefines = CNAF_TC_FOLDER + "CGMV01-Cobol85-NoRedefines.cbl";
 
         /// <summary>
-        /// Almost like Cobol85 file but replace almost level 01 declaration with a typedef.
+        /// Almost like Cobol85_NoRedefines file but replace almost level 01 declaration with a typedef.
         /// It's like replacing COPY with typedef
         ///
-        /// Performance should be similar to Cobol85
+        /// Performance should be similar to Cobol85_NoRedefines
         /// </summary>
         private static readonly string BigTypes_NoProcedure = CNAF_TC_FOLDER + "CGMV01-BigTypes.tcbl";
 
@@ -56,12 +56,12 @@ namespace TypeCobol.Test.Parser.Performance
         /// <summary>
         /// Performance should be similar to BigTypes_NoProcedure
         ///
-        /// This file is almost like Cobol85 except all variables are declared in Global-storage.
+        /// This file is almost like Cobol85_NoRedefines except all variables are declared in Global-storage.
         /// Linkage section is still here
         ///
         /// The goal is to be sure that no checkers (or any code) make extra works when we are under the global-storage
         ///
-        /// Performance should be similar to Cobol85
+        /// Performance should be similar to Cobol85_NoRedefines
         /// </summary>
         private static readonly string GlobalStorage = CNAF_TC_FOLDER + "CGMV01-GlobalStoragey.tcbl";
 
@@ -79,6 +79,8 @@ namespace TypeCobol.Test.Parser.Performance
 
         /// <summary>
         /// Same as UseALotOfTypes_1Times_Reference but declare a variable with a type 100 times
+        ///
+        /// Performance should be similar to UseALotOfTypes_1Times_Reference
         /// </summary>
         private static readonly string UseALotOfTypes_100Times = CNAF_TC_FOLDER + "CGMV01-UseAlotOfTypes-100Times.tcbl";
 
@@ -129,7 +131,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestProperty("Time", "long")]
         public void Incremental_Cobol85_NoRedefines()
         {
-            IncrementalPerformance2(Cobol85, 65809, "           MOVE WS-CMM010-MOIS-BIN TO WS-CMM010-MM       ");
+            IncrementalPerformance2(Cobol85_NoRedefines, 65809, "           MOVE WS-CMM010-MOIS-BIN TO WS-CMM010-MM       ");
         }
 
         [TestMethod]
@@ -262,7 +264,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestProperty("Time", "long")]
         public void FullParsing_Cobol85_NoRedefines()
         {
-            FullParsing(Cobol85);
+            FullParsing(Cobol85_NoRedefines);
         }
 
         [TestMethod]
