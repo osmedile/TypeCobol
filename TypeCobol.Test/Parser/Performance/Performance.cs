@@ -84,6 +84,14 @@ namespace TypeCobol.Test.Parser.Performance
         /// </summary>
         private static readonly string UseALotOfTypes_100Times = CNAF_TC_FOLDER + "CGMV01-UseAlotOfTypes-100Times.tcbl";
 
+        /// <summary>
+        /// Same as UseALotOfTypes_100Times but the type are used as parameter of a procedure.
+
+        /// Performance should be similar to UseALotOfTypes_1Times_Reference
+        /// </summary>
+        private static readonly string UseALotOfTypes_WithProc_100Times = CNAF_TC_FOLDER + "CGMV01-UseAlotOfTypes-WithProc-100Times.tcbl";
+
+        
 
         /// <summary>
         /// Cobol85 with deep variables declaration
@@ -129,7 +137,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void Incremental_Cobol85_NoRedefines()
+        public void Part1_Incremental_Cobol85_NoRedefines()
         {
             IncrementalPerformance2(Cobol85_NoRedefines, 65809, "           MOVE WS-CMM010-MOIS-BIN TO WS-CMM010-MM       ");
         }
@@ -137,7 +145,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void Incremental_TC_BigTypesNoProcedure()
+        public void Part1_Incremental_TC_BigTypesNoProcedure()
         {
             IncrementalPerformance2(BigTypes_NoProcedure, 65897, "           MOVE WS-CMM010-MOIS-BIN TO WS-CMM010-MM                      CMM010AK");
         }
@@ -145,7 +153,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void Incremental_TC_BigTypesWithProcedure()
+        public void Part1_Incremental_TC_BigTypesWithProcedure()
         {
             IncrementalPerformance2(BigTypes_1Procedure,65899, "           MOVE WS-CMM010-MOIS-BIN TO WS-CMM010-MM                      CMM010AK");
         }
@@ -153,7 +161,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void Incremental_TC_GlobaStorage()
+        public void Part1_Incremental_TC_GlobaStorage()
         {
             IncrementalPerformance2(BigTypes_1Procedure,65807, "           MOVE WS-CMM010-MOIS-BIN TO WS-CMM010-MM                      CMM010AK");
         }
@@ -161,7 +169,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void Incremental_TC_UseALotOfTypes_1Times_Reference()
+        public void Part2_Incremental_TC_UseALotOfTypes_001Time()
         {
             IncrementalPerformance2(UseALotOfTypes_1Times_Reference,50, "                                                                                ");
         }
@@ -169,15 +177,22 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void Incremental_TC_UseALotOfTypes_100Times()
+        public void Part2_Incremental_TC_UseALotOfTypes_100Times()
         {
             IncrementalPerformance2(UseALotOfTypes_100Times,50, "                                                                                ");
+        }
+        [TestMethod]
+        [TestCategory("Performance")]
+        [TestProperty("Time", "long")]
+        public void Part2_Incremental_TC_UseALotOfTypes_WithProc_100Times()
+        {
+            IncrementalPerformance2(UseALotOfTypes_WithProc_100Times, 50, "                                                                                ");
         }
 
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void Incremental_Cobol85_DeepVariables()
+        public void Part3_Incremental_Cobol85_DeepVariables()
         {
             IncrementalPerformance2(DeepVariables,20535, "                                                                                ");
         }
@@ -185,7 +200,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void Incremental_TC_DeepTypes()
+        public void Part3_Incremental_TC_DeepTypes()
         {
             IncrementalPerformance2(DeepTypes,20692, "                                                                                ");
         }
@@ -262,7 +277,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void FullParsing_Cobol85_NoRedefines()
+        public void Part1_FullParsing_Cobol85_NoRedefines()
         {
             FullParsing(Cobol85_NoRedefines);
         }
@@ -270,14 +285,14 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void FullParsing_TC_BigTypesNoProcedure()
+        public void Part1_FullParsing_TC_BigTypesNoProcedure()
         {
             FullParsing( BigTypes_NoProcedure);
         }
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void FullParsing_TC_BigTypesWithProcedure()
+        public void Part1_FullParsing_TC_BigTypesWithProcedure()
         {
             FullParsing( BigTypes_1Procedure);
         }
@@ -285,7 +300,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void FullParsing_TC_GlobalStorage()
+        public void Part1_FullParsing_TC_GlobalStorage()
         {
             FullParsing(GlobalStorage);
         }
@@ -293,7 +308,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void FullParsing_TC_UseALotOfTypes_1Times_Reference()
+        public void Part2_FullParsing_TC_UseALotOfTypes_001Time()
         {
             FullParsing(UseALotOfTypes_1Times_Reference);
         }
@@ -301,7 +316,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void FullParsing_TC_UseALotOfTypes_100Times()
+        public void Part2_FullParsing_TC_UseALotOfTypes_100Times()
         {
             FullParsing(UseALotOfTypes_100Times);
         }
@@ -309,7 +324,15 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void FullParsing_Cobol85_DeepVariables()
+        public void Part2_FullParsing_TC_UseALotOfTypes_WithProc_100Times()
+        {
+            FullParsing(UseALotOfTypes_WithProc_100Times);
+        }
+
+        [TestMethod]
+        [TestCategory("Performance")]
+        [TestProperty("Time", "long")]
+        public void Part3_FullParsing_Cobol85_DeepVariables()
         {
             FullParsing(DeepVariables);
         }
@@ -317,7 +340,7 @@ namespace TypeCobol.Test.Parser.Performance
         [TestMethod]
         [TestCategory("Performance")]
         [TestProperty("Time", "long")]
-        public void FullParsing_TC_DeepTypes()
+        public void Part3_FullParsing_TC_DeepTypes()
         {
             FullParsing(DeepTypes);
         }

@@ -5,12 +5,13 @@
       * procedures.
       *
       * The goal of this file is to check that there is no performance
-      * penalty by declaring a lot of variable with a type
+      * penality by declaring a lot of procedure with a typed variable.
       * The code doesn't use the variable, we just check the declaration
       * part
       *
-      * This file only 1 time the type.
-      * It serves as a reference for the other test
+      * This file use a procedure 100 times
+      * Each procedure use the same type.
+      *
       *
        IDENTIFICATION DIVISION.                                         
        PROGRAM-ID.    CGMV01.                                           
@@ -99,8 +100,9 @@
 
 
 
-      *Only 1 usage of type DFHCOMMAREA
+      *Start at 101 to count the number of declaration
        01 DFHCOMMAREA type DFHCOMMAREA.
+       
 
 
        01 DFHCOMMAREA typedef strict private.
@@ -16553,6 +16555,106 @@
               10 AZI3-RENOUV-APL                      PIC X.            CGLWAZI3
                  88 AZI3-FL-PAS-RENOUV-APL            VALUE 'N'.        CGLWAZI3
                  88 AZI3-FL-RENOUV-APL                VALUE 'O'.        CGLWAZI3
-      
+
        PROCEDURE DIVISION.
-       declare procedure Foo1 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo1 input varA  type DFHCOMMAREA. end-declare.
+       declare procedure Foo2 input varA  type DFHCOMMAREA. end-declare.
+       declare procedure Foo3 input varA  type DFHCOMMAREA. end-declare.
+       declare procedure Foo4 input varA  type DFHCOMMAREA. end-declare.
+       declare procedure Foo5 input varA  type DFHCOMMAREA. end-declare.
+       declare procedure Foo6 input varA  type DFHCOMMAREA. end-declare.
+       declare procedure Foo7 input varA  type DFHCOMMAREA. end-declare.
+       declare procedure Foo8 input varA  type DFHCOMMAREA. end-declare.
+       declare procedure Foo9 input varA  type DFHCOMMAREA. end-declare.
+       declare procedure Foo10 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo11 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo12 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo13 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo14 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo15 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo16 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo17 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo18 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo19 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo20 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo21 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo22 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo23 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo24 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo25 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo26 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo27 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo28 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo29 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo30 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo31 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo32 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo33 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo34 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo35 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo36 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo37 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo38 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo39 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo40 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo41 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo42 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo43 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo44 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo45 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo46 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo47 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo48 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo49 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo50 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo51 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo52 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo53 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo54 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo55 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo56 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo57 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo58 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo59 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo60 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo61 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo62 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo63 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo64 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo65 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo66 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo67 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo68 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo69 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo70 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo71 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo72 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo73 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo74 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo75 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo76 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo77 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo78 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo79 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo80 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo81 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo82 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo83 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo84 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo85 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo86 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo87 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo88 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo89 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo90 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo91 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo92 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo93 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo94 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo95 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo96 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo97 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo98 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo99 input varA type DFHCOMMAREA. end-declare.
+       declare procedure Foo100 input varA type DFHCOMMAREA. 
+       end-declare.
