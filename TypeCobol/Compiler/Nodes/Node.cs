@@ -412,7 +412,7 @@ namespace TypeCobol.Compiler.Nodes {
         /// <summary>
         /// Allows to store the used storage areas and their fully qualified Name. 
         /// </summary>
-        public Dictionary<StorageArea, List<string>> QualifiedStorageAreas { get; set; }
+        public Dictionary<StorageArea, DataDefinitionPath> QualifiedStorageAreas { get; set; }
 
         /// <summary>
         /// Get the fully qualified name used to reference the DataDefinition referenced by this StorageArea
@@ -430,7 +430,15 @@ namespace TypeCobol.Compiler.Nodes {
             }
             else
             {
-                return string.Join(".", this.QualifiedStorageAreas[storageArea]);
+                StringBuilder sb = new StringBuilder();
+                var currentDataDefinitionPath = this.QualifiedStorageAreas[storageArea];
+                while(currentDataDefinitionPath != null)
+                {
+                    sb.Append(currentDataDefinitionPath.CurrentDataDefinition.QualifiedName).Append('.');
+                    currentDataDefinitionPath = currentDataDefinitionPath.Parent;
+                }
+
+                return sb.ToString();
             }
         }
 

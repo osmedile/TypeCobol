@@ -378,7 +378,7 @@ namespace TypeCobol.Compiler.Diagnostics
         {
             if (dataDescription.IsFlagSet(Node.Flag.GlobalStorageSection))
             {
-                GlobalStorageSectionChecker.CheckGlobalStorageChildren(dataDescription, dataDescription.CodeElement());
+                GlobalStorageSectionChecker.CheckGlobalStorageChildren(dataDescription, dataDescription.CodeElement);
             }
             return true;
         }
@@ -486,11 +486,11 @@ namespace TypeCobol.Compiler.Diagnostics
             else if (foundCount == 1)
             {
                 var dataDefinitionFound = found.First();
-                var completeQualifiedName = foundQualified.First().Key;
+                var dataDefinitionPath = foundQualified.First().Key;
 
                 if (foundQualified.Count == 1)
                 {
-                    IndexAndFlagDataDefiniton(completeQualifiedName, dataDefinitionFound, node, area, storageArea);
+                    IndexAndFlagDataDefiniton(dataDefinitionPath, dataDefinitionFound, node, area, storageArea);
                 }
                 //add the found DataDefinition to a dictionary depending on the storage area type
                 if (isReadStorageArea)
@@ -518,7 +518,7 @@ namespace TypeCobol.Compiler.Diagnostics
             return null;
         }
 
-        private static void IndexAndFlagDataDefiniton(List<string> completeQualifiedName, DataDefinition dataDefinition,
+        private static void IndexAndFlagDataDefiniton(DataDefinitionPath dataDefinitionPath, DataDefinition dataDefinition,
             Node node, StorageArea area, StorageArea storageArea)
         {
             if (dataDefinition.IsIndex)
@@ -543,13 +543,12 @@ namespace TypeCobol.Compiler.Diagnostics
                 //Index name is qualified or belongs to a typedef
                 {
                     //Mark this node for generator
-                    FlagNodeAndCreateQualifiedStorageAreas(Node.Flag.NodeContainsIndex, node, storageArea,
-                        completeQualifiedName);
+                    FlagNodeAndCreateQualifiedStorageAreas(Node.Flag.NodeContainsIndex, node, storageArea, dataDefinitionPath);
 
                     foreach (var reference in index.GetReferences())
                     {
                         FlagNodeAndCreateQualifiedStorageAreas(Node.Flag.NodeContainsIndex, reference.Value,
-                            reference.Key, completeQualifiedName);
+                            reference.Key, dataDefinitionPath);
                     }
                 }
                 else if (!area.SymbolReference.IsQualifiedReference)
@@ -559,7 +558,7 @@ namespace TypeCobol.Compiler.Diagnostics
                     if(index.IsFlagSet(Node.Flag.IndexUsedWithQualifiedName))
                     {
                         FlagNodeAndCreateQualifiedStorageAreas(Node.Flag.NodeContainsIndex, node, storageArea,
-                            completeQualifiedName);
+                            dataDefinitionPath);
                     }
                 }
 
@@ -582,7 +581,7 @@ namespace TypeCobol.Compiler.Diagnostics
                     {
                         //Flag node has using a boolean variable + Add storage area into qualifiedStorageArea of the node. (Used in CodeGen)
                         FlagNodeAndCreateQualifiedStorageAreas(Node.Flag.NodeContainsBoolean, node, storageArea,
-                            completeQualifiedName);
+                            dataDefinitionPath);
                     }
                 }
 
@@ -641,14 +640,14 @@ namespace TypeCobol.Compiler.Diagnostics
         }
 
         private static void FlagNodeAndCreateQualifiedStorageAreas(Node.Flag flag, Node node, StorageArea storageArea,
-            List<string> completeQualifiedName)
+            DataDefinitionPath dataDefinitionPath)
         {
             node.SetFlag(flag, true);
             if (node.QualifiedStorageAreas == null)
-                node.QualifiedStorageAreas = new Dictionary<StorageArea, List<string>>();
+                node.QualifiedStorageAreas = new Dictionary<StorageArea, DataDefinitionPath>();
 
             if (!node.QualifiedStorageAreas.ContainsKey(storageArea))
-                node.QualifiedStorageAreas.Add(storageArea, completeQualifiedName);
+                node.QualifiedStorageAreas.Add(storageArea, dataDefinitionPath);
         }
     }
     
