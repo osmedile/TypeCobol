@@ -478,7 +478,7 @@ namespace TypeCobol.Compiler.Diagnostics
                     //errorMessage += Environment.NewLine + "\t" + symbol.Key.Replace(".", "::");
                     // Inline version
                     //                                        if qualified name list is not null, create a string          otherwise is the qualified name of the DataDefinition
-                    errorMessage += (isFirst ? "" : " | ") + (symbol.Key != null ? string.Join("::", symbol.Key) : symbol.Value.QualifiedName.ToString().Replace(".", "::"));
+                    errorMessage += (isFirst ? "" : " | ") + (symbol.Key != null ? symbol.Key.ToString().Replace(".", "::") : symbol.Value.QualifiedName.ToString().Replace(".", "::"));
                     isFirst = false;
                 }
                 DiagnosticUtils.AddError(node, errorMessage, area.SymbolReference);

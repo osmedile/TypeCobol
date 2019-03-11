@@ -310,6 +310,35 @@ namespace TypeCobol.Compiler.Nodes {
             }
         }
 
+        private QualifiedName _fixedVisualQualifiedName;
+        public virtual QualifiedName FixedVisualQualifiedName
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(Name)) return null;
+                if (_fixedVisualQualifiedName != null) return _fixedVisualQualifiedName;
+
+                List<string> qn = new List<string>() {Name};
+                var parent = this.Parent;
+                while (parent != null)
+                {
+                    if (!string.IsNullOrEmpty(parent.Name))
+                    {
+                        qn.Add(parent.Name);
+                    }
+
+                    parent = parent.Parent;
+                    if (parent is FunctionDeclaration) //If it's a procedure, we can exit we don't need the program name
+                        break;
+                    if (parent is Program)
+                        break;
+                }
+                qn.Reverse();
+                _fixedVisualQualifiedName = new URI(qn);
+                return _fixedVisualQualifiedName;
+            }
+        }
+
         /// <summary>Non-unique identifier of this node. Depends on CodeElement type and name (if applicable).</summary>
         public virtual string ID {
             get { return null; }
@@ -430,15 +459,7 @@ namespace TypeCobol.Compiler.Nodes {
             }
             else
             {
-                StringBuilder sb = new StringBuilder();
-                var currentDataDefinitionPath = this.QualifiedStorageAreas[storageArea];
-                while(currentDataDefinitionPath != null)
-                {
-                    sb.Append(currentDataDefinitionPath.CurrentDataDefinition.QualifiedName).Append('.');
-                    currentDataDefinitionPath = currentDataDefinitionPath.Parent;
-                }
-
-                return sb.ToString();
+                return this.QualifiedStorageAreas[storageArea].ToString(".");
             }
         }
 

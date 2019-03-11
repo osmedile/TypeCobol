@@ -34,6 +34,28 @@ namespace TypeCobol.Compiler.CodeModel
         /// </summary>
         public DataDefinitionPath Parent { get;  }
         public DataDefinition CurrentDataDefinition { get; }
+
+
+        public string ToString(string separator)
+        {
+            StringBuilder sb = new StringBuilder();
+            
+            //Start the tail with the qualifiedName (including the pgm name)
+            sb.Append(this.CurrentDataDefinition.QualifiedName);
+            var currentDataDefinitionPath = this.Parent;
+            while (currentDataDefinitionPath != null)
+            {
+                //Use FixedVisualQualifiedName because we don't want to repeat the pgm name
+                sb.Append(separator).Append(currentDataDefinitionPath.CurrentDataDefinition.FixedVisualQualifiedName);
+                currentDataDefinitionPath = currentDataDefinitionPath.Parent;
+            }
+
+            return sb.ToString();
+        }
+        public override string ToString()
+        {
+            return ToString("::");
+        }
     }
     public class SymbolTable
     {
