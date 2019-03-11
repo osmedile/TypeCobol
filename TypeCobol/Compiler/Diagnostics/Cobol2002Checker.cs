@@ -166,9 +166,9 @@ namespace TypeCobol.Compiler.Diagnostics
         public static void OnNode([NotNull] DataRenames renames)
         {
             if (renames.CodeElement.RenamesFromDataName != null)
-                Check(renames.CodeElement().RenamesFromDataName, renames);
+                Check(renames.CodeElement.RenamesFromDataName, renames);
             if(renames.CodeElement.RenamesToDataName != null)
-                Check(renames.CodeElement().RenamesToDataName, renames);
+                Check(renames.CodeElement.RenamesToDataName, renames);
         }
 
         private static void Check(SymbolReference renames, Node node)
