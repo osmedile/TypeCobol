@@ -23,7 +23,7 @@ namespace TypeCobol.Compiler.CodeElements
     /// <summary>
     /// Properties of a symbol Token in the Cobol grammar
     /// </summary>
-    public abstract class SymbolInformation : IVisitable
+    public abstract class SymbolInformation : IVisitable, IList<string>
     {
         protected SymbolInformation(SyntaxValue<string> nameLiteral, SymbolRole role, SymbolType type)
         {
@@ -65,6 +65,27 @@ namespace TypeCobol.Compiler.CodeElements
             return symbolTypes.Contains(Type);
         }
 
+
+        public virtual int Count => 1;
+
+        public bool IsReadOnly => true;
+
+        string IList<string>.this[int index] 
+        { 
+            get
+            {
+                if (index < 0 || index >= Count)
+                {
+                    throw new IndexOutOfRangeException("Index " + index + ", Count" + Count);
+                }
+                return Name;
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         // -- Override Equals & GetHashCode --
 
         public override bool Equals(object obj)
@@ -89,6 +110,56 @@ namespace TypeCobol.Compiler.CodeElements
 
         public override string ToString() { return Name; }
         public virtual string ToString(bool isBoolType) { return ToString() + (isBoolType ? "-value" : ""); }
+
+        public int IndexOf(string item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Insert(int index, string item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveAt(int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Add(string item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Clear()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Contains(string item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CopyTo(string[] array, int arrayIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Remove(string item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerator<string> GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     /// <summary>
@@ -234,7 +305,7 @@ namespace TypeCobol.Compiler.CodeElements
 	/// The higher-level names are called qualifiers, and the process by which
 	/// such names are made unique is called qualification.
 	/// </summary>
-	public class QualifiedSymbolReference: SymbolReference, IList<SymbolReference> {
+	public class QualifiedSymbolReference: SymbolReference, IList<string>  {
 		public QualifiedSymbolReference(SymbolReference head, SymbolReference tail): base(head.NameLiteral, head.Type) {
 			IsAmbiguous = head.IsAmbiguous || tail.IsAmbiguous;
 			IsQualifiedReference = true;
@@ -255,6 +326,37 @@ namespace TypeCobol.Compiler.CodeElements
 			}
 		}
 
+
+        private List<string> _asStringListHeadLast;
+
+        /// <summary>
+        ///           Tail  <-----> Head
+        ///           Var1::Var10::Var100
+        ///           MyPgm::MyType
+        ///           MyPgm::MyProcedure
+        /// </summary>
+        /// <returns></returns>
+        public IList<string> AsStringListHeadLast()
+        {
+            if (_asStringListHeadLast == null)
+            {
+                _asStringListHeadLast = new List<string>();
+                AsStringList(_asStringListHeadLast);
+            }
+            return _asStringListHeadLast;
+        }
+        protected void AsStringList(List<string> refs)
+        {
+            if (Tail is QualifiedSymbolReference qtail)
+                qtail.AsStringList(refs);
+            else refs.Add(Tail.Name);
+
+            if (Head is QualifiedSymbolReference qhead)
+                qhead.AsStringList(refs);
+            else refs.Add(Head.Name);
+
+        }
+
         public override bool IsOrCanBeOfType(SymbolType symbolType) {
             return Head.IsOrCanBeOfType(symbolType) || Tail.IsOrCanBeOfType(symbolType);
         }
@@ -266,11 +368,7 @@ namespace TypeCobol.Compiler.CodeElements
         public override bool IsOrCanBeOnlyOfTypes(params SymbolType[] symbolTypes) {
             return Head.IsOrCanBeOnlyOfTypes(symbolTypes) || Tail.IsOrCanBeOnlyOfTypes(symbolTypes);
         }
-
-        /// <summary>Used to resolve the symbol reference in a hierarchy of names</summary>
-        public override string DefinitionPathPattern {
-			get { return "\\." + Head.Name + "\\..*" + Tail.DefinitionPathPattern; }
-		}
+        
 
 	    public override string ToString()
 	    {
@@ -291,14 +389,26 @@ namespace TypeCobol.Compiler.CodeElements
         public override string Name { get { return Tail.Name+'.'+Head.Name; } }
 
 
+        
 
+		public override int Count { get { return AsStringListHeadLast().Count; } }
 
-		public bool IsReadOnly { get { return true; } }
-
-		public int Count { get { return AsList().Count; } }
-
-		IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
-		public IEnumerator<SymbolReference> GetEnumerator() { return AsList().GetEnumerator(); }
+        string IList<string>.this[int index]
+        {
+            get
+            {
+                if (index < 0 || index >= Count)
+                {
+                    throw new IndexOutOfRangeException("Index " + index + ", Count" + Count);
+                }
+                return AsStringListHeadLast()[index];
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+        
 		public IList<SymbolReference> AsList() {
 			var refs = new List<SymbolReference>();
 			if (Head is QualifiedSymbolReference)
@@ -310,78 +420,23 @@ namespace TypeCobol.Compiler.CodeElements
 			return refs;
 		}
 
-        /// <summary>
-        ///           Tail  <-----> Head
-        ///           Var1::Var10::Var100
-        ///           MyPgm::MyType
-        ///           MyPgm::MyProcedure
-        /// </summary>
-        /// <returns></returns>
-        public IList<string> AsStringListHeadLast()
-        {
-            var refs = new List<string>();
-            AsStringList(refs);
-            return refs;
-        }
-        protected void AsStringList(List<string> refs)
-        {
-            if (Tail is QualifiedSymbolReference qtail)
-                qtail.AsStringList(refs);
-            else refs.Add(Tail.Name);
-
-            if (Head is QualifiedSymbolReference qhead)
-                qhead.AsStringList(refs);
-            else refs.Add(Head.Name);
-            
-        }
 
         public override bool AcceptASTVisitor(IASTVisitor astVisitor) {
 	        return base.AcceptASTVisitor(astVisitor) && astVisitor.Visit(this)
                 && this.ContinueVisitToChildren(astVisitor, Head, Tail);
 	    }
 
-	    // UNIMPLEMENTED BECAUSE OF LAZYNESS
-
-        public int IndexOf(SymbolReference item) {
-			throw new NotImplementedException("TODO");
-		}
-
-		public void Insert(int index,SymbolReference item) {
-			throw new NotImplementedException();
-		}
-
-		public void RemoveAt(int index) {
-			throw new NotImplementedException();
-		}
-
-		public SymbolReference this[int index] {
-			get {
-				throw new NotImplementedException("TODO");
-			}
-			set {
-				throw new NotImplementedException();
-			}
-		}
+        
 
 		public void Add(SymbolReference item) {
 			throw new NotImplementedException();
 		}
-
-		public void Clear() {
-			throw new NotImplementedException();
-		}
+        
 
 		public bool Contains(SymbolReference item) {
 			throw new NotImplementedException("TODO");
 		}
 
-		public void CopyTo(SymbolReference[] array, int index) {
-			throw new NotImplementedException();
-		}
-
-		public bool Remove(SymbolReference item) {
-			throw new NotImplementedException();
-		}
 	}
 	public class TypeCobolQualifiedSymbolReference: QualifiedSymbolReference {
 	    public TypeCobolQualifiedSymbolReference(SymbolReference head, SymbolReference tail) : base(head, tail)

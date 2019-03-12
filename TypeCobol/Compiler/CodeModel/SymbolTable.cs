@@ -426,23 +426,6 @@ namespace TypeCobol.Compiler.CodeModel
         //After that, the algorithm will rapidly return to the first foreach done on candidates inside GetVariablesExplicitWithQualifiedName
         //And launch the same mechanic, but this time with no success, because we are going to immediately find a terminal variable. 
 
-        public List<KeyValuePair<string, DataDefinition>> GetVariablesExplicitWithQualifiedName(SymbolReference name,
-                    TypeDefinition typeDefContext = null)
-        {
-            IList<string> names;
-            if (name.IsQualifiedReference)
-            {
-                names = ((QualifiedSymbolReference)name).AsStringListHeadLast();
-                
-            }
-            else
-            {
-                names = new List<string>();
-                names.Add(name.Name);
-            }
-            return GetVariablesExplicitWithQualifiedName(names, typeDefContext);
-        }
-
         public List<KeyValuePair<string, DataDefinition>> GetVariablesExplicitWithQualifiedName(IList<string> symbolReferences,
             TypeDefinition typeDefContext = null)
         {
