@@ -146,20 +146,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
                 Exit();
             }
         }
-
-        private Node GetTopLevelItem(long level)
-        {
-            var parent = CurrentNode;
-            while (parent != null)
-            {
-                var data = parent.CodeElement as DataDefinitionEntry;
-                if (data == null) return null;
-                if (data.LevelNumber == null || data.LevelNumber.Value < level) return parent;
-                parent = parent.Parent;
-            }
-            return null;
-        }
-
+        
         /// <summary>Exit() every Node that is not the top-level item for a data of a given level.</summary>
         /// <param name="levelnumber">
         /// Level number of the next data definition that will be Enter()ed.
@@ -167,33 +154,38 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         /// </param>
         private void SetCurrentNodeToTopLevelItem(IntegerValue levelnumber)
         {
-            long level = levelnumber != null ? levelnumber.Value : 1;
-            Node parent;
+            long level = levelnumber?.Value ?? 1;
 
             if (level == 1 || level == 77)
             {
-                parent = null;
-            }
-            else
-            {
-                parent = GetTopLevelItem(level);
-            }
-            if (parent != null)
-            {
-                // Exit() previous sibling and all of its last children
-                while (parent != CurrentNode) Exit();
-            }
-            else
-            {
                 ExitLastLevel1Definition();
             }
+            else
+            {
+                // Exit() previous sibling and all of its last children
+                while (true)
+                {
+                    var data = CurrentNode as DataDefinition;
+                    if (data == null) break; //we reach a section (working-storage section, local-storage, ...)
+                    if (data.CodeElement.LevelNumber.Value >= level)
+                    {
+                        Exit();
+                    }
+                    else
+                    {
+                        break;//The CurrentNode has a number < level
+                    }
+
+                }
+            }
+
         }
 
         /// <summary>Exit last level-01 data definition entry, as long as all its subordinates.</summary>
         private void ExitLastLevel1Definition()
         {
             _CurrentTypeDefinition = null;
-            while (CurrentNode.CodeElement != null && CurrentNode.CodeElement is DataDefinitionEntry) Exit();
+            while (CurrentNode is DataDefinition) Exit();
         }
 
         public virtual void StartCobolCompilationUnit()
