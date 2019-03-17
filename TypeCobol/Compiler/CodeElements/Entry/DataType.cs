@@ -34,11 +34,12 @@ namespace TypeCobol.Compiler.CodeElements
 			return other == this;
 		}
 
-		public static bool operator ==(DataType x, DataType y) {
-			if (Object.ReferenceEquals(x, null) && Object.ReferenceEquals(y, null)) return true;
-			if (Object.ReferenceEquals(x, null) || Object.ReferenceEquals(y, null)) return false;
-			return x.Name.ToUpper() == y.Name.ToUpper();
-		}
+		public static bool operator ==(DataType x, DataType y)
+        {
+            if (Object.ReferenceEquals(x, y)) return true;
+            if (Object.ReferenceEquals(x, null) || Object.ReferenceEquals(y, null)) return false;
+            return x.Name.Equals(y.Name, StringComparison.OrdinalIgnoreCase);
+        }
 		public static bool operator !=(DataType x, DataType y) {
 			return !(x == y);
 		}
