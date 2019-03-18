@@ -269,6 +269,7 @@ namespace TypeCobol.Compiler.Nodes {
             get { return _typeDefinition; }
             set
             {
+                //Implementation note : Only TypeCobolLinker should set this value
                 if (_typeDefinition == null)
                     _typeDefinition = value;
             }
@@ -823,7 +824,10 @@ namespace TypeCobol.Compiler.Nodes {
     // [COBOL 2002]
     public class TypeDefinition: DataDefinition, Parent<DataDescription>, IDocumentable
     {
-        public TypeDefinition([NotNull] DataTypeDescriptionEntry entry) : base(entry) { }
+        public TypeDefinition([NotNull] DataTypeDescriptionEntry entry) : base(entry)
+        {
+            TypedChildren = new List<DataDefinition>();
+        }
 
         [NotNull]
         public new DataTypeDescriptionEntry CodeElement => (DataTypeDescriptionEntry) base.CodeElement;
@@ -834,6 +838,9 @@ namespace TypeCobol.Compiler.Nodes {
             return base.VisitNode(astVisitor) && astVisitor.Visit(this);
         }
 
+
+        [NotNull][ItemCanBeNull]
+        public List<DataDefinition>  TypedChildren { get;  }
 
         public override bool IsPartOfATypeDef => true;
 

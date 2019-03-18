@@ -12,7 +12,12 @@ namespace TypeCobol.Compiler.Parser
 
     public class TemporarySemanticDocument : ICompilerStepDocumentSnapshot<ICodeElementsLine, ICodeElementsLine>
     {
-        public TemporarySemanticDocument(CodeElementsDocument previousSnapShot, DocumentVersion<ICodeElementsLine> codeElementsLinesVersion, ISearchableReadOnlyList<ICodeElementsLine> codeElementsLines, SourceFile root, [NotNull] List<Diagnostic> diagnostics, Dictionary<CodeElement, Node> nodeCodeElementLinkers)
+        public TemporarySemanticDocument(CodeElementsDocument previousSnapShot, DocumentVersion<ICodeElementsLine> codeElementsLinesVersion, 
+            ISearchableReadOnlyList<ICodeElementsLine> codeElementsLines, SourceFile root, [NotNull] List<Diagnostic> diagnostics, 
+            Dictionary<CodeElement, Node> nodeCodeElementLinkers, 
+            List<DataDefinition> typedVariablesOutsideTypedef, 
+            List<TypeDefinition> typeThatNeedTypeLinking,
+            List<TypeDefinition> typeToResolve)
         {
             PreviousStepSnapshot = previousSnapShot;
             Root = root;
@@ -21,11 +26,25 @@ namespace TypeCobol.Compiler.Parser
             TextSourceInfo = previousSnapShot.TextSourceInfo;
             CurrentVersion = codeElementsLinesVersion;
             Lines = codeElementsLines;
+            TypedVariablesOutsideTypedef = typedVariablesOutsideTypedef;
+            TypeThatNeedTypeLinking = typeThatNeedTypeLinking;
+            TypeToResolve = typeToResolve;
         }
 
         public TextSourceInfo TextSourceInfo { get; set; }
         public SourceFile Root { get; private set; }
         public Dictionary<CodeElement, Node> NodeCodeElementLinkers { get; private set; }
+
+
+        [NotNull] [ItemNotNull]
+        public List<DataDefinition> TypedVariablesOutsideTypedef { get; }
+
+        [NotNull][ItemNotNull]
+        public List<TypeDefinition> TypeThatNeedTypeLinking { get; }
+
+        [NotNull][ItemNotNull]
+        public List<TypeDefinition> TypeToResolve { get; }
+
         /// <summary>
         /// Errors found while parsing Program or Class
         /// </summary>

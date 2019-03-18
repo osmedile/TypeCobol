@@ -48,7 +48,11 @@ namespace TypeCobol.Compiler.Parser
                 }
             }
         }
-        public static void CupParseProgramOrClass(TextSourceInfo textSourceInfo, ISearchableReadOnlyList<CodeElementsLine> codeElementsLines, TypeCobolOptions compilerOptions, SymbolTable customSymbols, PerfStatsForParserInvocation perfStatsForParserInvocation, out SourceFile root, out List<Diagnostic> diagnostics, out Dictionary<CodeElement, Node> nodeCodeElementLinkers)
+        public static void CupParseProgramOrClass(TextSourceInfo textSourceInfo, ISearchableReadOnlyList<CodeElementsLine> codeElementsLines, TypeCobolOptions compilerOptions, SymbolTable customSymbols, PerfStatsForParserInvocation perfStatsForParserInvocation, out SourceFile root, out List<Diagnostic> diagnostics, 
+            out Dictionary<CodeElement, Node> nodeCodeElementLinkers,
+            out List<DataDefinition> typedVariablesOutsideTypedef,
+            out List<TypeDefinition> typeThatNeedTypeLinking,
+            out List<TypeDefinition> typeToResolve)
         {
             PrepareCupParser();
 #if DEBUG_ANTRL_CUP_TIME
@@ -89,8 +93,6 @@ namespace TypeCobol.Compiler.Parser
 
             perfStatsForParserInvocation.OnStartTreeBuilding();
 
-            //Create link between data definition an Types, will be stored in SymbolTable
-            root.AcceptASTVisitor(new TypeCobolLinker());
 
             //Stop measuring tree building performance
             perfStatsForParserInvocation.OnStopTreeBuilding();
@@ -98,6 +100,9 @@ namespace TypeCobol.Compiler.Parser
             // Register compiler results
             diagnostics = diagReporter.Diagnostics ?? new List<Diagnostic>();
             nodeCodeElementLinkers = builder.NodeCodeElementLinkers;
+            typedVariablesOutsideTypedef = builder.TypedVariablesOutsideTypedef;
+            typeThatNeedTypeLinking = builder.TypeThatNeedTypeLinking;
+            typeToResolve = builder.TypesToResolved;
 
             if (programClassBuilderError != null)
             {
@@ -105,8 +110,12 @@ namespace TypeCobol.Compiler.Parser
             }
         }
 
-        public static void CrossCheckPrograms(SourceFile root)
+        public static void CrossCheckPrograms(SourceFile root, TemporarySemanticDocument temporarySemanticDocument)
         {
+            //Create link between data definition an Types, will be stored in SymbolTable
+            TypeCobolLinker.LinkedTypedVariables(temporarySemanticDocument.TypedVariablesOutsideTypedef, 
+                temporarySemanticDocument.TypeThatNeedTypeLinking, temporarySemanticDocument.TypeToResolve);
+
             //Complete some information on Node and run checker that need a full AST
             root.AcceptASTVisitor(new CrossCompleteChecker());
         }
