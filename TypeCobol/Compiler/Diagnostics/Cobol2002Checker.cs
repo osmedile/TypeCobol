@@ -113,6 +113,9 @@ namespace TypeCobol.Compiler.Diagnostics
                         token, code: MessageCode.Warning);
                 }
             }
+
+            //Check circular reference if not already done by TypeCobolLinker
+            TypeCobolLinker.CheckCircularReferences(typeDefinition);
         }
 
         private static void CheckForValueClause(Node node, QualifiedName typedef)

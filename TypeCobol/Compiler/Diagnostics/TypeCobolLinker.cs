@@ -23,8 +23,7 @@ namespace TypeCobol.Compiler.Diagnostics
         /// <param name="typeThatNeedTypeLinking">Typedef that need all its typed children to be resolved (only use case for now is "Depending on")</param>
         /// <param name="typeToResolve">All others typedef</param>
         public static void LinkedTypedVariables([NotNull][ItemNotNull] in List<DataDefinition> typedVariablesOutsideTypedef, 
-            [NotNull][ItemNotNull] in List<TypeDefinition> typeThatNeedTypeLinking, 
-            [NotNull][ItemNotNull] in List<TypeDefinition> typeToResolve)
+            [NotNull][ItemNotNull] in List<TypeDefinition> typeThatNeedTypeLinking)
         {
             //Stack to detect circular reference between types
             Stack<DataDefinition> currentlyCheckedTypedefStack = new Stack<DataDefinition>();
@@ -64,16 +63,32 @@ namespace TypeCobol.Compiler.Diagnostics
                 LinkTypedChildren(typeDefinition, currentlyCheckedTypedefStack, typeDefinition.SymbolTable);
             }
 
-
+            /*
             //Now just check for circular in remaining typedef
             System.Diagnostics.Debug.Assert(currentlyCheckedTypedefStack.Count == 0, "Stack must be empty");
             foreach (var typeDefinition in typeToResolve)
             {
                 LinkTypedChildren(typeDefinition, currentlyCheckedTypedefStack);//No need to keep reference because these are unused types
             }
-
+            */
         }
 
+
+        public static void CheckCircularReferences([NotNull] TypeDefinition typeDefinition)
+        {
+                                 
+            if (typeDefinition.TypedChildren.Count == 0                     //no typed children     
+                || typeDefinition.TypedChildren[0] == null                  //TypeDefinition of first children could not be resolved
+                || typeDefinition.TypedChildren[0].TypeDefinition != null)  //TypeDefinition of first children already resolved
+            {
+                //In these case, nothing to do because no children or job has already be done
+                return;
+            }
+
+            //Stack to detect circular reference between types
+            Stack<DataDefinition> currentlyCheckedTypedefStack = new Stack<DataDefinition>();
+            LinkTypedChildren(typeDefinition, currentlyCheckedTypedefStack);
+        }
 
         /// <summary>
         /// Detect circular reference between type

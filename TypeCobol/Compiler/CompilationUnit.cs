@@ -228,12 +228,11 @@ namespace TypeCobol.Compiler
                     //TODO cast to ImmutableList<CodeElementsLine> sometimes fails here
                     ProgramClassParserStep.CupParseProgramOrClass(TextSourceInfo, ((ImmutableList<CodeElementsLine>)codeElementsDocument.Lines), CompilerOptions, CustomSymbols, perfStatsForParserInvocation, out root, out newDiagnostics, out nodeCodeElementLinkers,
                         out typedVariablesOutsideTypedef,
-                        out typeThatNeedTypeLinking,
-                        out typeToResolve);
+                        out typeThatNeedTypeLinking);
 
                     // Capture the produced results
                     TemporaryProgramClassDocumentSnapshot = new TemporarySemanticDocument(codeElementsDocument, new DocumentVersion<ICodeElementsLine>(this), codeElementsDocument.Lines,  root, newDiagnostics, nodeCodeElementLinkers,
-                        typedVariablesOutsideTypedef, typeThatNeedTypeLinking, typeToResolve);
+                        typedVariablesOutsideTypedef, typeThatNeedTypeLinking);
 
                     // Stop perf measurement
                     PerfStatsForTemporarySemantic.OnStopRefreshParsingStep();

@@ -47,8 +47,6 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         public List<DataDefinition> TypedVariablesOutsideTypedef { get; } = new List<DataDefinition>();
         public List<TypeDefinition> TypeThatNeedTypeLinking { get; } = new List<TypeDefinition>();
 
-        public List<TypeDefinition> TypesToResolved { get; } = new List<TypeDefinition>();
-
         // Programs can be nested => track current programs being analyzed
         private Stack<Program> programsStack = null;
 
@@ -545,7 +543,6 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             table.AddType(node);
 
             _CurrentTypeDefinition = node;
-            TypesToResolved.Add(_CurrentTypeDefinition);
             CheckIfItsTyped(node, node.CodeElement);
         }
 

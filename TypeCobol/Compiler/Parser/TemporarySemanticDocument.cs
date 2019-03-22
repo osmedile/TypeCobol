@@ -16,8 +16,7 @@ namespace TypeCobol.Compiler.Parser
             ISearchableReadOnlyList<ICodeElementsLine> codeElementsLines, SourceFile root, [NotNull] List<Diagnostic> diagnostics, 
             Dictionary<CodeElement, Node> nodeCodeElementLinkers, 
             List<DataDefinition> typedVariablesOutsideTypedef, 
-            List<TypeDefinition> typeThatNeedTypeLinking,
-            List<TypeDefinition> typeToResolve)
+            List<TypeDefinition> typeThatNeedTypeLinking)
         {
             PreviousStepSnapshot = previousSnapShot;
             Root = root;
@@ -28,7 +27,6 @@ namespace TypeCobol.Compiler.Parser
             Lines = codeElementsLines;
             TypedVariablesOutsideTypedef = typedVariablesOutsideTypedef;
             TypeThatNeedTypeLinking = typeThatNeedTypeLinking;
-            TypeToResolve = typeToResolve;
         }
 
         public TextSourceInfo TextSourceInfo { get; set; }
@@ -41,9 +39,6 @@ namespace TypeCobol.Compiler.Parser
 
         [NotNull][ItemNotNull]
         public List<TypeDefinition> TypeThatNeedTypeLinking { get; }
-
-        [NotNull][ItemNotNull]
-        public List<TypeDefinition> TypeToResolve { get; }
 
         /// <summary>
         /// Errors found while parsing Program or Class
