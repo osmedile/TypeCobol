@@ -21,6 +21,74 @@ namespace TypeCobol.Compiler.Diagnostics
     ///    - It's the only class that can update SymbolTable.TypesReferences
     ///    - This path is not set for unused types
     ///
+    ///
+    /// What is the "path" between type ? (SymbolTable.TypesReferences)
+    /// ----------------------------------------------------------
+    /// The path between type is used to search variables which are located under a typedef
+    /// and then find if a variable outside reference this type (directly or indirectly).
+    /// The path will link a DataDefinition that use the syntax (type XXXX) to a TypeDefinition.
+    ///
+    ///
+    /// Group1                  TypeA               TypeB                 TypeC
+    ///   var1                    A11 type typeB       B1                    C1
+    ///    var11 type typeA                             B2                    C2
+    ///                                                  B3 type typeC         C3
+    /// 
+    ///
+    /// Eg, with this SymbolReference:
+    /// var11::A11::B3::C3
+    /// 
+    /// We'll first find C3 under TypeC, then we need to know all DataDefinition that references TypeC.
+    /// So the path must start with: TypeC->B3
+    /// Then again, after B3 is found under TypeB, we need to find DataDefinition that references TypeB.
+    /// The path must continue with: TypeB->A11
+    /// ...
+    /// At the end, the full path path will be: TypeC->B3, TypeB->A11, TypeA->var11
+    /// As var11 is a variable outside a TypeDef, the path ends here.
+    ///
+    /// With the same SymbolReference but fully qualified:
+    /// var11::A11::B1::B2::B3::C1::C2::C3
+    /// The path will be exactly the same.
+    /// The path doesn't contains intermediate group-item.
+    ///
+    ///
+    /// Now when there are more Data/Definition/TypeDef
+    /// 
+    ///   Group1                  TypeA               TypeB                 TypeC
+    ///     var1                    A11 type typeB       B1                    C1
+    ///      var11 type typeA                             B2                    C2
+    ///                                                    B3 type typeC         C3
+    ///   
+    ///    Group2                  TypeZ
+    ///      var22                    Z11 type typeB
+    ///       var222 type typeZ     
+    ///
+    /// With a SymbolReference with Group2 it's the same logic.
+    /// var222::Z11::B3::C3
+    /// The path will be:
+    /// TypeC->B3, TypeB->Z11, TypeZ->var222
+    /// 
+    /// 
+    /// 
+    /// How the path is calculated/stored ? (SymbolTable.TypesReferences)
+    /// ------------------------------------------------------------------
+    /// The path will always contains a DataDefinition outside a Type.
+    /// So we use the SymbolTable of this DataDefinition to store the full path.
+    ///
+    /// In the previous example, if Group1 and Group2 are in 2 different SymbolTable, it means the full path will be stored twice.
+    /// It takes more time to construct the path but it ensure that when we use a path we'll always be sure to find variables accessible/visible to our SymbolTable.
+    ///
+    /// 
+    /// If all paths were common to all SymbolTable, then if Group1 and Group2 are in 2 different programs, there would be 2 downsides:
+    ///  - We'll spend time using path that takes us outside our visibility scope.
+    ///    - It's not a real problem on our unit test, but on big programs with a lot of dependencies this would be an issue.
+    ///  - At the end we need to check if the variable is accessible to our scope
+    ///
+    ///
+    ///
+    /// Optimization on path storage (SymbolTable.TypesReferences)
+    /// ------------------------------------------------------------
+    /// When 2 or more variable inside a typedef reference the same type, TypeCobolLinker will detect that and only store the path once.
     /// 
     /// 
     /// </summary>
@@ -43,7 +111,6 @@ namespace TypeCobol.Compiler.Diagnostics
             //Stack to detect circular reference between types
             Stack<DataDefinition> currentlyCheckedTypedefStack = new Stack<DataDefinition>();
 
-            
             foreach (var dataDefinition in typedVariablesOutsideTypedef)
             {
                 //There should be no typeDef at this point, because it's the job of the Linker and only it should do it
@@ -128,7 +195,9 @@ namespace TypeCobol.Compiler.Diagnostics
             currentlyCheckedTypedefStack?.Pop();
 
 
-            //Only reason to use private method here, is because there multiple return path, so we can easily handle currentlyCheckedTypedefStack push/pop 
+
+            //Only reason to use private method here, is because there are multiple return path in LinkTypedChildren0.
+            //So we can easily handle currentlyCheckedTypedefStack push/pop just above
             void LinkTypedChildren0()
             {
                 //If all typed children of typedef are resolved it means this typedef has already been fully linked
@@ -142,7 +211,7 @@ namespace TypeCobol.Compiler.Diagnostics
                     }
 
                     //As typedef has already been linked, then no need to check circular reference
-                    currentlyCheckedTypedefStack = null;
+                    //currentlyCheckedTypedefStack = null;
                 }
 
 
