@@ -12,12 +12,27 @@ using TypeCobol.Compiler.Parser;
 
 namespace TypeCobol.Compiler.Diagnostics
 {
+    /// <summary>
+    /// TypeCobolLinker is responsible for:
+    /// - Resolve TypeDefinition.
+    ///    - It's the only class that can call SymbolTable.GetType() and set the property TypeDefinition on DataDefinition node
+    /// - Check circular reference between types
+    /// - Create a path between type reference and TypeDefinition in the SymbolTable (property SymbolTable.TypesReferences)
+    ///    - It's the only class that can update SymbolTable.TypesReferences
+    ///    - This path is not set for unused types
+    ///
+    /// 
+    /// 
+    /// </summary>
     public class TypeCobolLinker 
     {
-        
-        
+
+
         /// <summary>
-        /// 
+        /// This method will do the 3 actions:
+        ///   - Resolve TypeDefinition
+        ///   - Check circular references
+        ///   - Create a path between type reference and TypeDefinition
         /// </summary>
         /// <param name="typedVariablesOutsideTypedef">Variable outside that use the "type" syntax</param>
         /// <param name="typeThatNeedTypeLinking">Typedef that need all its typed children to be resolved (only use case for now is "Depending on")</param>
@@ -91,9 +106,11 @@ namespace TypeCobol.Compiler.Diagnostics
         }
 
         /// <summary>
-        /// Detect circular reference between type
-        /// Resolve TypeDefinition
-        /// Link the type with the DataDefinition that use it in SymbolTable
+        /// This method will do the 3 actions:
+        ///   - Resolve TypeDefinition
+        ///   - Check circular references
+        ///   - Create a path between type reference and TypeDefinition
+        /// 
         /// </summary>
         /// <param name="currentlyCheckedTypedefStack"></param>
         /// <param name="symbolTable"></param>
