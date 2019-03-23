@@ -30,36 +30,21 @@ namespace TypeCobol.Compiler.CodeModel
         public IEnumerable<DataDefinition> GetAllEnclosingTypeReferences(TypeDefinition currentTypeDef)
         {
             var result = new List<DataDefinition>();
+            
+
             SymbolTable symbolTable = this;//By default set this symboltable as the starting point
 
-            while (symbolTable.CurrentScope >= Scope.Namespace) //Loop on enclosing scope until null scope. 
+            while (symbolTable.CurrentScope > Scope.Namespace) //Loop on enclosing scope until we reach NameSpace 
             {
-                symbolTable.TypesReferences.TryGetValue(currentTypeDef, out var typeReferences);
-                if (typeReferences != null)
+                if (symbolTable.TypesReferences.TryGetValue(currentTypeDef, out var typeReferences))
                 {
                     result.AddRange(typeReferences);
-                }
 
-                if (symbolTable.CurrentScope == Scope.Namespace && symbolTable.Programs.Count > 0)
-                    //Some TypeReferences are stored only in program's symbolTable, need to seek into them. 
-                {
-                    foreach (var program in symbolTable.Programs.SelectMany(t => t.Value))
-                    {
-                        if (!program.SymbolTable.TypesReferences.IsNullOrEmpty())
-                        {
-
-                            program.SymbolTable.TypesReferences.TryGetValue(currentTypeDef, out var typeReferences2);
-                            if (typeReferences2 != null)
-                            {
-                                result.AddRange(typeReferences2);
-                            }
-                        }
-                    }
                 }
 
                 symbolTable = symbolTable.EnclosingScope; //Go to the next enclosing scope. 
             }
-            return result.Distinct();
+            return result.Distinct();//Distinct we are using path from 2 multiple SymbolTable and can have duplicate
         }
 
 
@@ -593,14 +578,12 @@ namespace TypeCobol.Compiler.CodeModel
                 {
                     //references property of a TypeDefinition can lead to variable in totally others scopes, like in another program
                     //So we need to check if we can access this variable
-                    if (reference.IsPartOfATypeDef || GetVariables(reference.Name).Contains(reference))
-                    {
-                        if (found.Count == 0)
-                            completeQualifiedNames.Remove(completeQualifiedNames.Last());//InCase nothing was found after first reference checked, we need to reset completeQualifiedName to it's primary value.
-                        completeQualifiedNames.Add(new List<string>(primaryPath));
+                    if (found.Count == 0)
+                        completeQualifiedNames.Remove(completeQualifiedNames.Last());//InCase nothing was found after first reference checked, we need to reset completeQualifiedName to it's primary value.
+                    completeQualifiedNames.Add(new List<string>(primaryPath));
 
-                        MatchVariable(found, headDataDefinition, name, nameIndex, reference, completeQualifiedNames, typeDefContext);
-                    }
+                    MatchVariable(found, headDataDefinition, name, nameIndex, reference, completeQualifiedNames, typeDefContext);
+                    
                        
                 }
             }
@@ -634,26 +617,28 @@ namespace TypeCobol.Compiler.CodeModel
             {
                 var primaryPath = new List<string>();
                 var parentTypeDef = reference.GetParentTypeDefinitionWithPath(primaryPath);
-                if (parentTypeDef != null && parentTypeDef != typeDefContext) {
+
+
+                //If we are outside a typedef or we reach the typedefContext
+                if (parentTypeDef == null || parentTypeDef == typeDefContext)
+                {
+                    found.Add(heaDataDefinition);
+                    referenceCounter++;
+                    if (referenceCounter == 1) //If first reference found, add it to the top item of list
+                        completeQualifiedNames.Last().AddRange(reference.QualifiedName.Reverse());
+                    else
+                    {
+                        var newPath = new List<string>(typePath);
+                        newPath.AddRange(reference.QualifiedName.Reverse());
+                        completeQualifiedNames.Add(newPath);
+                    }
+                }
+                else
+                {
+                    //continue to go to the next type or variable
                     completeQualifiedNames.Last().AddRange(primaryPath);
                     AddAllReference(found, heaDataDefinition, parentTypeDef, completeQualifiedNames, typeDefContext);
                     referenceCounter++;
-                } else { 
-                    //we are on a variable but ... references property of a TypeDefinition can lead to variable in totally others scopes, like in another program
-                    //So we need to check if we can access this variable OR check if the variable is declared inside the typeDefContext
-                    if (GetVariables(reference.Name).Contains(reference) || (typeDefContext != null && typeDefContext.GetChildren<DataDefinition>(reference.Name, true).Contains(reference)))
-                    {
-                        found.Add(heaDataDefinition);
-                        referenceCounter++;
-                        if (referenceCounter == 1) //If first reference found, add it to the top item of list
-                            completeQualifiedNames.Last().AddRange(reference.QualifiedName.Reverse());
-                        else
-                        {
-                            var newPath = new List<string>(typePath);
-                            newPath.AddRange(reference.QualifiedName.Reverse());
-                            completeQualifiedNames.Add(newPath);
-                        }
-                    }
                 }
             }
         }
