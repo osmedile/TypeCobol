@@ -188,6 +188,7 @@ namespace TypeCobol.Compiler.Text
             tempTokensLine.InitializeScanState(new MultilineScanState(false, false, false, IBMCodePages.GetDotNetEncodingFromIBMCCSID(1147)));
 
             Scanner.Scanner scanner = new Scanner.Scanner(line, 0, line.Length - 1, tempTokensLine, null, false);
+            scanner.ReturnWhiteSpaceToken = true;
             Token t = null;
             int nCurLength = 0;
             int nSpan = max;

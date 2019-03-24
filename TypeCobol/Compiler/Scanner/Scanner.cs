@@ -30,6 +30,22 @@ namespace TypeCobol.Compiler.Scanner
         /// A solution would be to rescan all the line.
         /// </summary>
         public bool BeSmartWithLevelNumber { get; set; }
+
+        /// <summary>
+        /// True if the scanner must create whitespace token.
+        ///General option to control this behavior for both static and instance method.
+        /// </summary>
+        public static bool DefaultReturnWhiteSpaceToken {get;set;}
+
+        /// <summary>
+        /// True if the scanner must create whitespace token.
+        /// Option to control the behavior for instance method only.
+        /// </summary>
+        public bool ReturnWhiteSpaceToken {get;set;}
+
+        
+
+
         /// <summary>
         /// Scan a line of a document when no previous scan state object is available
         /// </summary>
@@ -136,8 +152,11 @@ namespace TypeCobol.Compiler.Scanner
             {
                 if(!String.IsNullOrEmpty(line))
                 {
-                    Token whitespaceToken = new Token(TokenType.SpaceSeparator, startIndex, lastIndex, tokensLine);
-                    tokensLine.AddToken(whitespaceToken);
+                   if (DefaultReturnWhiteSpaceToken)
+                   {
+                        Token whitespaceToken = new Token(TokenType.SpaceSeparator, startIndex, lastIndex, tokensLine);
+                        tokensLine.AddToken(whitespaceToken);
+                   }
                 }
                 return;
             }
@@ -265,8 +284,12 @@ namespace TypeCobol.Compiler.Scanner
                 for (; startOfContinuationIndex <= lastIndex && line[startOfContinuationIndex] == ' '; startOfContinuationIndex++) { }
                 if (startOfContinuationIndex > startIndex)
                 {
-                    Token whitespaceToken = new Token(TokenType.SpaceSeparator, startIndex, startOfContinuationIndex - 1, continuationLine);
-                    continuationLine.SourceTokens.Add(whitespaceToken);
+                    if (DefaultReturnWhiteSpaceToken) {
+                        Token whitespaceToken = new Token(TokenType.SpaceSeparator, startIndex,
+                            startOfContinuationIndex - 1, continuationLine);
+                        continuationLine.SourceTokens.Add(whitespaceToken);
+                    }
+
                     startIndex = startOfContinuationIndex;
                 }
                 if (startOfContinuationIndex <= lastIndex)
@@ -507,6 +530,8 @@ namespace TypeCobol.Compiler.Scanner
             this.compilerOptions = compilerOptions;
 
             this.BeSmartWithLevelNumber = beSmartWithLevelNumber;
+
+            this.ReturnWhiteSpaceToken = DefaultReturnWhiteSpaceToken;
         }
 
         public Token GetNextToken()
@@ -1274,7 +1299,14 @@ namespace TypeCobol.Compiler.Scanner
             // consume all whitespace chars available
             for (; currentIndex <= lastIndex && line[currentIndex] == ' '; currentIndex++) { }
             int endIndex = currentIndex - 1;
-            return new Token(TokenType.SpaceSeparator, startIndex, endIndex, tokensLine);
+            if (ReturnWhiteSpaceToken)
+            {
+                return new Token(TokenType.SpaceSeparator, startIndex, endIndex, tokensLine);
+            }
+            else
+            {
+                return GetNextToken();
+            }
         }
 
         private Token ScanOneChar(int startIndex, TokenType tokenType)
