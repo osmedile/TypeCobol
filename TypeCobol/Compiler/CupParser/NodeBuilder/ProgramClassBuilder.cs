@@ -181,25 +181,6 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             while (CurrentNode.CodeElement != null && CurrentNode.CodeElement is DataDefinitionEntry) Exit();
         }
 
-        private void AddToSymbolTable(DataDescription node)
-        {
-            var table = node.SymbolTable;
-            if (node.CodeElement.IsGlobal && table.CurrentScope != SymbolTable.Scope.GlobalStorage)
-                table = table.GetTableFromScope(SymbolTable.Scope.Global);
-            else
-            {
-                var parent = node.Parent as DataDescription;
-                while (parent != null)
-                {
-                    if (parent.CodeElement.IsGlobal && table.CurrentScope != SymbolTable.Scope.GlobalStorage)
-                        table = table.GetTableFromScope(SymbolTable.Scope.Global);
-                    parent = parent.Parent as DataDescription;
-                }
-            }
-
-            table.AddVariable(node);
-        }
-
         public virtual void StartCobolCompilationUnit()
         {
             if (TableOfNamespaces == null)
@@ -415,26 +396,27 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             {
                 SetCurrentNodeToTopLevelItem(entry.LevelNumber);
 
+                var symbolTable = SyntaxTree.CurrentNode.SymbolTable;
+                if (entry.IsGlobal)
+                    symbolTable = symbolTable.GetTableFromScope(SymbolTable.Scope.Global);
+
                 //Update DataType of CodeElement by searching info on the declared Type into SymbolTable.
                 //Note that the AST is not complete here, but you can only refer to a Type that has previously been defined.
                 var node = new DataDescription(entry);
                 if (_CurrentTypeDefinition != null)
                     node.ParentTypeDefinition = _CurrentTypeDefinition;
-                Enter(node);
+                Enter(node, null, symbolTable);
 
                 if (entry.Indexes != null && entry.Indexes.Any())
                 {
-                    var table = node.SymbolTable;
+                    
                     foreach (var index in entry.Indexes)
                     {
-                        if (node.CodeElement.IsGlobal)
-                            table = table.GetTableFromScope(SymbolTable.Scope.Global);
-
                         var indexNode = new IndexDefinition(index);
-                        Enter(indexNode, null, table);
+                        Enter(indexNode, null, symbolTable);
                         if (_CurrentTypeDefinition != null)
                             indexNode.ParentTypeDefinition = _CurrentTypeDefinition;
-                        table.AddVariable(indexNode);
+                        symbolTable.AddVariable(indexNode);
                         Exit();
                     }
                 }
@@ -457,17 +439,21 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
                 if (_IsInsideGlobalStorageSection)
                     node.SetFlag(Node.Flag.GlobalStorageSection, true);         //Set flag to know that this node belongs to Global Storage Section
 
-                AddToSymbolTable(node);
+                node.SymbolTable.AddVariable(node);
             }
         }
 
         public virtual void StartDataRedefinesEntry(DataRedefinesEntry entry)
         {
             SetCurrentNodeToTopLevelItem(entry.LevelNumber);
+            var symbolTable = SyntaxTree.CurrentNode.SymbolTable;
+            if (entry.IsGlobal)
+                symbolTable = symbolTable.GetTableFromScope(SymbolTable.Scope.Global);
+
             var node = new DataRedefines(entry);
             if (_CurrentTypeDefinition != null)
                 node.ParentTypeDefinition = _CurrentTypeDefinition;
-            Enter(node);
+            Enter(node, null, symbolTable);
             node.SymbolTable.AddVariable(node);
         }
 
@@ -494,11 +480,14 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         public virtual void StartTypeDefinitionEntry(DataTypeDescriptionEntry typedef)
         {
             SetCurrentNodeToTopLevelItem(typedef.LevelNumber);
-            var node = new TypeDefinition(typedef);
-            Enter(node);
+
             // TCTYPE_GLOBAL_TYPEDEF
-            var table = node.SymbolTable.GetTableFromScope(node.CodeElement.IsGlobal ? SymbolTable.Scope.Global : SymbolTable.Scope.Declarations);
-            table.AddType(node);
+            var symbolTable = SyntaxTree.CurrentNode.SymbolTable.GetTableFromScope(typedef.IsGlobal ? SymbolTable.Scope.Global : SymbolTable.Scope.Declarations);
+
+            var node = new TypeDefinition(typedef);
+            Enter(node, null, symbolTable);
+
+            symbolTable.AddType(node);
 
             _CurrentTypeDefinition = node;
         }

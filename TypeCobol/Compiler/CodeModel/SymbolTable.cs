@@ -195,11 +195,8 @@ namespace TypeCobol.Compiler.CodeModel
             //TypeDefinition must NOT be added to DataTypeEntries, only its children
             Debug.Assert(!(data is TypeDefinition)); 
 
-            //Types are declared in the Declarations SymbolTable
-            var table = GetTableFromScope(Scope.Declarations);
-            
             //Add symbol to the dictionary
-            Add(table.DataTypeEntries, data);
+            Add(this.DataTypeEntries, data);
         }
 
         public IEnumerable<DataDefinition> GetVariables(SymbolReference symbolReference)
@@ -720,6 +717,13 @@ namespace TypeCobol.Compiler.CodeModel
                 var result = GetVariablesUnderTypeDefinition(name, currSymbolTable);
                 if (result != null) {
                     dataDefinitions.AddRange(result);
+                }
+
+                //Stop when we reach the first Global scope, because otherwise a nested program can end up searching in it the global scope of its parent
+                //Global is the most upper scope that can contains Typedef (GlobalStorage cannot contains typedef)
+                if (currSymbolTable.CurrentScope == Scope.Global) 
+                {
+                    break;
                 }
                 currSymbolTable = currSymbolTable.EnclosingScope;
             }
