@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TypeCobol.Compiler.Scanner;
 using TypeCobol.Test.Compiler.Parser;
 using TypeCobol.Test.Parser;
 using TypeCobol.Test.Parser.FileFormat;
@@ -52,6 +53,9 @@ namespace TypeCobol.Test {
         {
             //System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
 
+            //TODO find a way to lock DefaultReturnWhiteSpaceToken so we can run parallels tests
+            Scanner.DefaultReturnWhiteSpaceToken = true;
+
             TestTokenTypes.CheckSeparators();
             TestTokenTypes.CheckComments();
             TestTokenTypes.CheckOperators();
@@ -77,12 +81,15 @@ namespace TypeCobol.Test {
             TestContinuations.CheckCommentEntry();
 
             TestRealPrograms.CheckAllFilesForExceptions();
+
+            Scanner.DefaultReturnWhiteSpaceToken = false;
         }
 
         [TestMethod]
         [TestProperty("Time", "fast")]
         public void CheckPreprocessor()
         {
+            Scanner.DefaultReturnWhiteSpaceToken = true;
             TestCompilerDirectiveBuilder.CheckBASIS();
             TestCompilerDirectiveBuilder.CheckCBL_PROCESS();
             TestCompilerDirectiveBuilder.CheckASTERISK_CONTROL_CBL();
@@ -112,6 +119,8 @@ namespace TypeCobol.Test {
             TestReplaceDirective.CheckReplaceNested();
             TestReplaceDirective.CheckReplaceFunction();
             TestReplaceDirective.CheckEmptyPartialWordReplace();
+
+            Scanner.DefaultReturnWhiteSpaceToken = false;
         }
 
         [TestMethod]
