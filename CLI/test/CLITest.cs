@@ -72,6 +72,24 @@ namespace CLI.Test
 #endif
         }
 
+        /// <summary>
+        /// Test various case of usage of dependencies such as good usage, bad file, bad path.
+        /// </summary>
+        [TestMethod]
+        public void TestDependenciesWithErrors() {
+            CLITestHelper.Test("dependencies_7_bad_call_proc", ReturnCode.ParsingDiagnostics);
+        }
+
+
+        
+
+            [TestMethod]
+        public void TestCircularTypedef_1()
+        {
+            CLITestHelper.Test("CircularTypedef_1", ReturnCode.ParsingDiagnostics);
+        }
+
+
         [TestMethod]
         public void TestEmptyDependency()
         {
