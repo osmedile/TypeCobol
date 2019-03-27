@@ -223,7 +223,6 @@ namespace TypeCobol.Compiler
 
                     List<DataDefinition> typedVariablesOutsideTypedef = new List<DataDefinition>();
                     List<TypeDefinition> typeThatNeedTypeLinking = new List<TypeDefinition>();
-                    List<TypeDefinition> typeToResolve = new List<TypeDefinition>();
 
                     //TODO cast to ImmutableList<CodeElementsLine> sometimes fails here
                     ProgramClassParserStep.CupParseProgramOrClass(TextSourceInfo, ((ImmutableList<CodeElementsLine>)codeElementsDocument.Lines), CompilerOptions, CustomSymbols, perfStatsForParserInvocation, out root, out newDiagnostics, out nodeCodeElementLinkers,
