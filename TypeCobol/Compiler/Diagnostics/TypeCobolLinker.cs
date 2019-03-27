@@ -272,10 +272,21 @@ namespace TypeCobol.Compiler.Diagnostics
         /// </summary>
         /// <param name="dataDefinition"></param>
         /// <returns>true if type has been resolved</returns>
-        private static bool ResolveType([NotNull] in DataDefinition dataDefinition)
+        public static bool ResolveType([NotNull] in DataDefinition dataDefinition)
         {
             //dataDefinition.CodeElement cannot be null, only Index have a null CodeElement and Index cannot be typed
-            var types = dataDefinition.SymbolTable.GetType(dataDefinition.CodeElement.DataType); 
+            List<TypeDefinition> types;
+
+            //Special hack until Visibility are fixed
+            //As global Scope is above Declarations it cannot have access to Declarations. So public type in Declarations scope cannot be reached.
+            if (dataDefinition.SymbolTable.CurrentScope == SymbolTable.Scope.Global)
+            {
+                types= dataDefinition.GetProgramNode().SymbolTable.EnclosingScope.GetType(dataDefinition.CodeElement.DataType);
+            }
+            else
+            {
+                types = dataDefinition.SymbolTable.GetType(dataDefinition.CodeElement.DataType);
+            }
 
             if (types.Count < 1)
             {
