@@ -70,7 +70,18 @@ namespace CLI.Test
 #if EUROINFO_RULES
             CLITestHelper.Test("ei_dependencies_1", ReturnCode.ParsingDiagnostics);
 #endif
+            CLITestHelper.Test("dependencies_7_bad_call_proc", ReturnCode.ParsingDiagnostics);
         }
+
+
+        
+
+            [TestMethod]
+        public void TestCircularTypedef_1()
+        {
+            CLITestHelper.Test("CircularTypedef_1", ReturnCode.ParsingDiagnostics);
+        }
+
 
         [TestMethod]
         public void TestEmptyDependency()

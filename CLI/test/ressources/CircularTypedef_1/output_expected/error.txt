@@ -1,0 +1,10 @@
+ReturnCode=ParsingDiagnostics_
+8 errors in "input\MainPgm.tcbl":
+Line 32[13,41] <30, Error, Semantics> - Semantic error: Type circular reference detected : MainType11 -> Type11 -> Type11
+Line 39[13,40] <30, Error, Semantics> - Semantic error: Type circular reference detected : MainType12 -> Type12 -> Type12
+Line 51[24,30] <27, Error, Syntax> - Syntax error : Symbol foo10.var10-1 is not referenced
+Line 51[35,42] <27, Error, Syntax> - Syntax error : Symbol var-10-1 is not referenced
+Line 42[13,58] <30, Error, Semantics> - Semantic error: TYPE 'MainPgm.MainUnusedType13' is not referenced
+Line 10[13,50] <30, Error, Semantics> - Semantic error: Type circular reference detected : Type1 -> Type1 -> MainType1
+Line 16[13,50] <30, Error, Semantics> - Semantic error: Type circular reference detected : Type2 -> Type2 -> MainType2
+Line 22[13,56] <30, Error, Semantics> - Semantic error: TYPE 'MainPgm.MainUnusedType3' is not referenced
