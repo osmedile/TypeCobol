@@ -892,7 +892,7 @@ namespace TypeCobol.Compiler.CodeModel
             }
         }
 
-        public IList<TypeDefinition> EmptyTypeDefinitionList = new List<TypeDefinition>();
+        public List<TypeDefinition> EmptyTypeDefinitionList = new List<TypeDefinition>();
         [NotNull]
         public IList<TypeDefinition> GetType(DataDefinition symbol)
         {
@@ -907,7 +907,7 @@ namespace TypeCobol.Compiler.CodeModel
 
       
         [NotNull]
-        public IList<TypeDefinition> GetType(DataType dataType, string pgmName = null)
+        public List<TypeDefinition> GetType(DataType dataType, string pgmName = null)
         {
             if (dataType.CobolLanguageLevel == CobolLanguageLevel.Cobol85)
             {
