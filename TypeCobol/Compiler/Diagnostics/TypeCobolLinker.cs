@@ -113,9 +113,8 @@ namespace TypeCobol.Compiler.Diagnostics
 
             foreach (var dataDefinition in typedVariablesOutsideTypedef)
             {
-                //There should be no typeDef at this point, because it's the job of the Linker and only it should do it
-                System.Diagnostics.Debug.Assert(dataDefinition.TypeDefinition == null);
-                
+                //Warning, when you ask to parse multiple input files with CLI, then TypeDefinition of typedVariablesOutsideTypedef can already be resolved
+
 
                 if (ResolveType(dataDefinition)) //If type has been found in SymbolTable
                 {
