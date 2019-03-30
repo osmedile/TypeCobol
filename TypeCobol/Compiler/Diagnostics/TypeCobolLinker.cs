@@ -104,7 +104,6 @@ namespace TypeCobol.Compiler.Diagnostics
         /// </summary>
         /// <param name="typedVariablesOutsideTypedef">Variable outside that use the "type" syntax</param>
         /// <param name="typeThatNeedTypeLinking">Typedef that need all its typed children to be resolved (only use case for now is "Depending on")</param>
-        /// <param name="typeToResolve">All others typedef</param>
         public static void LinkedTypedVariables([NotNull][ItemNotNull] in List<DataDefinition> typedVariablesOutsideTypedef, 
             [NotNull][ItemNotNull] in List<TypeDefinition> typeThatNeedTypeLinking)
         {
@@ -137,21 +136,13 @@ namespace TypeCobol.Compiler.Diagnostics
                 }
             }
 
+
             //Now link type that use depending On
             System.Diagnostics.Debug.Assert(currentlyCheckedTypedefStack.Count == 0, "Stack must be empty");
             foreach (var typeDefinition in typeThatNeedTypeLinking)
             {
                 LinkTypedChildren(typeDefinition, currentlyCheckedTypedefStack, typeDefinition.SymbolTable);
             }
-
-            /*
-            //Now just check for circular in remaining typedef
-            System.Diagnostics.Debug.Assert(currentlyCheckedTypedefStack.Count == 0, "Stack must be empty");
-            foreach (var typeDefinition in typeToResolve)
-            {
-                LinkTypedChildren(typeDefinition, currentlyCheckedTypedefStack);//No need to keep reference because these are unused types
-            }
-            */
         }
 
 
