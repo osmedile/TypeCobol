@@ -270,14 +270,14 @@ namespace TypeCobol.Compiler.Diagnostics
 
 
             //Special hack until Visibility are fixed (#1081 and #938)
-            //As "Global" Scope is above "Declarations" it cannot have access to "Declarations" scope.
-            //So public type in "Declarations" scope cannot be reached from the SymbolTable of a variable declared as global.
-            
-            //But a variable NOT global can access the SymbolTable "Declarations" and "Global".
-            //So we always retrieve the SymbolTable "Declarations" and resolve the type using this SymbolTable.
+            //As "Global" and "GlobalStorage" Scopes are above "Declarations" they cannot have access to "Declarations" scope.
+            //So types in "Declarations" scope cannot be reached from the SymbolTable of a variable declared as global or a variable inside global-storage.
+
+            //But a variable NOT global and not in global-storage can access the SymbolTable "Declarations" and "Global".
+            //So if we are in scopes "Global" or "GlobalStorage" we first need to retrieve a SymbolTable under "Declarations" and resolve the type using this SymbolTable.
             List<TypeDefinition> types;
             SymbolTable declarationsSymbolTable;
-            if (dataDefinition.SymbolTable.CurrentScope == SymbolTable.Scope.Global)
+            if (dataDefinition.SymbolTable.CurrentScope <= SymbolTable.Scope.Global)
             {
                 //Retrieve the Scope Declarations by retrieving the SymbolTable of the program which is of Scope "Program".
                 //Then use the EnclosingScope which is of scope "Declarations"
