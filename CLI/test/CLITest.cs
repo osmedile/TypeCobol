@@ -70,6 +70,7 @@ namespace CLI.Test
 #if EUROINFO_RULES
             CLITestHelper.Test("ei_dependencies_1", ReturnCode.ParsingDiagnostics);
 #endif
+            CLITestHelper.Test("dependencies_not_loaded_in_correct_order", ReturnCode.ParsingDiagnostics);
         }
 
         /// <summary>
