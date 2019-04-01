@@ -47,80 +47,92 @@ namespace TypeCobol.Test {
             TestReadOnlyTextDocument.Check_FreeFormatDocument();
         }
 
+        /// <summary>
+        /// Lock for concurrent access of Scanner.DefaultReturnWhiteSpaceToken.
+        /// When running tests in parallels we don't want 2 tests to modify Scanner.DefaultReturnWhiteSpaceToken at the same time.
+        /// </summary>
+        public static object ScannerLock = "";
+
         [TestMethod]
         [TestProperty("Time", "fast")]
         public void CheckScanner()
         {
             //System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
 
-            //TODO find a way to lock DefaultReturnWhiteSpaceToken so we can run parallels tests
-            Scanner.DefaultReturnWhiteSpaceToken = true;
+            lock (ScannerLock)
+            {
+                Scanner.DefaultReturnWhiteSpaceToken = true;
 
-            TestTokenTypes.CheckSeparators();
-            TestTokenTypes.CheckComments();
-            TestTokenTypes.CheckOperators();
-            TestTokenTypes.CheckAlphanumericLiterals();
-            TestTokenTypes.CheckPseudoText();
-            TestTokenTypes.CheckNumericLiterals();
-            TestTokenTypes.CheckKeywordsAndUserDefinedWords();
-            TestTokenTypes.CheckPartialCobolWords();
-            TestTokenTypes.CheckPictureCharacterString();
-            TestTokenTypes.CheckCommentEntry();
-            TestTokenTypes.CheckExecStatement();
-            TestTokenTypes.CheckContextSensitiveKeywords();
-            TestTokenTypes.CheckSymbolicCharacters();
-            TestTokenTypes.CheckCblProcessCompilerDirective();
+                TestTokenTypes.CheckSeparators();
+                TestTokenTypes.CheckComments();
+                TestTokenTypes.CheckOperators();
+                TestTokenTypes.CheckAlphanumericLiterals();
+                TestTokenTypes.CheckPseudoText();
+                TestTokenTypes.CheckNumericLiterals();
+                TestTokenTypes.CheckKeywordsAndUserDefinedWords();
+                TestTokenTypes.CheckPartialCobolWords();
+                TestTokenTypes.CheckPictureCharacterString();
+                TestTokenTypes.CheckCommentEntry();
+                TestTokenTypes.CheckExecStatement();
+                TestTokenTypes.CheckContextSensitiveKeywords();
+                TestTokenTypes.CheckSymbolicCharacters();
+                TestTokenTypes.CheckCblProcessCompilerDirective();
 
-            TestContinuations.CheckSeparators();
-            TestContinuations.CheckComments();
-            TestContinuations.CheckOperators();
-            TestContinuations.CheckAlphanumericLiterals();
-            TestContinuations.CheckNumericLiterals();
-            TestContinuations.CheckKeywordsAndUserDefinedWords();
-            TestContinuations.CheckPictureCharacterString();
-            TestContinuations.CheckCommentEntry();
+                TestContinuations.CheckSeparators();
+                TestContinuations.CheckComments();
+                TestContinuations.CheckOperators();
+                TestContinuations.CheckAlphanumericLiterals();
+                TestContinuations.CheckNumericLiterals();
+                TestContinuations.CheckKeywordsAndUserDefinedWords();
+                TestContinuations.CheckPictureCharacterString();
+                TestContinuations.CheckCommentEntry();
 
-            TestRealPrograms.CheckAllFilesForExceptions();
+                TestRealPrograms.CheckAllFilesForExceptions();
 
-            Scanner.DefaultReturnWhiteSpaceToken = false;
+                Scanner.DefaultReturnWhiteSpaceToken = false;
+            }
         }
 
         [TestMethod]
         [TestProperty("Time", "fast")]
         public void CheckPreprocessor()
         {
-            Scanner.DefaultReturnWhiteSpaceToken = true;
-            TestCompilerDirectiveBuilder.CheckBASIS();
-            TestCompilerDirectiveBuilder.CheckCBL_PROCESS();
-            TestCompilerDirectiveBuilder.CheckASTERISK_CONTROL_CBL();
+            lock (ScannerLock)
+            {
+                Scanner.DefaultReturnWhiteSpaceToken = true;
+                TestCompilerDirectiveBuilder.CheckBASIS();
+                TestCompilerDirectiveBuilder.CheckCBL_PROCESS();
+                TestCompilerDirectiveBuilder.CheckASTERISK_CONTROL_CBL();
 #if EUROINFO_RULES
-            TestCompilerDirectiveBuilder.CheckCOPY(); //Because of the presence of remarks directive and non use of comprarator
+                TestCompilerDirectiveBuilder
+                    .CheckCOPY(); //Because of the presence of remarks directive and non use of comprarator
 #endif
-            TestCompilerDirectiveBuilder.CheckDELETE();
-            TestCompilerDirectiveBuilder.CheckEJECT();
-            TestCompilerDirectiveBuilder.CheckENTER();
-            TestCompilerDirectiveBuilder.CheckEXEC_SQL_INCLUDE();
-            TestCompilerDirectiveBuilder.CheckINSERT();
-            TestCompilerDirectiveBuilder.CheckREADY_RESET_TRACE();
-            TestCompilerDirectiveBuilder.CheckREPLACE();
-            TestCompilerDirectiveBuilder.CheckSERVICE_LABEL();
-            TestCompilerDirectiveBuilder.CheckSERVICE_RELOAD();
-            TestCompilerDirectiveBuilder.CheckSKIP1_2_3();
-            TestCompilerDirectiveBuilder.CheckTITLE();
-            TestCompilerDirectiveBuilder.CheckRealFiles();
+                TestCompilerDirectiveBuilder.CheckDELETE();
+                TestCompilerDirectiveBuilder.CheckEJECT();
+                TestCompilerDirectiveBuilder.CheckENTER();
+                TestCompilerDirectiveBuilder.CheckEXEC_SQL_INCLUDE();
+                TestCompilerDirectiveBuilder.CheckINSERT();
+                TestCompilerDirectiveBuilder.CheckREADY_RESET_TRACE();
+                TestCompilerDirectiveBuilder.CheckREPLACE();
+                TestCompilerDirectiveBuilder.CheckSERVICE_LABEL();
+                TestCompilerDirectiveBuilder.CheckSERVICE_RELOAD();
+                TestCompilerDirectiveBuilder.CheckSKIP1_2_3();
+                TestCompilerDirectiveBuilder.CheckTITLE();
+                TestCompilerDirectiveBuilder.CheckRealFiles();
 
-            TestCopyDirective.CheckCopy();
-            TestCopyDirective.CheckCopyReplacing();
+                TestCopyDirective.CheckCopy();
+                TestCopyDirective.CheckCopyReplacing();
 
-            TestReplaceDirective.CheckReplaceSingle();
-            TestReplaceDirective.CheckReplacePartial();
-            TestReplaceDirective.CheckReplaceSingleToMultiple();
-            TestReplaceDirective.CheckReplaceMultiple();
-            TestReplaceDirective.CheckReplaceNested();
-            TestReplaceDirective.CheckReplaceFunction();
-            TestReplaceDirective.CheckEmptyPartialWordReplace();
+                TestReplaceDirective.CheckReplaceSingle();
+                TestReplaceDirective.CheckReplacePartial();
+                TestReplaceDirective.CheckReplaceSingleToMultiple();
+                TestReplaceDirective.CheckReplaceMultiple();
+                TestReplaceDirective.CheckReplaceNested();
+                TestReplaceDirective.CheckReplaceFunction();
+                TestReplaceDirective.CheckEmptyPartialWordReplace();
 
-            Scanner.DefaultReturnWhiteSpaceToken = false;
+                Scanner.DefaultReturnWhiteSpaceToken = false;
+            }
         }
 
         [TestMethod]
