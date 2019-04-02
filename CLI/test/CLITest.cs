@@ -70,7 +70,6 @@ namespace CLI.Test
 #if EUROINFO_RULES
             CLITestHelper.Test("ei_dependencies_1", ReturnCode.ParsingDiagnostics);
 #endif
-            CLITestHelper.Test("dependencies_not_loaded_in_correct_order", ReturnCode.ParsingDiagnostics);
         }
 
         /// <summary>
@@ -80,6 +79,16 @@ namespace CLI.Test
         public void TestDependenciesWithErrors() {
             CLITestHelper.Test("dependencies_7_bad_call_proc", ReturnCode.ParsingDiagnostics);
         }
+
+        /// <summary>
+        /// Tests with a dependency that depends on a dependency which is loaded after itself.
+        /// </summary>
+        [TestMethod]
+        public void TestDpendenciesNotLoadedInCorrectOrder() {
+            CLITestHelper.Test("dependenciesNotLoadedInCorrectOrder", ReturnCode.ParsingDiagnostics);
+        }
+
+
 
 
         
