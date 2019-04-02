@@ -86,6 +86,7 @@ namespace CLI.Test
         [TestMethod]
         public void TestDpendenciesNotLoadedInCorrectOrder() {
             CLITestHelper.Test("dependenciesNotLoadedInCorrectOrder", ReturnCode.ParsingDiagnostics);
+            CLITestHelper.Test("dependenciesNotLoadedInCorrectOrder_2", ReturnCode.Success);
         }
 
 
