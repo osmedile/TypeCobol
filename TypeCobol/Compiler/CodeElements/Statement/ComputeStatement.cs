@@ -64,24 +64,11 @@ public interface ArithmeticStatement {
 	Dictionary<StorageArea,List<ArithmeticExpression>> Affectations { get; }
 }
 
-public abstract class AbstractArithmeticStatement: StatementElement, ArithmeticStatement, VariableWriter {
+public abstract class AbstractArithmeticStatement: StatementElement, ArithmeticStatement {
     protected AbstractArithmeticStatement(CodeElementType ce, StatementType statement): base(ce, statement) { }
 	
 	public abstract Dictionary<StorageArea, List<ArithmeticExpression>> Affectations { get; }
-
-	public IDictionary<StorageArea, object> Variables { get { return VariablesWritten; } }
-	private IDictionary<StorageArea, object> variablesWritten;
-	public  IDictionary<StorageArea,object> VariablesWritten {
-		get {
-			if (variablesWritten != null) return variablesWritten;
-			variablesWritten = new Dictionary<StorageArea, object>();
-
-			foreach(var affectation in Affectations)
-				variablesWritten.Add(affectation.Key, affectation.Value);
-			return variablesWritten;
-		}
-	}
-	public bool IsUnsafe { get { return false; } }
+        
 }
 
 }
