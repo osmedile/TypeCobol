@@ -39,7 +39,6 @@ namespace TypeCobol.Compiler.CodeModel
                 if (symbolTable.TypesReferences.TryGetValue(currentTypeDef, out var typeReferences))
                 {
                     result.AddRange(typeReferences);
-
                 }
 
                 symbolTable = symbolTable.EnclosingScope; //Go to the next enclosing scope. 
@@ -94,16 +93,20 @@ namespace TypeCobol.Compiler.CodeModel
         {
             if (head != null)
             {
-                table.TryGetValue(head, out List<T> values);
-                if (values != null) return values.ToList();
+                if (table.TryGetValue(head, out List<T> values))
+                {
+                    return values.ToList();
+                }
             }
             return new List<T>();
         }
 
         private void GetFromTable<T>(string head, IDictionary<string, List<T>> table, List<T> result) where T : Node
         {
-            table.TryGetValue(head, out List<T> values);
-            if (values != null) result.AddRange(values);
+            if (table.TryGetValue(head, out List<T> values))
+            {
+                result.AddRange(values);
+            }
         }
 
         #region DATA SYMBOLS
