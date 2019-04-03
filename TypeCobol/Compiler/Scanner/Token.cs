@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using JetBrains.Annotations;
 using TypeCobol.Compiler.CodeElements;
 
 namespace TypeCobol.Compiler.Scanner
@@ -10,7 +11,7 @@ namespace TypeCobol.Compiler.Scanner
     /// COBOL word, a literal, a PICTURE character-string, or a comment-entry. 
     /// A separator is a string of contiguous characters used to delimit character strings.
     /// </summary>
-    public class Token : Antlr4.Runtime.IToken, IVisitable
+    public class Token : Antlr4.Runtime.IToken, IVisitable, IEquatable<Token>
     {
         private ITokensLine tokensLine;
         private int startIndex;
@@ -19,25 +20,30 @@ namespace TypeCobol.Compiler.Scanner
 		/// <summary>Empty constructor for mock.</summary>
 		public Token() { }
 
+
+        public override int GetHashCode()
+        {
+            return StartIndex * 1000 + StopIndex;
+        }
+
         public override bool Equals(object obj)
         {
-            if (!(obj is Token))
-                return false;
-            var tokenCompare = (Token) obj;
+            if (obj is Token tokenCompare)
+                return Equals(tokenCompare);
 
-            return this.Type == tokenCompare.Type
+            return false;
+        }
+
+        public bool Equals([NotNull] Token tokenCompare)
+        {
+            return this.TokenType == tokenCompare.TokenType
                    && this.Channel == tokenCompare.Channel
-                   && this.Column == tokenCompare.Column
-                   && this.EndColumn == tokenCompare.EndColumn
                    && this.ExpectedClosingDelimiter == tokenCompare.ExpectedClosingDelimiter
-                   && this.Length == tokenCompare.Length
-                   && this.Line == tokenCompare.Line
                    && this.StartIndex == tokenCompare.StartIndex
                    && this.StopIndex == tokenCompare.StopIndex
-                   && this.TokenIndex == tokenCompare.TokenIndex
+                   && this.Line == tokenCompare.Line
                    && this.HasClosingDelimiter == tokenCompare.HasClosingDelimiter
                    && this.LiteralValue == tokenCompare.LiteralValue
-                   && this.TokenType == tokenCompare.TokenType
                    && this.Text == tokenCompare.Text;
         }
 
