@@ -160,10 +160,8 @@ namespace TypeCobol.Compiler.CupParser
             }
             if (CodeElementsLines != null)
             {
-                int celCount = CodeElementsLines.Count;
-                for (; m_CodeElementsLineIndex < celCount; m_CodeElementsLineIndex++)
+                foreach(var cel in CodeElementsLines)
                 {
-                    CodeElementsLine cel = CodeElementsLines[m_CodeElementsLineIndex];
                     if (cel.CodeElements != null)
                     {
                         int ceCount = cel.CodeElements.Count;
