@@ -12,7 +12,7 @@ namespace TypeCobol.Compiler.CodeElements {
 /// more data items or literals into one single data item.
 /// One STRING statement can be written instead of a series of MOVE statements.
 /// </summary>
-public class StringStatement: StatementElement, VariableWriter {
+public class StringStatement: StatementElement {
 	public StringStatement(): base(CodeElementType.StringStatement, StatementType.StringStatement) { }
 
 	/// <summary>
@@ -76,37 +76,7 @@ public class StringStatement: StatementElement, VariableWriter {
 		}
 		return sb.ToString();
 	}
-
-	private IDictionary<StorageArea, object> variables;
-	public  IDictionary<StorageArea, object> Variables {
-		get {
-			if (variables != null) return variables;
-			variables = new Dictionary<StorageArea, object>();
-			foreach(var kv in VariablesWritten) variables.Add(kv.Key, kv.Value);
-			if (StringContentsToConcatenate == null) return variables;
-			foreach(var content in StringContentsToConcatenate) {
-				foreach(var variable in content.SendingFields) {
-					if (variable.IsLiteral) continue;
-					var storageArea = variable.StorageArea;
-                  
-                    if (!variables.ContainsKey(storageArea)) {
-                        variables.Add(storageArea, null);
-                    }
-                }
-			}
-			return variables;
-		}
-	}
-	private IDictionary<StorageArea, object> variablesWritten;
-	public  IDictionary<StorageArea,object> VariablesWritten {
-		get {
-			if (variablesWritten != null) return variablesWritten;
-			variablesWritten = new Dictionary<StorageArea, object>();
-			if (ReceivingField?.StorageArea != null) variablesWritten.Add(ReceivingField.StorageArea, StringContentsToConcatenate);
-			return variablesWritten;
-		}
-	}
-	public bool IsUnsafe { get { return false; }  }
+        
 
         public override bool VisitCodeElement(IASTVisitor astVisitor)
         {

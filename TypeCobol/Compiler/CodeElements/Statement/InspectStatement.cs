@@ -14,7 +14,7 @@
     /// * Converts all occurrences of specific characters in a data item to user-supplied
     /// replacement characters (format 4).
     /// </summary>
-    public abstract class InspectStatement : StatementElement, VariableWriter {
+    public abstract class InspectStatement : StatementElement {
         protected InspectStatement(StatementType statementType) : base(CodeElementType.InspectStatement, statementType) {
         }
 
@@ -29,29 +29,6 @@
         /// </summary>
         public ReceivingStorageArea InspectedItem { get; set; }
 
-        public IDictionary<StorageArea, object> Variables {
-            get { return VariablesWritten; }
-        }
-
-        protected IDictionary<StorageArea, object> variablesWritten;
-
-        public IDictionary<StorageArea, object> VariablesWritten {
-            get {
-                if (variablesWritten != null) return variablesWritten;
-                variablesWritten = new Dictionary<StorageArea, object>();
-                if (InspectedItem == null) return variablesWritten;
-                var receiver = InspectedItem.StorageArea;
-                if (InspectedItem.SendingStorageAreas == null || InspectedItem.SendingStorageAreas.Length < 1) {
-                    variablesWritten.Add(receiver, "?MAGIC_FOR_INSPECTED_ITEM_AS_ALPHANUM?");
-                    return variablesWritten;
-                }
-                foreach (var variable in InspectedItem.SendingStorageAreas) {
-                    string sender = variable.SymbolReference?.Name;
-                    variablesWritten.Add(receiver, sender);
-                }
-                return variablesWritten;
-            }
-        }
 
         public bool IsUnsafe {
             get { return false; }

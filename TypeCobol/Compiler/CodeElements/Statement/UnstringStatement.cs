@@ -10,7 +10,7 @@
 /// The UNSTRING statement causes contiguous data in a sending field to be
 /// separated and placed into multiple receiving fields.
 /// </summary>
-public class UnstringStatement: StatementElement, VariableWriter {
+public class UnstringStatement: StatementElement {
 	public UnstringStatement(): base(CodeElementType.UnstringStatement, StatementType.UnstringStatement) { }
 
 	/// <summary>
@@ -76,37 +76,7 @@ public class UnstringStatement: StatementElement, VariableWriter {
 		if (NumberOfDelimitedFieldsProcessed != null) str.Append(" TALLYING IN ").AppendLine(NumberOfDelimitedFieldsProcessed.ToString());
 		return str.ToString();
 	}
-
-	private IDictionary<StorageArea,object> variables;
-	public  IDictionary<StorageArea, object> Variables {
-		get {
-			if (variables != null) return variables;
-			variables = new Dictionary<StorageArea, object>();
-			foreach(var kv in VariablesWritten) variables.Add(kv.Key, kv.Value);
-			if (SendingField?.StorageArea != null && !SendingField.IsLiteral) variables.Add(SendingField.StorageArea, null);
-			return variables;
-		}
-	}
-	private IDictionary<StorageArea, object> variablesWritten;
-	public  IDictionary<StorageArea, object> VariablesWritten {
-		get {
-			if (variablesWritten != null) return variablesWritten;
-			variablesWritten = new Dictionary<StorageArea, object>();
-			if (ReceivingFields == null) return variablesWritten;
-			string sending = SendingField == null? null : SendingField.ToString();
-			foreach(var field in ReceivingFields)
-			{
-			    if (field.ReceivingField?.StorageArea == null) continue;
-		
-			    if (!variablesWritten.ContainsKey(field.ReceivingField.StorageArea)) {
-			        variablesWritten.Add(field.ReceivingField.StorageArea, sending);
-			    }
-			    
-			}
-			return variablesWritten;
-		}
-	}
-	public bool IsUnsafe { get { return false; }  }
+        
 
         public override bool VisitCodeElement(IASTVisitor astVisitor)
         {
