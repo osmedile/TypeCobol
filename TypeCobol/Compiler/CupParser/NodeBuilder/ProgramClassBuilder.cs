@@ -431,13 +431,13 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
                 if(_IsInsideWorkingStorageContext)
                     node.SetFlag(Node.Flag.WorkingSectionNode, true);      //Set flag to know that this node belongs to Working Storage Section
-                if(_IsInsideLinkageSectionContext)               
+                else if(_IsInsideLinkageSectionContext)               
                     node.SetFlag(Node.Flag.LinkageSectionNode, true);      //Set flag to know that this node belongs to Linkage Section
-                if(_IsInsideLocalStorageSectionContext)
+                else if (_IsInsideLocalStorageSectionContext)
                     node.SetFlag(Node.Flag.LocalStorageSectionNode, true); //Set flag to know that this node belongs to Local Storage Section
-                if (_IsInsideFileSectionContext)
+                else if (_IsInsideFileSectionContext)
                     node.SetFlag(Node.Flag.FileSectionNode, true);         //Set flag to know that this node belongs to File Section
-                if (_IsInsideGlobalStorageSection)
+                else if (_IsInsideGlobalStorageSection)
                     node.SetFlag(Node.Flag.GlobalStorageSection, true);         //Set flag to know that this node belongs to Global Storage Section
 
                 node.SymbolTable.AddVariable(node);
