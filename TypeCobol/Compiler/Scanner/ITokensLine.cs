@@ -13,7 +13,7 @@ namespace TypeCobol.Compiler.Scanner
         /// Tokens found while scanning the raw source text line
         /// (before the text manipulation phase)
         /// </summary>
-        IList<Token> SourceTokens { get; }
+        List<Token> SourceTokens { get; }
 
         /// <summary>
         /// Error and warning messages produced while scanning the raw source text line

@@ -44,7 +44,7 @@ namespace TypeCobol.Compiler.Scanner
         /// Tokens found while scanning the raw source text line
         /// (before the text manipulation phase)
         /// </summary>
-        public IList<Token> SourceTokens { get; private set; }
+        public List<Token> SourceTokens { get; private set; }
 
         /// <summary>
         /// True if the first token on the next line continues the last token of this line
