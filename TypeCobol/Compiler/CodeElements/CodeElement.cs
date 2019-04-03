@@ -27,11 +27,11 @@ namespace TypeCobol.Compiler.CodeElements
         /// </summary>
         public CodeElementType Type { get; private set; }
 
-        private IList<Token> _consumedTokens;
+        private List<Token> _consumedTokens;
         /// <summary>
         /// All significant tokens consumed in the source document to build this code element
         /// </summary>
-        public IList<Token> ConsumedTokens
+        public List<Token> ConsumedTokens
         {
             get { return this._consumedTokens; }
             set {
