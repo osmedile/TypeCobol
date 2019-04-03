@@ -65,7 +65,7 @@ namespace Analytics
         
         private Configuration _AppConfig;
         private string _TypeCobolVersion;
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static Logger logger = LogManager.GetLogger("AnalyticsWrapper");
 
         private AnalyticsWrapper()
         {
