@@ -37,7 +37,7 @@ internal class ProcedureDivision: Compiler.Nodes.ProcedureDivision, Generated {
 			if (declaration.Profile.ReturningParameter.LevelNumber.Value == 1)
 				ReturningParameter = new CallTargetParameter() { StorageArea = GeneratedParameter.CreateReceivingStorageArea(declaration.Profile.ReturningParameter.DataName) };
 
-		this.children.AddRange(sentences);
+		this.AddRange(sentences);
 
         var signature = new List<TextLineSnapshot>();
         signature.Add(new TextLineSnapshot(-1,
