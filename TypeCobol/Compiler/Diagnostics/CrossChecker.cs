@@ -76,13 +76,13 @@ namespace TypeCobol.Compiler.Diagnostics
         public override bool Visit(DataRenames dataRenames)
         {
             RenamesChecker.OnNode(dataRenames);
-            return false;
+            return true;
         }
 
         public override bool Visit(ProcedureStyleCall call)
         {
             FunctionCallChecker.OnNode(call);
-            return false;
+            return true;
         }
 
         
