@@ -65,19 +65,26 @@ namespace TypeCobol.Compiler.CodeElements
     {
         public IntegerValue(Token t) : base(t) { }
 
+        private long iValue = -1;
         public override long Value
         {
             get
             {
-                IntegerLiteralTokenValue integerLiteralValue = Token.LiteralValue as IntegerLiteralTokenValue;
-                if (integerLiteralValue != null)
+                if (iValue == -1)
                 {
-                    return integerLiteralValue.Number;
+                    
+                    IntegerLiteralTokenValue integerLiteralValue = Token.LiteralValue as IntegerLiteralTokenValue;
+                    if (integerLiteralValue != null)
+                    {
+                        iValue =  integerLiteralValue.Number;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Unexpected literal token type");
+                    }
+                    
                 }
-                else
-                {
-                    throw new InvalidOperationException("Unexpected literal token type");
-                }
+                return iValue;
             }
         }
 
