@@ -346,7 +346,7 @@ namespace TypeCobol.Compiler.Nodes {
                     return _physicalLength;
                 }
 
-                if (children != null)
+                if (ChildrenCount > 0)
                 {
                     if(Picture != null || (Usage != null && Usage != DataUsage.None && Children.Count == 0))
                     {
@@ -372,7 +372,7 @@ namespace TypeCobol.Compiler.Nodes {
                             _physicalLength = 0;
 
                         //Sum up the physical lengths of the children of the current node.
-                        foreach (var node in children)
+                        foreach (var node in Children)
                         {
                             var dataDefinition = (DataDefinition)node;
                             

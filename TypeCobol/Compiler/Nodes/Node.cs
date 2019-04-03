@@ -6,6 +6,7 @@ using System.Text;
 using TypeCobol.Compiler.CodeElements;
 using TypeCobol.Compiler.CodeElements.Expressions;
 using TypeCobol.Compiler.CodeModel;
+using TypeCobol.Compiler.Concurrency;
 using TypeCobol.Compiler.Diagnostics;
 using TypeCobol.Compiler.Text;
 using TypeCobol.Tools;
@@ -17,8 +18,11 @@ namespace TypeCobol.Compiler.Nodes {
     ///     - parent/children relations
     ///     - unique identification accross the tree
     /// </summary>
-    public abstract class Node : IVisitable{
-        protected List<Node> children = new List<Node>();
+    public abstract class Node : IVisitable
+    {
+        private List<Node> children;
+
+        private static IReadOnlyList<Node> emptyNodes = new ImmutableList<Node>();
 
         /// <summary>TODO: Codegen should do its stuff without polluting this class.</summary>
         public bool? Comment = null;
@@ -57,7 +61,7 @@ namespace TypeCobol.Compiler.Nodes {
 #if NET40
             get { return new ReadOnlyList<Node>(children); }
 #else
-            get { return children; }
+            get { return children ?? emptyNodes; }
 #endif
         }
 
@@ -243,7 +247,7 @@ namespace TypeCobol.Compiler.Nodes {
         public void SetFlag(Flag flag, bool value, bool bRecurse = false)
         {            
             Flags = value  ? (Flags | (uint)flag) : (Flags & ~(uint)flag);
-            if (bRecurse)
+            if (bRecurse && children != null)
             {
                 foreach (var child in children)
                 {
@@ -432,8 +436,11 @@ namespace TypeCobol.Compiler.Nodes {
             get {
                 var lines = new List<ITextLine>();
                 lines.AddRange(Lines);
-                foreach (var child in children) {
-                    lines.AddRange(child.SelfAndChildrenLines);
+                if (children != null)
+                {
+                    foreach (var child in children) {
+                        lines.AddRange(child.SelfAndChildrenLines);
+                    }
                 }
                 return lines;
             }
@@ -508,7 +515,7 @@ namespace TypeCobol.Compiler.Nodes {
         }
 
         public IList<N> GetChildren<N>() where N : Node {
-            return children.OfType<N>().ToList();
+            return Children.OfType<N>().ToList();
         }
 
 
@@ -533,6 +540,10 @@ namespace TypeCobol.Compiler.Nodes {
         /// <param name="child">Child to-be.</param>
         /// <param name="index">Child position in children list.</param>
         public virtual void Add(Node child, int index = -1) {
+            if (children == null)
+            {
+                children = new List<Node>();
+            }
             if (index < 0) children.Add(child);
             else children.Insert(index, child);
             child.Parent = this;
@@ -544,7 +555,11 @@ namespace TypeCobol.Compiler.Nodes {
         /// <param name="toAdd">children to be added</param>
         /// <param name="index">children position</param>
         public virtual void AddRange(IEnumerable<Node> toAdd, int index = -1)
-        {            
+        {
+            if (children == null)
+            {
+                children = new List<Node>();
+            }
             if (index < 0)
                 children.AddRange(toAdd);
             else children.InsertRange(index, toAdd);
@@ -566,7 +581,7 @@ namespace TypeCobol.Compiler.Nodes {
         /// <summary>Removes a child from this node.</summary>
         /// <param name="node">Child to remove. If this is not one of this Node's current children, nothing happens.</param>
         public void Remove(Node child) {
-            children.Remove(child);
+            children?.Remove(child);
             child.Parent = null;
         }
 
@@ -580,13 +595,17 @@ namespace TypeCobol.Compiler.Nodes {
         /// <returns>Position in the children list.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException">As List</exception>
         public int IndexOf(Node child) {
-            return children.IndexOf(child);
+            return children?.IndexOf(child) ?? -1;
         }
 
         /// <summary>Delete all childrens of this node.</summary>
         public void Clear() {
-            foreach (var child in children) child.Parent = null;
-            children.Clear();
+
+            if (children != null)
+            {
+                foreach (var child in children) child.Parent = null;
+                children.Clear();
+            }
         }
 
         /// <summary>
@@ -595,7 +614,7 @@ namespace TypeCobol.Compiler.Nodes {
         /// <param name="lines">A List to store all children.</param>
         public void ListChildren(List<Node> list)
         {
-            if (list == null) return;
+            if (list == null || children==null) return;
             foreach (var child in children)
             {
                 list.Add(child);
@@ -623,10 +642,14 @@ namespace TypeCobol.Compiler.Nodes {
                     return this;
                 }
             }
-            foreach (var child in Children)
+
+            if (children!=null)
             {
-                var found = child.Get(uri);
-                if (found != null) return found;
+                foreach (var child in Children)
+                {
+                    var found = child.Get(uri);
+                    if (found != null) return found;
+                }
             }
             return null;
         }
@@ -652,11 +675,15 @@ namespace TypeCobol.Compiler.Nodes {
                     return this;
                 }
             }
-            for (int i = startIndex; i < children.Count; i++)
+
+            if (children !=null)
             {
-                var child = this.children[i];
-                var found = child.Get(uri);
-                if (found != null) return found;
+                for (int i = startIndex; i < children.Count; i++)
+                {
+                    var child = this.children[i];
+                    var found = child.Get(uri);
+                    if (found != null) return found;
+                }
             }
             return null;
         }
@@ -698,7 +725,7 @@ namespace TypeCobol.Compiler.Nodes {
                 CodeElement?.AcceptASTVisitor(astVisitor);
             }
 
-            if (continueVisit) {
+            if (continueVisit && children!=null) {
                 //To Handle concurrent modifications during traverse.
                 //Get the array of Children that must be traverse.
                 if (astVisitor.CanModifyChildrenNode)
@@ -749,7 +776,7 @@ namespace TypeCobol.Compiler.Nodes {
 
         /// <summary>TODO: Codegen should do its stuff without polluting this class.</summary>
         public void RemoveAllChildren() {
-            children.Clear();
+            children?.Clear();
         }
 
         /// <summary>Implementation of the GoF Visitor pattern.</summary>
@@ -912,7 +939,11 @@ namespace TypeCobol.Compiler.Nodes {
             //TODO? maybe use ConvertAll or Cast from LINQ, but only
             // if the performance is better or if it avoids a copy.
             var result = new List<C>();
-            foreach (var child in node.Children) result.Add((C) child);
+
+            if (node.ChildrenCount > 0)
+            {
+                foreach (var child in node.Children) result.Add((C) child);
+            }
 #if NET40
             return new ReadOnlyList<C>(result);
 #else
@@ -943,7 +974,7 @@ namespace TypeCobol.Compiler.Nodes {
         public IEnumerable<Program> Programs {
             get
             {
-                return this.children.Where(c => c is Program && !((Program)c).IsNested).Select(c => c as Program);
+                return this.Children.Where(c => c is Program && !((Program)c).IsNested).Select(c => c as Program);
             }
         }
 
@@ -953,7 +984,7 @@ namespace TypeCobol.Compiler.Nodes {
         {
             get
             {
-                return this.children.OfType<Class>();
+                return this.Children.OfType<Class>();
             }
         }
 

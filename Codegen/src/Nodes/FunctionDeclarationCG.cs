@@ -48,7 +48,7 @@ namespace TypeCobol.Codegen.Nodes {
                     foreach (var sentence in child.Children)
                         sentences.Add(sentence);
                     var pdiv = new ProcedureDivision(originalNode, sentences);
-                    children.Add(pdiv);
+                    Add(pdiv);
 
                     
                     //Generate code if this procedure call a public procedure in another source
@@ -71,11 +71,11 @@ namespace TypeCobol.Codegen.Nodes {
                 } else {
                     if (child.CodeElement is FunctionDeclarationEnd)
                     {
-                        children.Add(new ProgramEnd(new URI(OriginalHash), OriginalProcName, child.CodeElement.Line));
+                        Add(new ProgramEnd(new URI(OriginalHash), OriginalProcName, child.CodeElement.Line));
                     } else {
                         // TCRFUN_CODEGEN_NO_ADDITIONAL_DATA_SECTION
                         // TCRFUN_CODEGEN_DATA_SECTION_AS_IS
-                        children.Add(child);
+                        Add(child);
                     }
                 }
             }
