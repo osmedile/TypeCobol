@@ -346,8 +346,7 @@ namespace TypeCobol.Compiler.Nodes {
                     return _physicalLength;
                 }
 
-                if (ChildrenCount > 0)
-                {
+                
                     if(Picture != null || (Usage != null && Usage != DataUsage.None && Children.Count == 0))
                     {
                         _physicalLength = GetPhysicalLength();
@@ -370,22 +369,25 @@ namespace TypeCobol.Compiler.Nodes {
                     {
                         if (_physicalLength == -1)
                             _physicalLength = 0;
-
-                        //Sum up the physical lengths of the children of the current node.
-                        foreach (var node in Children)
+                        if (ChildrenCount > 0)
                         {
-                            var dataDefinition = (DataDefinition)node;
-                            
-                            //The highest amount of memory taken between a node and its redefinition is always the size taken in memory
-                            if (dataDefinition is DataRedefines == false)
+                            //Sum up the physical lengths of the children of the current node.
+                            foreach (var node in Children)
                             {
-                                var redefines = dataDefinition.GetBiggestRedefines();
-                                _physicalLength += Math.Max(redefines?.PhysicalLength + redefines?.SlackBytes ?? 0, dataDefinition.PhysicalLength + dataDefinition.SlackBytes);
+                                var dataDefinition = (DataDefinition) node;
+
+                                //The highest amount of memory taken between a node and its redefinition is always the size taken in memory
+                                if (dataDefinition is DataRedefines == false)
+                                {
+                                    var redefines = dataDefinition.GetBiggestRedefines();
+                                    _physicalLength += Math.Max(redefines?.PhysicalLength + redefines?.SlackBytes ?? 0,
+                                        dataDefinition.PhysicalLength + dataDefinition.SlackBytes);
+                                }
                             }
                         }
                     }
                     
-                }
+                
 
                 if (MaxOccurencesCount > 1)
                 {
