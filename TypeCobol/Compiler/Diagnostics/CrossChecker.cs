@@ -339,28 +339,42 @@ namespace TypeCobol.Compiler.Diagnostics
             }
 
 
-            if (HasChildrenThatDeclareData(dataDefinition))
+            bool? hasChildrenThatDeclareData = null;
+            if (dataDefinition.Picture != null)
             {
-                if (dataDefinition.Picture != null)
+                hasChildrenThatDeclareData = HasChildrenThatDeclareData(dataDefinition);
+                if (hasChildrenThatDeclareData == true)
                 {
                     DiagnosticUtils.AddError(dataDefinition,
                         "Group item " + dataDefinition.Name + " cannot have a \"PICTURE\"", dataDefinitionEntry);
                 }
+            }
 
-                if (commonDataDataDefinitionCodeElement?.UserDefinedDataType != null)
+            if (commonDataDataDefinitionCodeElement?.UserDefinedDataType != null)
+            {
+                if(hasChildrenThatDeclareData == null)
+                    hasChildrenThatDeclareData = HasChildrenThatDeclareData(dataDefinition);
+
+                if (hasChildrenThatDeclareData == true)
                 {
                     DiagnosticUtils.AddError(dataDefinition,
                         "Group item  " + dataDefinition.Name + " cannot have a \"TYPE\"", dataDefinitionEntry);
                 }
+            }
 
-                if (commonDataDataDefinitionCodeElement?.IsBlankWhenZero?.Value == true)
+            if (commonDataDataDefinitionCodeElement?.IsBlankWhenZero?.Value == true)
+            {
+                if (hasChildrenThatDeclareData == null)
+                    hasChildrenThatDeclareData = HasChildrenThatDeclareData(dataDefinition);
+
+                if (hasChildrenThatDeclareData == true)
                 {
                     DiagnosticUtils.AddError(dataDefinition,
-                        "Group itm " + dataDefinition.Name + " cannot have \"Blank when zero\" clause", dataDefinitionEntry);
+                        "Group itm " + dataDefinition.Name + " cannot have \"Blank when zero\" clause",
+                        dataDefinitionEntry);
                 }
-
-                return true;
             }
+
 
             DataDefinitionChecker.OnNode(dataDefinition);
 
@@ -374,7 +388,7 @@ namespace TypeCobol.Compiler.Diagnostics
         /// <returns>True if there are only DataConditionEntry or DataRenamesEntry childrens</returns>
         private static bool HasChildrenThatDeclareData(DataDefinition dataDefinition)
         {
-            return dataDefinition.Children.Any(elem=>elem.CodeElement != null && 
+            return dataDefinition.ChildrenCount >0 && dataDefinition.Children.Any(elem=>elem.CodeElement != null && 
                                                      elem.CodeElement.Type != CodeElementType.DataConditionEntry && 
                                                      elem.CodeElement.Type != CodeElementType.DataRenamesEntry);
         }
