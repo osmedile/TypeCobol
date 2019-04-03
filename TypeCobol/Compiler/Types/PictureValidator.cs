@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TypeCobol.Compiler.CodeElements;
+using TypeCobol.Compiler.Scanner;
 
 namespace TypeCobol.Compiler.Types
 {
@@ -36,6 +38,10 @@ namespace TypeCobol.Compiler.Types
             DecimalPoint = '.';
             NumericSeparator = ',';
             ValidationMesssage = new List<string>();
+        }
+
+        public PictureValidator(Token pictureToken, string picture, bool separateSign = false) : this(AlphanumericValue.ApplyDecimalPointIsComma(pictureToken, picture), separateSign)
+        {
         }
 
         /// <summary>

@@ -327,8 +327,7 @@ namespace TypeCobol.Compiler.Nodes {
             get
             {
                 if (_pictureValidator != null) return _pictureValidator;
-
-                _pictureValidator = new PictureValidator(Picture.Value, SignIsSeparate);
+                _pictureValidator = new PictureValidator(Picture.Token, Picture.Value, SignIsSeparate);
 
                 return _pictureValidator;
             }

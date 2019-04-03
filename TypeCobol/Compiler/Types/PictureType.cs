@@ -11,43 +11,8 @@ namespace TypeCobol.Compiler.Types
     /// </summary>
     public class PictureType : TypeCobolType
     {
-        /// <summary>
-        /// Empty Constructor
-        /// </summary>
-        public PictureType()
-            : base(Tags.Picture)
-        {
-            Category = PictureCategory.Error;
-        }
+       
 
-        /// <summary>
-        /// AlphaNumericValue Constructor
-        /// <param name="separateSign">a boolean value indicating whether the sign is separate character</param>
-        /// </summary>
-        /// <param name="tokens"></param>
-        public PictureType(Compiler.CodeElements.AlphanumericValue value, bool separateSign) : this(value.Token, separateSign)
-        {
-        }
-
-        /// <summary>
-        /// Token constructor
-        /// </summary>
-        /// <param name="token">The consumed token corresponding to this Picture</param>
-        /// <param name="separateSign">a boolean value indicating whether the sign is separate character</param>
-        public PictureType(TypeCobol.Compiler.Scanner.Token token, bool separateSign) : this()
-        {
-            ConsumedToken = token;
-            IsSeparateSign = separateSign;
-        }
-
-        /// <summary>
-        /// String constructor
-        /// </summary>
-        /// <param name="value">Picture string value</param>
-        /// <param name="separateSign">a boolean value indicating whether the sign is separate character</param>
-        public PictureType(String value, bool separateSign) : this(new PictureValidator(value, separateSign))
-        {            
-        }
 
         /// <summary>
         /// Validator constructor.
@@ -96,7 +61,7 @@ namespace TypeCobol.Compiler.Types
                 System.Diagnostics.Debug.Assert(value != null);
                 m_ConsumedToken = value;
                 //Use the Automata Picture String Validator
-                PictureValidator validator = new PictureValidator(value.Text, IsSeparateSign);
+                PictureValidator validator = new PictureValidator(m_ConsumedToken, value.Text, IsSeparateSign);
                 AssignFromValidator(validator);
             }
         }
