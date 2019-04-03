@@ -423,75 +423,85 @@ namespace TUVienna.CS_CUP.Runtime
       report_fatal_error("Couldn't repair and continue parse", cur_token);
     }
 
-  /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
+        /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
 
-  /** Fetch an action from the action table.  The table is broken up into
-   *  rows, one per state (rows are indexed directly by state number).  
-   *  Within each row, a list of index, value pairs are given (as sequential
-   *  entries in the table), and the list is terminated by a default entry 
-   *  (denoted with a Symbol index of -1).  To find the proper entry in a row 
-   *  we do a linear or binary search (depending on the size of the row).  
-   *
-   * @param state the state index of the action being accessed.
-   * @param sym   the Symbol index of the action being accessed.
-   */
-  protected  short get_action(int state, int sym)
-    {
-      short tag;
-      int first, last, probe;
-      short[] row = action_tab[state];
+        /** Fetch an action from the action table.  The table is broken up into
+         *  rows, one per state (rows are indexed directly by state number).  
+         *  Within each row, a list of index, value pairs are given (as sequential
+         *  entries in the table), and the list is terminated by a default entry 
+         *  (denoted with a Symbol index of -1).  To find the proper entry in a row 
+         *  we do a linear or binary search (depending on the size of the row).  
+         *
+         * @param state the state index of the action being accessed.
+         * @param sym   the Symbol index of the action being accessed.
+         */
+        protected short get_action(int state, int sym)
+        {
+            int probe;
+            short[] row = action_tab[state];
 
-      /* linear search if we are < 10 entries */
-      if (row.Length < 20)
-        for (probe = 0; probe < row.Length; probe++)
-	  {
-	    /* is this entry labeled with our Symbol or the default? */
-	    tag = row[probe++];
-	    if (tag == sym || tag == -1)
-	      {
-	        /* return the next entry */
-	        return row[probe];
-	      }
-	  }
-      /* otherwise binary search */
-      else
-	{
-	  first = 0; 
-	  last = (row.Length-1)/2 - 1;  /* leave out trailing default entry */
-	  while (first <= last)
-	    {
-	      probe = (first+last)/2;
-	      if (sym == row[probe*2])
-		return row[probe*2+1];
-	      else if (sym > row[probe*2])
-		first = probe+1;
-	      else
-	        last = probe-1;
-	    }
+            /* linear search if we are < 10 entries */
+            if (row.Length < 20)
+                for (probe = 0; probe < row.Length; probe++)
+                {
+                    /* is this entry labeled with our Symbol or the default? */
+                    var tag = row[probe++];
+                    if (tag == sym || tag == -1)
+                    {
+                        /* return the next entry */
+                        return row[probe];
+                    }
+                }
+            /* otherwise binary search */
+            else
+            {
+                var first = 0;
+                var last = (row.Length - 1) / 2 - 1;
+                while (first <= last)
+                {
+                    /*
+                    probe = (first + last) / 2;
+                    if (sym == row[probe * 2])
+                        return row[probe * 2 + 1];
+                    else if (sym > row[probe * 2])
+                        first = probe + 1;
+                    else
+                        last = probe - 1;
 
-	  /* not found, use the default at the end */
-	  return row[row.Length-1];
-	}
+                    */
+                    probe = (first + last) / 2;
+                    var probe2 = probe * 2;
+                    if (sym == row[probe2])
+                        return row[probe2 + 1];
+                    else if (sym > row[probe2])
+                        first = probe + 1;
+                    else
+                        last = probe - 1;
+                }
 
-      /* shouldn't happened, but if we run off the end we return the 
-	 default (error == 0) */
-      return 0;
-    }
+                /* not found, use the default at the end */
+                return row[row.Length - 1];
+            }
 
-  /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
+            /* shouldn't happened, but if we run off the end we return the 
+           default (error == 0) */
+            return 0;
+        }
 
-  /** Fetch a state from the reduce-goto table.  The table is broken up into
-   *  rows, one per state (rows are indexed directly by state number).  
-   *  Within each row, a list of index, value pairs are given (as sequential
-   *  entries in the table), and the list is terminated by a default entry 
-   *  (denoted with a Symbol index of -1).  To find the proper entry in a row 
-   *  we do a linear search.  
-   *
-   * @param state the state index of the entry being accessed.
-   * @param sym   the Symbol index of the entry being accessed.
-   */
-    
-  protected  short get_reduce(int state, int sym)
+        /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
+
+        /** Fetch a state from the reduce-goto table.  The table is broken up into
+         *  rows, one per state (rows are indexed directly by state number).  
+         *  Within each row, a list of index, value pairs are given (as sequential
+         *  entries in the table), and the list is terminated by a default entry 
+         *  (denoted with a Symbol index of -1).  To find the proper entry in a row 
+         *  we do a linear search.  
+         *
+         * @param state the state index of the entry being accessed.
+         * @param sym   the Symbol index of the entry being accessed.
+         */
+
+        protected  short get_reduce(int state, int sym)
     {
       short tag;
       short[] row = reduce_tab[state];
