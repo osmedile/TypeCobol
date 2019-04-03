@@ -67,9 +67,12 @@ namespace TypeCobol.Compiler.Parser
         /// <summary>Notifies listeners about the creation of a new CodeElement.</summary>
         public void OnNode(Node node, Program program)
         {
-            foreach (var listener in _listeners)
+            if (_listeners.Count > 0)
             {
-                listener.OnNode(node, program);
+                foreach (var listener in _listeners)
+                {
+                    listener.OnNode(node, program);
+                }
             }
         }
 
