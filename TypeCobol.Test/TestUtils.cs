@@ -32,7 +32,7 @@ namespace TypeCobol.Test
             StringBuilder errors = new StringBuilder();
 
             //Set to true to automaticaly replace content in ExpectedResult File
-            bool autoReplace = false;
+            bool autoReplace = true;
 
             if (testName == string.Empty && result == string.Empty && expectedResult == string.Empty &&
                 expectedResultPath == string.Empty)
@@ -116,9 +116,9 @@ namespace TypeCobol.Test
                 FormatLine(compiler.PerfStatsForText.FirstCompilationTime, totalTime, "text update");
                 FormatLine(compiler.PerfStatsForScanner.FirstCompilationTime, totalTime, "scanner");
                 FormatLine(compiler.PerfStatsForPreprocessor.FirstCompilationTime, totalTime, "preprocessor");
-                FormatLine(compiler.PerfStatsForCodeElementsParser.FirstCompilationTime, totalTime, "code elements parser");
-                FormatLine(compiler.PerfStatsForTemporarySemantic.FirstCompilationTime, totalTime, "temporary semantic class parser");
-                FormatLine(compiler.PerfStatsForProgramCrossCheck.FirstCompilationTime, totalTime, "cross check class parser");
+                FormatLine(compiler.PerfStatsForCodeElementsParser.FirstCompilationTime, totalTime, "code elements");
+                FormatLine(compiler.PerfStatsForTemporarySemantic.FirstCompilationTime, totalTime, "temporary semantic");
+                FormatLine(compiler.PerfStatsForProgramCrossCheck.FirstCompilationTime, totalTime, "cross check");
 
                 report.AppendLine("Total: " + totalTime.ToString("##0.00") + " ms");
             }
@@ -132,8 +132,8 @@ namespace TypeCobol.Test
             FormatLine(stats.AverageScannerTime, stats.AverageTotalProcessingTime, "scanner");
             FormatLine(stats.AveragePreprocessorTime, stats.AverageTotalProcessingTime, "preprocessor");
             FormatLine(stats.AverageCodeElementParserTime, stats.AverageTotalProcessingTime, "code elements parser");
-            FormatLine(stats.AverateTemporarySemanticsParserTime, stats.AverageTotalProcessingTime, "temporary semantic class parser");
-            FormatLine(stats.AverageCrossCheckerParserTime, stats.AverageTotalProcessingTime, "cross check class parser");
+            FormatLine(stats.AverateTemporarySemanticsParserTime, stats.AverageTotalProcessingTime, "temporary semantic");
+            FormatLine(stats.AverageCrossCheckerParserTime, stats.AverageTotalProcessingTime, "cross check");
 
             report.AppendLine("Total average time: " + stats.AverageTotalProcessingTime.ToString("##0.00") + " ms");
 

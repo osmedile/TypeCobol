@@ -242,14 +242,21 @@ namespace TypeCobol.Compiler
                 ExecutionStepEventHandler?.Invoke(this, new ExecutionStepEventArgs() { ExecutionStep = ExecutionStep.SyntaxCheck});
 
                 if (!(exec2Step > ExecutionStep.SyntaxCheck)) return;
-
+#if DEBUG
+Thread.Sleep(2000);
+#endif
                 CompilationResultsForProgram.ProduceTemporarySemanticDocument(); //SemanticCheck
                 ExecutionStepEventHandler?.Invoke(this, new ExecutionStepEventArgs() { ExecutionStep = ExecutionStep.SemanticCheck });
-
+#if DEBUG
+Thread.Sleep(1000);
+#endif
                 if (!(exec2Step > ExecutionStep.SemanticCheck)) return;
 
                 CompilationResultsForProgram.RefreshProgramClassDocumentSnapshot(); //Cross Check step
                 ExecutionStepEventHandler?.Invoke(this, new ExecutionStepEventArgs() { ExecutionStep = ExecutionStep.CrossCheck });
+#if DEBUG
+Thread.Sleep(2000);
+#endif
             }
         }
     }
