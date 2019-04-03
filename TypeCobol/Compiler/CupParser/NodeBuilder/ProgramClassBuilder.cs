@@ -117,7 +117,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             private set;
         }
 
-        private void Enter(Node node, CodeElement context = null, SymbolTable table = null)
+        private void Enter(Node node, SymbolTable table = null)
         {
             node.SymbolTable = table ?? SyntaxTree.CurrentNode.SymbolTable;
             if (_ProcedureDeclaration != null)
@@ -217,19 +217,19 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
                 
                 programsStack = new Stack<Program>();
                 CurrentProgram = Program;
-                Enter(CurrentProgram, programIdentification, CurrentProgram.SymbolTable);
+                Enter(CurrentProgram, CurrentProgram.SymbolTable);
             }
             else
             {
                 var enclosing = CurrentProgram;
                 CurrentProgram = new NestedProgram(enclosing, programIdentification);
-                Enter(CurrentProgram, programIdentification, CurrentProgram.SymbolTable);
+                Enter(CurrentProgram, CurrentProgram.SymbolTable);
             }
 
             if (libraryCopy != null)
             { // TCRFUN_LIBRARY_COPY
                 var cnode = new LibraryCopy(libraryCopy);
-                Enter(cnode, libraryCopy, CurrentProgram.SymbolTable);
+                Enter(cnode, CurrentProgram.SymbolTable);
                 Exit();
             }
 
@@ -251,7 +251,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartEnvironmentDivision(EnvironmentDivisionHeader header)
         {
-            Enter(new EnvironmentDivision(header), header);
+            Enter(new EnvironmentDivision(header));
         }
 
         public virtual void EndEnvironmentDivision()
@@ -261,7 +261,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartConfigurationSection(ConfigurationSectionHeader header)
         {
-            Enter(new ConfigurationSection(header), header);
+            Enter(new ConfigurationSection(header));
         }
 
         public virtual void EndConfigurationSection()
@@ -311,7 +311,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartInputOutputSection(InputOutputSectionHeader header)
         {
-            Enter(new InputOutputSection(header), header);
+            Enter(new InputOutputSection(header));
         }
 
         public virtual void EndInputOutputSection()
@@ -321,7 +321,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartFileControlParagraph(FileControlParagraphHeader header)
         {
-            Enter(new FileControlParagraphHeaderNode(header), header);
+            Enter(new FileControlParagraphHeaderNode(header));
         }
 
         public virtual void EndFileControlParagraph()
@@ -332,7 +332,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         public virtual void StartFileControlEntry(FileControlEntry entry)
         {
             var fileControlEntry = new FileControlEntryNode(entry);
-            Enter(fileControlEntry, entry);
+            Enter(fileControlEntry);
         }
 
         public virtual void EndFileControlEntry()
@@ -342,7 +342,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartDataDivision(DataDivisionHeader header)
         {
-            Enter(new DataDivision(header), header);
+            Enter(new DataDivision(header));
         }
 
         public virtual void EndDataDivision()
@@ -352,7 +352,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartFileSection(FileSectionHeader header)
         {
-            Enter(new FileSection(header), header);
+            Enter(new FileSection(header));
             _IsInsideFileSectionContext = true;
         }
 
@@ -365,7 +365,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartGlobalStorageSection(GlobalStorageSectionHeader header)
         {
-            Enter(new GlobalStorageSection(header), header, SyntaxTree.CurrentNode.SymbolTable.GetTableFromScope(SymbolTable.Scope.GlobalStorage));
+            Enter(new GlobalStorageSection(header), SyntaxTree.CurrentNode.SymbolTable.GetTableFromScope(SymbolTable.Scope.GlobalStorage));
             _IsInsideGlobalStorageSection = true;
         }
 
@@ -379,7 +379,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         public virtual void StartFileDescriptionEntry(FileDescriptionEntry entry)
         {
             ExitLastLevel1Definition();
-            Enter(new FileDescriptionEntryNode(entry), entry);
+            Enter(new FileDescriptionEntryNode(entry));
         }
 
         public virtual void EndFileDescriptionEntry()
@@ -412,7 +412,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
                 var node = new DataDescription(entry);
                 if (_CurrentTypeDefinition != null)
                     node.ParentTypeDefinition = _CurrentTypeDefinition;
-                Enter(node, null, symbolTable);
+                Enter(node, symbolTable);
 
                 if (entry.Indexes != null && entry.Indexes.Length > 0)
                 {
@@ -420,7 +420,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
                     foreach (var index in entry.Indexes)
                     {
                         var indexNode = new IndexDefinition(index);
-                        Enter(indexNode, null, symbolTable);
+                        Enter(indexNode, symbolTable);
                         if (_CurrentTypeDefinition != null)
                             indexNode.ParentTypeDefinition = _CurrentTypeDefinition;
                         symbolTable.AddVariable(indexNode);
@@ -485,7 +485,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             var node = new DataRedefines(entry);
             if (_CurrentTypeDefinition != null)
                 node.ParentTypeDefinition = _CurrentTypeDefinition;
-            Enter(node, null, symbolTable);
+            Enter(node, symbolTable);
             node.SymbolTable.AddVariable(node);
 
             CheckIfItsTyped(node, node.CodeElement);
@@ -519,7 +519,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             var symbolTable = SyntaxTree.CurrentNode.SymbolTable.GetTableFromScope(typedef.IsGlobal ? SymbolTable.Scope.Global : SymbolTable.Scope.Declarations);
 
             var node = new TypeDefinition(typedef);
-            Enter(node, null, symbolTable);
+            Enter(node, symbolTable);
 
             symbolTable.AddType(node);
 
@@ -529,7 +529,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartWorkingStorageSection(WorkingStorageSectionHeader header)
         {
-            Enter(new WorkingStorageSection(header), header);
+            Enter(new WorkingStorageSection(header));
             _IsInsideWorkingStorageContext = true;
             if (_ProcedureDeclaration != null)
             {
@@ -546,7 +546,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartLocalStorageSection(LocalStorageSectionHeader header)
         {
-            Enter(new LocalStorageSection(header), header);
+            Enter(new LocalStorageSection(header));
             _IsInsideLocalStorageSectionContext = true;
             if (_ProcedureDeclaration != null)
             {
@@ -563,7 +563,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartLinkageSection(LinkageSectionHeader header)
         {
-            Enter(new LinkageSection(header), header);
+            Enter(new LinkageSection(header));
             _IsInsideLinkageSectionContext = true;
             if (_ProcedureDeclaration != null)
             {
@@ -580,7 +580,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartProcedureDivision(ProcedureDivisionHeader header)
         {
-            Enter(new ProcedureDivision(header), header);
+            Enter(new ProcedureDivision(header));
             if (_ProcedureDeclaration != null)
             {
                 CurrentNode.SetFlag(Node.Flag.ForceGetGeneratedLines, true);
@@ -594,7 +594,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartDeclaratives(DeclarativesHeader header)
         {
-            Enter(new Declaratives(header), header);
+            Enter(new Declaratives(header));
         }
 
         public virtual void EndDeclaratives(DeclarativesEnd end)
@@ -605,7 +605,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void EnterUseStatement(UseStatement useStatement)
         {
-            Enter(new Use(useStatement), useStatement);
+            Enter(new Use(useStatement));
             Exit();
         }
 
@@ -628,7 +628,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             //Function must be added to Declarations scope
             var declarationSymbolTable = SyntaxTree.CurrentNode.SymbolTable.GetTableFromScope(SymbolTable.Scope.Declarations);
             declarationSymbolTable.AddFunction(node);
-            Enter(node, header, new SymbolTable(declarationSymbolTable, SymbolTable.Scope.Function));
+            Enter(node, new SymbolTable(declarationSymbolTable, SymbolTable.Scope.Function));
 
             var declaration = node.CodeElement;
             var funcProfile = node.Profile; //Get functionprofile to set parameters
@@ -685,7 +685,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void EndFunctionDeclaration(FunctionDeclarationEnd end)
         {
-            Enter(new FunctionEnd(end), end);
+            Enter(new FunctionEnd(end));
             Exit();
             Exit();// exit DECLARE FUNCTION
             _ProcedureDeclaration = null;
@@ -696,7 +696,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             if (header.UsingParameters != null && header.UsingParameters.Count > 0)
                 DiagnosticUtils.AddError(header, "TCRFUN_DECLARATION_NO_USING");//TODO#249
 
-            Enter(new ProcedureDivision(header), header);
+            Enter(new ProcedureDivision(header));
         }
 
         public virtual void EndFunctionProcedureDivision()
@@ -707,7 +707,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         public virtual void StartSection(SectionHeader header)
         {
             var section = new Section(header);
-            Enter(section, header);
+            Enter(section);
             section.SymbolTable.AddSection(section);
         }
 
@@ -719,7 +719,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         public virtual void StartParagraph(ParagraphHeader header)
         {
             var paragraph = new Paragraph(header);
-            Enter(paragraph, header);
+            Enter(paragraph);
             paragraph.SymbolTable.AddParagraph(paragraph);
         }
 
@@ -730,7 +730,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartSentence()
         {
-            Enter(new Sentence(), null);
+            Enter(new Sentence());
         }
 
         public virtual void EndSentence(SentenceEnd end, bool bCheck)
@@ -771,7 +771,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         public virtual void StartExecStatement(ExecStatement execStmt)
         {
             ExitLastLevel1Definition();
-            Enter(new Exec(execStmt), execStmt);
+            Enter(new Exec(execStmt));
         }
 
         public virtual void EndExecStatement()
@@ -798,146 +798,146 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void OnContinueStatement(ContinueStatement stmt)
         {
-            Enter(new Continue(stmt), stmt);
+            Enter(new Continue(stmt));
             Exit();
         }
 
         public virtual void OnEntryStatement(EntryStatement stmt)
         {
-            Enter(new Entry(stmt), stmt);
+            Enter(new Entry(stmt));
             Exit();
         }
 
         public virtual void OnAcceptStatement(AcceptStatement stmt)
         {
-            Enter(new Accept(stmt), stmt);
+            Enter(new Accept(stmt));
             Exit();
         }
 
         public virtual void OnInitializeStatement(InitializeStatement stmt)
         {
-            Enter(new Initialize(stmt), stmt);
+            Enter(new Initialize(stmt));
             Exit();
         }
 
         public virtual void OnInspectStatement(InspectStatement stmt)
         {
-            Enter(new Inspect(stmt), stmt);
+            Enter(new Inspect(stmt));
             Exit();
         }
 
         public virtual void OnMoveStatement(MoveStatement stmt)
         {
-            Enter(new Move(stmt), stmt);
+            Enter(new Move(stmt));
             Exit();
         }
 
         public virtual void OnSetStatement(SetStatement stmt)
         {
-            Enter(new Set(stmt), stmt);
+            Enter(new Set(stmt));
             Exit();
         }
 
         public virtual void OnStopStatement(StopStatement stmt)
         {
-            Enter(new Stop(stmt), stmt);
+            Enter(new Stop(stmt));
             Exit();
         }
 
         public virtual void OnExitMethodStatement(ExitMethodStatement stmt)
         {
-            Enter(new ExitMethod(stmt), stmt);
+            Enter(new ExitMethod(stmt));
             Exit();
         }
 
         public virtual void OnExitProgramStatement(ExitProgramStatement stmt)
         {
-            Enter(new ExitProgram(stmt), stmt);
+            Enter(new ExitProgram(stmt));
             Exit();
         }
 
         public virtual void OnGobackStatement(GobackStatement stmt)
         {
-            Enter(new Goback(stmt), stmt);
+            Enter(new Goback(stmt));
             Exit();
         }
 
         public virtual void OnCloseStatement(CloseStatement stmt)
         {
-            Enter(new Close(stmt), stmt);
+            Enter(new Close(stmt));
             Exit();
         }
 
         public virtual void OnDisplayStatement(DisplayStatement stmt)
         {
-            Enter(new Display(stmt), stmt);
+            Enter(new Display(stmt));
             Exit();
         }
 
         public virtual void OnOpenStatement(OpenStatement stmt)
         {
-            Enter(new Open(stmt), stmt);
+            Enter(new Open(stmt));
             Exit();
         }
 
         public virtual void OnMergeStatement(MergeStatement stmt)
         {
-            Enter(new Merge(stmt), stmt);
+            Enter(new Merge(stmt));
             Exit();
         }
 
         public virtual void OnReleaseStatement(ReleaseStatement stmt)
         {
-            Enter(new Release(stmt), stmt);
+            Enter(new Release(stmt));
             Exit();
         }
 
         public virtual void OnSortStatement(SortStatement stmt)
         {
-            Enter(new Sort(stmt), stmt);
+            Enter(new Sort(stmt));
             Exit();
         }
 
         public virtual void OnAlterStatement(AlterStatement stmt)
         {
-            Enter(new Alter(stmt), stmt);
+            Enter(new Alter(stmt));
             Exit();
         }
 
         public void OnExitStatement(ExitStatement stmt)
         {
-            Enter(new Exit(stmt), stmt);
+            Enter(new Exit(stmt));
             Exit();
         }
 
         public virtual void OnGotoStatement(GotoStatement stmt)
         {
-            Enter(new Goto(stmt), stmt);
+            Enter(new Goto(stmt));
             Exit();
         }
 
         public virtual void OnPerformProcedureStatement(PerformProcedureStatement stmt)
         {
-            Enter(new PerformProcedure(stmt), stmt);
+            Enter(new PerformProcedure(stmt));
             Exit();
         }
 
         public virtual void OnCancelStatement(CancelStatement stmt)
         {
-            Enter(new Cancel(stmt), stmt);
+            Enter(new Cancel(stmt));
             Exit();
         }
 
         public virtual void OnProcedureStyleCall(ProcedureStyleCallStatement stmt, CallStatementEnd end)
         {
-            Enter(new ProcedureStyleCall(stmt), stmt);            
+            Enter(new ProcedureStyleCall(stmt));            
             AttachEndIfExists(end);
             Exit();
         }
 
         public virtual void OnExecStatement(ExecStatement stmt)
         {
-            Enter(new Exec(stmt), stmt);
+            Enter(new Exec(stmt));
 
             //Code duplicated in OnExecStatement
             //EndExecStatement (therefore StartExecStatement) is fired if the exec is in a procedure division and is the first instruction
@@ -961,7 +961,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartAddStatementConditional(TypeCobol.Compiler.CodeElements.AddStatement stmt)
         {
-            Enter(new Add(stmt), stmt);
+            Enter(new Add(stmt));
         }
 
         public virtual void EndAddStatementConditional(TypeCobol.Compiler.CodeElements.AddStatementEnd end)
@@ -972,7 +972,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartCallStatementConditional(TypeCobol.Compiler.CodeElements.CallStatement stmt)
         {
-            Enter(new Call(stmt), stmt);
+            Enter(new Call(stmt));
         }
 
         public virtual void EndCallStatementConditional(TypeCobol.Compiler.CodeElements.CallStatementEnd end)
@@ -983,7 +983,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartComputeStatementConditional(TypeCobol.Compiler.CodeElements.ComputeStatement stmt)
         {
-            Enter(new Compute(stmt), stmt);
+            Enter(new Compute(stmt));
         }
 
         public virtual void EndComputeStatementConditional(TypeCobol.Compiler.CodeElements.ComputeStatementEnd end)
@@ -994,7 +994,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartOnSizeError(TypeCobol.Compiler.CodeElements.OnSizeErrorCondition cond)
         {
-            Enter(new OnSizeError(cond), cond);
+            Enter(new OnSizeError(cond));
         }
 
         public virtual void EndOnSizeError()
@@ -1004,7 +1004,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartNoSizeError(TypeCobol.Compiler.CodeElements.NotOnSizeErrorCondition cond)
         {
-            Enter(new NoSizeError(cond), cond);
+            Enter(new NoSizeError(cond));
         }
 
         public virtual void EndNoSizeError()
@@ -1014,7 +1014,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartOnException(TypeCobol.Compiler.CodeElements.OnExceptionCondition cond)
         {
-            Enter(new OnException(cond), cond);
+            Enter(new OnException(cond));
         }
 
         public virtual void EndOnException()
@@ -1024,7 +1024,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartNoException(TypeCobol.Compiler.CodeElements.NotOnExceptionCondition cond)
         {
-            Enter(new NoException(cond), cond);
+            Enter(new NoException(cond));
         }
 
         public virtual void EndNoException()
@@ -1034,7 +1034,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartOnOverflow(TypeCobol.Compiler.CodeElements.OnOverflowCondition cond)
         {
-            Enter(new OnOverflow(cond), cond);
+            Enter(new OnOverflow(cond));
         }
 
         public virtual void EndOnOverflow()
@@ -1044,7 +1044,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartNoOverflow(TypeCobol.Compiler.CodeElements.NotOnOverflowCondition cond)
         {
-            Enter(new NoOverflow(cond), cond);
+            Enter(new NoOverflow(cond));
         }
 
         public virtual void EndNoOverflow()
@@ -1054,7 +1054,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartOnInvalidKey(TypeCobol.Compiler.CodeElements.InvalidKeyCondition cond)
         {
-            Enter(new OnInvalidKey(cond), cond);
+            Enter(new OnInvalidKey(cond));
         }
 
         public virtual void EndOnInvalidKey()
@@ -1064,7 +1064,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartNoInvalidKey(TypeCobol.Compiler.CodeElements.NotInvalidKeyCondition cond)
         {
-            Enter(new NoInvalidKey(cond), cond);
+            Enter(new NoInvalidKey(cond));
         }
 
         public virtual void EndNoInvalidKey()
@@ -1074,7 +1074,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartOnAtEnd(TypeCobol.Compiler.CodeElements.AtEndCondition cond)
         {
-            Enter(new OnAtEnd(cond), cond);
+            Enter(new OnAtEnd(cond));
         }
 
         public virtual void EndOnAtEnd()
@@ -1084,7 +1084,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartNoAtEnd(TypeCobol.Compiler.CodeElements.NotAtEndCondition cond)
         {
-            Enter(new NoAtEnd(cond), cond);
+            Enter(new NoAtEnd(cond));
         }
 
         public virtual void EndNoAtEnd()
@@ -1094,7 +1094,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartDeleteStatementConditional(TypeCobol.Compiler.CodeElements.DeleteStatement stmt)
         {
-            Enter(new Delete(stmt), stmt);
+            Enter(new Delete(stmt));
         }
 
         public virtual void EndDeleteStatementConditional(TypeCobol.Compiler.CodeElements.DeleteStatementEnd end)
@@ -1105,7 +1105,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartDivideStatementConditional(TypeCobol.Compiler.CodeElements.DivideStatement stmt)
         {
-            Enter(new Divide(stmt), stmt);
+            Enter(new Divide(stmt));
         }
 
         public virtual void EndDivideStatementConditional(TypeCobol.Compiler.CodeElements.DivideStatementEnd end)
@@ -1116,7 +1116,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartEvaluateStatementWithBody(TypeCobol.Compiler.CodeElements.EvaluateStatement stmt)
         {
-            Enter(new Evaluate(stmt), stmt);// enter EVALUATE
+            Enter(new Evaluate(stmt));// enter EVALUATE
         }
 
         public virtual void EndEvaluateStatementWithBody(TypeCobol.Compiler.CodeElements.EvaluateStatementEnd end)
@@ -1127,7 +1127,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartWhenConditionClause(List<TypeCobol.Compiler.CodeElements.CodeElement> conditions)
         {
-            Enter(new WhenGroup(), null);// enter WHEN group
+            Enter(new WhenGroup());// enter WHEN group
             foreach(var cond in conditions)
             {
                 TypeCobol.Compiler.CodeElements.WhenCondition condition = null;
@@ -1153,11 +1153,11 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
                 {
                     condition = cond as TypeCobol.Compiler.CodeElements.WhenCondition;
                 }
-                Enter(new When(condition), condition);
+                Enter(new When(condition));
                 Exit();
             }
             Exit();// exit WHEN group
-            Enter(new Then(), conditions[0]);// enter THEN
+            Enter(new Then());// enter THEN
         }
 
 
@@ -1168,7 +1168,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartWhenOtherClause(TypeCobol.Compiler.CodeElements.WhenOtherCondition cond)
         {
-            Enter(new WhenOther(cond), cond);// enter WHEN OTHER
+            Enter(new WhenOther(cond));// enter WHEN OTHER
         }
 
         public virtual void EndWhenOtherClause()
@@ -1178,13 +1178,13 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartIfStatementWithBody(TypeCobol.Compiler.CodeElements.IfStatement stmt)
         {
-            Enter(new If(stmt), stmt);
-            Enter(new Then(), stmt);
+            Enter(new If(stmt));
+            Enter(new Then());
         }
         public virtual void EnterElseClause(TypeCobol.Compiler.CodeElements.ElseCondition clause)
         {
             Exit();// we want ELSE to be child of IF, not THEN, so exit THEN
-            Enter(new Else(clause), clause);// ELSE
+            Enter(new Else(clause));// ELSE
         }
         public virtual void EndIfStatementWithBody(TypeCobol.Compiler.CodeElements.IfStatementEnd end)
         {
@@ -1202,7 +1202,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartInvokeStatementConditional(TypeCobol.Compiler.CodeElements.InvokeStatement stmt)
         {
-            Enter(new Invoke(stmt), stmt);
+            Enter(new Invoke(stmt));
         }
 
         public virtual void EndInvokeStatementConditional(TypeCobol.Compiler.CodeElements.InvokeStatementEnd end)
@@ -1213,7 +1213,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartMultiplyStatementConditional(TypeCobol.Compiler.CodeElements.MultiplyStatement stmt)
         {
-            Enter(new Multiply(stmt), stmt);
+            Enter(new Multiply(stmt));
         }
 
         public virtual void EndMultiplyStatementConditional(TypeCobol.Compiler.CodeElements.MultiplyStatementEnd end)
@@ -1224,7 +1224,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartPerformStatementWithBody(TypeCobol.Compiler.CodeElements.PerformStatement stmt)
         {
-            Enter(new Perform(stmt), stmt);
+            Enter(new Perform(stmt));
         }
 
         public virtual void EndPerformStatementWithBody(TypeCobol.Compiler.CodeElements.PerformStatementEnd end)
@@ -1235,7 +1235,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartSearchStatementWithBody([NotNull] TypeCobol.Compiler.CodeElements.SearchStatement stmt)
         {
-            Enter(new Search(stmt), stmt);
+            Enter(new Search(stmt));
         }
 
         public virtual void EndSearchStatementWithBody(TypeCobol.Compiler.CodeElements.SearchStatementEnd end)
@@ -1246,7 +1246,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartWhenSearchConditionClause(TypeCobol.Compiler.CodeElements.WhenSearchCondition condition)
         {
-            Enter(new WhenSearch(condition), condition);
+            Enter(new WhenSearch(condition));
         }
 
         public virtual void EndWhenSearchConditionClause()
@@ -1256,7 +1256,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void EnterReadStatementConditional(TypeCobol.Compiler.CodeElements.ReadStatement stmt)
         {
-            Enter(new Read(stmt), stmt);
+            Enter(new Read(stmt));
         }
 
         public virtual void EndReadStatementConditional(TypeCobol.Compiler.CodeElements.ReadStatementEnd end)
@@ -1267,7 +1267,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void EnterReturnStatementConditional(TypeCobol.Compiler.CodeElements.ReturnStatement stmt)
         {
-            Enter(new Return(stmt), stmt);
+            Enter(new Return(stmt));
         }
 
         public virtual void EndReturnStatementConditional(TypeCobol.Compiler.CodeElements.ReturnStatementEnd end)
@@ -1278,7 +1278,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartRewriteStatementConditional(TypeCobol.Compiler.CodeElements.RewriteStatement stmt)
         {
-            Enter(new Rewrite(stmt), stmt);
+            Enter(new Rewrite(stmt));
         }
 
         public virtual void EndRewriteStatementConditional(TypeCobol.Compiler.CodeElements.RewriteStatementEnd end)
@@ -1289,7 +1289,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartStartStatementConditional(TypeCobol.Compiler.CodeElements.StartStatement stmt)
         {
-            Enter(new Start(stmt), stmt);
+            Enter(new Start(stmt));
         }
 
         public virtual void EndStartStatementConditional(TypeCobol.Compiler.CodeElements.StartStatementEnd end)
@@ -1300,7 +1300,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartStringStatementConditional([NotNull] TypeCobol.Compiler.CodeElements.StringStatement stmt)
         {
-            Enter(new Nodes.String(stmt), stmt);
+            Enter(new Nodes.String(stmt));
         }
 
         public virtual void EndStringStatementConditional(TypeCobol.Compiler.CodeElements.StringStatementEnd end)
@@ -1311,7 +1311,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartSubtractStatementConditional(TypeCobol.Compiler.CodeElements.SubtractStatement stmt)
         {
-            Enter(new Subtract(stmt), stmt);
+            Enter(new Subtract(stmt));
         }
 
         public virtual void EndSubtractStatementConditional(TypeCobol.Compiler.CodeElements.SubtractStatementEnd end)
@@ -1322,7 +1322,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartUnstringStatementConditional(TypeCobol.Compiler.CodeElements.UnstringStatement stmt)
         {
-            Enter(new Unstring(stmt), stmt);
+            Enter(new Unstring(stmt));
         }
 
         public virtual void EndUnstringStatementConditional(TypeCobol.Compiler.CodeElements.UnstringStatementEnd end)
@@ -1333,7 +1333,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartWriteStatementConditional(TypeCobol.Compiler.CodeElements.WriteStatement stmt)
         {
-            Enter(new Write(stmt), stmt);
+            Enter(new Write(stmt));
         }
 
         public virtual void EndWriteStatementConditional(TypeCobol.Compiler.CodeElements.WriteStatementEnd end)
@@ -1344,7 +1344,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartXmlGenerateStatementConditional([NotNull] TypeCobol.Compiler.CodeElements.XmlGenerateStatement stmt)
         {
-            Enter(new XmlGenerate(stmt), stmt);
+            Enter(new XmlGenerate(stmt));
         }
 
         public virtual void EndXmlGenerateStatementConditional(TypeCobol.Compiler.CodeElements.XmlStatementEnd end)
@@ -1355,7 +1355,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartXmlParseStatementConditional([NotNull] TypeCobol.Compiler.CodeElements.XmlParseStatement stmt)
         {
-            Enter(new XmlParse(stmt), stmt);
+            Enter(new XmlParse(stmt));
         }
 
         public virtual void EndXmlParseStatementConditional(TypeCobol.Compiler.CodeElements.XmlStatementEnd end)
