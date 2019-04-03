@@ -242,8 +242,15 @@ namespace TypeCobol.Compiler.Nodes {
             if(_References == null)
                 _References = new Dictionary<StorageArea, Node>();
 
-            if (!_References.ContainsKey(storageArea))
+            if(!_References.TryGetValue(storageArea, out var nodeAlready))
+            {
                 _References.Add(storageArea, node);
+            }
+            else
+            {
+                System.Diagnostics.Debug.Assert(node == nodeAlready);
+            }
+
         }
 
         public Dictionary<StorageArea, Node> GetReferences()
