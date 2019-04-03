@@ -376,7 +376,7 @@ namespace TypeCobol.Compiler.CodeElements
                     case TokenType.ZEROES:
                         return "0";
                     case TokenType.PictureCharacterString:
-                        return ApplyDecimalPointIsComma(Token.Text);
+                        //return ApplyDecimalPointIsComma(Token.Text);
                     case TokenType.CommentEntry:
                     case TokenType.ExecStatementText:
                     case TokenType.IntrinsicFunctionName:
@@ -431,9 +431,14 @@ namespace TypeCobol.Compiler.CodeElements
 
         private string ApplyDecimalPointIsComma(string picText)
         {
+            return ApplyDecimalPointIsComma(Token, picText);
+        }
+
+        public static string ApplyDecimalPointIsComma(Token token, string picText)
+        {
             if (picText.Contains(",") || picText.Contains("."))
             {
-                var tokensLine = Token.TokensLine as TokensLine;
+                var tokensLine = token.TokensLine as TokensLine;
                 if (tokensLine != null && tokensLine.InitialScanState.DecimalPointIsComma)
                 {
                     System.Text.StringBuilder parsedPicture = new System.Text.StringBuilder();
