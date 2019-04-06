@@ -192,29 +192,42 @@ namespace TypeCobol.LanguageServer
 
         public static CompletionItem CreateCompletionItemForVariable(DataDefinition variable, bool useQualifiedName = true)
         {
-
-            var qualifiedName = variable.VisualQualifiedName.Skip(variable.VisualQualifiedName.Count > 1 ? 1 : 0); //Skip Program Name
-
-            var finalQualifiedName = qualifiedName.ToList();
-
-            if (variable.CodeElement != null && variable.CodeElement.IsInsideCopy())
+            string variableArrangedQualifiedName;
+            
+            if (useQualifiedName)
             {
-                finalQualifiedName.Clear();
-               
-#if EUROINFO_RULES
-                var lastSplited = qualifiedName.Last().Split('-');
-                if(!qualifiedName.First().Contains(lastSplited.First()))
-                    finalQualifiedName.Add(qualifiedName.First());
-#else
-                finalQualifiedName.Add(qualifiedName.First());
                 
+
+                if (variable.CodeElement != null && variable.CodeElement.IsInsideCopy())
+                {
+                    var qualifiedName = variable.VisualQualifiedNameWithoutProgram;
+                    var finalQualifiedName = new List<string>();
+
+#if EUROINFO_RULES
+                    var last = qualifiedName.Last();
+                    var lastSplited = last.Split('-');
+                    var first = qualifiedName.First();
+
+
+                    if (!first.Contains(lastSplited.First()))
+                        finalQualifiedName.Add(first);
+#else
+                     finalQualifiedName.Add(qualifiedName.First());
 #endif
-                if (qualifiedName.First() != qualifiedName.Last())
-                    finalQualifiedName.Add(qualifiedName.Last());
+                    if (first != last)
+                        finalQualifiedName.Add(last);
 
+                    variableArrangedQualifiedName = string.Join("::", finalQualifiedName);
+                }
+                else
+                {
+                    variableArrangedQualifiedName = string.Join("::", variable.VisualQualifiedNameWithoutProgram);
+                }
             }
-
-            var variableArrangedQualifiedName = useQualifiedName ? string.Join("::", finalQualifiedName) : variable.Name;
+            else
+            {
+                variableArrangedQualifiedName = variable.Name;
+            }
 
             var variableDisplay = string.Format("{0} ({1}) ({2})", variable.Name, variable.DataType.Name, variableArrangedQualifiedName);
             return new CompletionItem(variableDisplay) { insertText = variableArrangedQualifiedName, kind = CompletionItemKind.Variable };

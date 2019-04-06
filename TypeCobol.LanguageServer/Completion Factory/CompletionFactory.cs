@@ -524,15 +524,12 @@ namespace TypeCobol.LanguageServer
         #region Variable Completion
         public static IEnumerable<CompletionItem> GetCompletionForVariable(FileCompiler fileCompiler, CodeElement codeElement, Expression<Func<DataDefinition, bool>> predicate)
         {
-            var completionItems = new List<CompletionItem>();
             var node = GetMatchingNode(fileCompiler, codeElement);
             if (node == null)
-                return completionItems;
+                return new List<CompletionItem>();
 
             var variables = node.SymbolTable.GetVariables(predicate, SymbolTable.Scope.GlobalStorage);
-            completionItems.AddRange(CompletionFactoryHelpers.CreateCompletionItemsForVariables(variables));
-
-            return completionItems;
+            return CompletionFactoryHelpers.CreateCompletionItemsForVariables(variables);
         }
         #endregion
 
