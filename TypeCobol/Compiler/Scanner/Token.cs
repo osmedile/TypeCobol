@@ -36,6 +36,7 @@ namespace TypeCobol.Compiler.Scanner
 
         public bool Equals([NotNull] Token tokenCompare)
         {
+            if (Object.ReferenceEquals(this, tokenCompare)) return true;
             return this.TokenType == tokenCompare.TokenType
                    && this.Channel == tokenCompare.Channel
                    && this.ExpectedClosingDelimiter == tokenCompare.ExpectedClosingDelimiter
