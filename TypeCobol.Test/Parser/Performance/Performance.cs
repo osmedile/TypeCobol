@@ -415,7 +415,12 @@ namespace TypeCobol.Test.Parser.Performance
             stopwatch.Start();
             if (compilationUnit.AllDiagnostics().Any(d => d.Info.Severity == Severity.Error))
             {
-                throw new Exception("Error diagnostics Detected"+ compilationUnit.AllDiagnostics().First(d => d.Info.Severity == Severity.Error));
+                foreach (var diagnostic in compilationUnit.AllDiagnostics())
+                {
+                    Console.WriteLine(diagnostic);
+                }
+                Console.WriteLine();
+                throw new Exception("Error diagnostics Detected" + compilationUnit.AllDiagnostics().First(d => d.Info.Severity == Severity.Error));
             }
 
             return stopwatch.ElapsedMilliseconds;
