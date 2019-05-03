@@ -437,6 +437,11 @@ namespace TypeCobol.Test.Parser.Performance
         {
             if (compilationUnit.AllDiagnostics().Any(d => d.Info.Severity == Severity.Error))
             {
+                foreach (var diagnostic in compilationUnit.AllDiagnostics())
+                {
+                    Console.WriteLine(diagnostic);
+                }
+                Console.WriteLine();
                 throw new Exception("Error diagnostics Detected");
             }
         }
