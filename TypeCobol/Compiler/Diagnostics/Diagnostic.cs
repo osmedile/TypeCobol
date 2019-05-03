@@ -49,6 +49,7 @@ namespace TypeCobol.Compiler.Diagnostics
 
         public override bool Equals(object obj)
         {
+            if (object.ReferenceEquals(this, obj)) return true;
             Diagnostic diag = obj as Diagnostic;
             if (diag == null)
                 return false;

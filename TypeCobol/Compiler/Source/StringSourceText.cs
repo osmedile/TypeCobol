@@ -372,6 +372,7 @@ namespace TypeCobol.Compiler.Source
         /// <returns>true if both the given source text is equals to this one, false otherwise</returns>
         public override bool Equals(object obj)
         {
+            if (object.ReferenceEquals(this, obj)) return true;
             if (!(obj is StringSourceText))
                 return false;
             StringSourceText t = (StringSourceText)obj;

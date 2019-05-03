@@ -482,6 +482,7 @@ namespace TypeCobol.Compiler.Scanner
         /// </summary>
         public override bool Equals(object obj)
         {
+            if (object.ReferenceEquals(this, obj)) return true;
             MultilineScanState otherScanState = obj as MultilineScanState;
             if (otherScanState == null)
             {

@@ -69,6 +69,7 @@ namespace TypeCobol.Compiler.CodeElements
 
         public override bool Equals(object obj)
         {
+            if (object.ReferenceEquals(this, obj)) return true;
             SymbolInformation otherSymbol = obj as SymbolInformation;
             if (otherSymbol == null)
             {

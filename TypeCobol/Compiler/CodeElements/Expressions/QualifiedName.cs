@@ -90,6 +90,7 @@ namespace TypeCobol.Compiler.CodeElements.Expressions
         }
         public virtual bool Equals(QualifiedName other)
         {
+            if (object.ReferenceEquals(this, other)) return true;
             if (other == null) return false;
             //			if (other.IsExplicit != IsExplicit) return false;
             if (other.Count != Count) return false;

@@ -44,6 +44,7 @@ namespace TypeCobol.Compiler.Nodes
 
         public override bool Equals(object other)
         {
+            if (object.ReferenceEquals(this, other)) return true;
             if (other == null || GetType() != other.GetType()) return false;
             var o = other as ParametersProfileNode;
             if (o == null) return false;

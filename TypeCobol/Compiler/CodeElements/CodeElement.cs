@@ -157,6 +157,7 @@ namespace TypeCobol.Compiler.CodeElements
 
         public override bool Equals(object obj)
         {
+            if (object.ReferenceEquals(this, obj)) return true;
             var codeElement = obj as CodeElement;
             if (codeElement == null)
                 return false;

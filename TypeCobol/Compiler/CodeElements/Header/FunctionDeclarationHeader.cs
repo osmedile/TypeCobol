@@ -233,7 +233,8 @@ namespace TypeCobol.Compiler.CodeElements {
 	    public bool IsProcedure { get { return ReturningParameter == null; } }
 
 	    public override bool Equals(object other) {
-		    if (other == null || GetType() != other.GetType()) return false;
+            if (object.ReferenceEquals(this, other)) return true;
+            if (other == null || GetType() != other.GetType()) return false;
 		    var o = other as ParametersProfile;
 		    if (o == null) return false;
 		    // instead of doing foreach(var mode in Tools.Reflection.GetValues<Passing.Mode>()) ...,

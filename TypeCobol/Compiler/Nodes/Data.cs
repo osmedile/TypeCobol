@@ -854,16 +854,14 @@ namespace TypeCobol.Compiler.Nodes {
 
         public override bool Equals(object obj)
         {
-            if ((obj as TypeDefinition) != null)
+            if (System.Object.ReferenceEquals(this, obj)) return true;
+            if (obj is TypeDefinition compareTypeDef)
             {
-                var compareTypeDef = (TypeDefinition) obj;
                 return compareTypeDef.DataType == this.DataType &&
-                       //compareTypeDef.PrimitiveDataType == this.PrimitiveDataType &&
                        compareTypeDef.QualifiedName.ToString() == this.QualifiedName.ToString();
             }
 
-            var generatedDataType = (obj as GeneratedDefinition);
-            if (generatedDataType  != null && 
+            if (obj is GeneratedDefinition generatedDataType && 
                 !(generatedDataType.DataType == DataType.Alphabetic ||
                   generatedDataType .DataType == DataType.Alphanumeric)) //Remove these two check on Alpha.. to allow move "fezf" TO alphatypedVar
             {
@@ -1008,9 +1006,10 @@ namespace TypeCobol.Compiler.Nodes {
 
         public override bool Equals(object obj)
         {
+            if (object.ReferenceEquals(this, obj)) return true;
             //In this case we can only compare the DataType
-            if((obj as DataDefinition) != null)
-                return ((DataDefinition) obj).DataType == _DataType;
+            if (obj is DataDefinition dataDefinition)
+                return dataDefinition.DataType == _DataType;
             return false;
         }
     }

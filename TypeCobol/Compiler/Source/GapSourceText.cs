@@ -545,6 +545,7 @@ namespace TypeCobol.Compiler.Source
         /// <returns>true if both the given source text is equals to this one, false otherwise</returns>
         public override bool Equals(object text)                                         
         {
+            if (object.ReferenceEquals(this, text)) return true;
             if (!(text is GapSourceText))
 	            return false;
             GapSourceText t= (GapSourceText) text; 
