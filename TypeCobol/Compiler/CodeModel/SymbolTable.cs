@@ -8,13 +8,39 @@ using TypeCobol.Compiler.CodeElements;
 using TypeCobol.Compiler.CodeElements.Expressions;
 using TypeCobol.Compiler.Nodes;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Castle.Core.Internal;
 using TypeCobol.Compiler.Concurrency;
 
 namespace TypeCobol.Compiler.CodeModel
 {
-    
+    /// <summary>
+    /// An equality comparer that compares objects for reference equality.
+    /// </summary>
+    /// <typeparam name="T">The type of objects to compare.</typeparam>
+    public sealed class ReferenceEqualityComparer<T> : IEqualityComparer<T> 
+    {
+        /// <summary>
+        /// Gets the default instance of the
+        /// <see cref="ReferenceEqualityComparer{T}"/> class.
+        /// </summary>
+        /// <value>A <see cref="ReferenceEqualityComparer<T>"/> instance.</value>
+        public static ReferenceEqualityComparer<T> Instance { get; } = new ReferenceEqualityComparer<T>();
+
+        /// <inheritdoc />
+        public bool Equals(T left, T right)
+        {
+            return object.ReferenceEquals(left, right);
+        }
+
+        /// <inheritdoc />
+        public int GetHashCode(T value)
+        {
+            return RuntimeHelpers.GetHashCode(value);
+        }
+    }
+
     public class SymbolTable
     {
         public Scope CurrentScope { get; internal set; }
@@ -51,7 +77,7 @@ namespace TypeCobol.Compiler.CodeModel
         {
             CurrentScope = current;
             EnclosingScope = enclosing;
-            TypesReferences = new Dictionary<TypeDefinition, List<DataDefinition>>();
+            TypesReferences = new Dictionary<TypeDefinition, List<DataDefinition>>(ReferenceEqualityComparer<TypeDefinition>.Instance);
             if (EnclosingScope == null && CurrentScope != Scope.Intrinsic)
                 throw new InvalidOperationException("Only Table of INTRINSIC symbols don't have any enclosing scope.");
         }
