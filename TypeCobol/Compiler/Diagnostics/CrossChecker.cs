@@ -8,10 +8,8 @@ using TypeCobol.Compiler.CodeModel;
 using TypeCobol.Compiler.Nodes;
 using TypeCobol.Compiler.Parser;
 using System.Text.RegularExpressions;
-using TypeCobol.Compiler.Domain;
 using Antlr4.Runtime;
 using TypeCobol.Compiler.Directives;
-using TypeCobol.Compiler.Domain.Validator;
 using TypeCobol.Compiler.Scanner;
 using TypeCobol.Compiler.Symbols;
 
@@ -484,6 +482,34 @@ namespace TypeCobol.Compiler.Diagnostics
             return true;
         }
 
+        public override bool Visit(Goto gotoNode)
+        {
+            var gotoCE = gotoNode.CodeElement;
+            if(gotoCE is GotoSimpleStatement gotoSimpleCE)
+            {
+                Node paragraphOrSection = SectionOrParagraphUsageChecker.ResolveProcedureName(gotoNode.SymbolTable, gotoSimpleCE.ProcedureName as AmbiguousSymbolReference, gotoNode);
+                if (paragraphOrSection != null)
+                {
+                    if (paragraphOrSection is Paragraph paragraph)
+                    {
+                        gotoNode.ParagraphSymbol = (ParagraphSymbol)paragraph.SemanticData;
+                    }
+                    else if (paragraphOrSection is Section section)
+                    {
+                        gotoNode.SectionSymbol = (SectionSymbol)section.SemanticData;
+                    }
+                }
+            } else if (gotoCE is GotoConditionalStatement gotoConditionalCE)
+            {
+                //TODO implement this
+            }
+            
+
+            
+            return true;
+        }
+
+
         public static void CheckPicture(Node node, CommonDataDescriptionAndDataRedefines customCodeElement = null)
         {
             var codeElement = customCodeElement ?? node.CodeElement as CommonDataDescriptionAndDataRedefines;
@@ -518,102 +544,10 @@ namespace TypeCobol.Compiler.Diagnostics
             }
         }
 
-#if DOMAIN_CHECKER
-        private class DelegateErrorReporter : IValidationErrorReporter
-        {
-            private readonly Action<ValidationError> _onError;
-
-            public DelegateErrorReporter(Action<ValidationError> onError)
-            {
-                _onError = onError;
-            }
-
-            public void Report(ValidationError validationError)
-            {
-                _onError(validationError);
-            }
-        }
-
-        /// <summary>
-        /// Expand the top program.
-        /// </summary>
-        /// <param name="curPrg">Current program.</param>
-        /// <returns>True if expansion succeeded, False otherwise.</returns>
-        private static bool ExpandTopProgram(ProgramSymbol curPrg)
-        {
-            bool result = true;
-            var topProgram = ProgramSymbol.GetTopProgram(curPrg);
-            var expander = new ProgramExpander(new DelegateErrorReporter(v => result = false));
-
-            expander.Expand(topProgram);
-            if (!result)
-            {
-                //Reset expansion state for this test session
-                topProgram.SetFlag(Symbol.Flags.SymbolExpanded, false);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// This static method normalize path names by removing consecutive dots like ".."
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        static string NormalizePathNames(string name)
-        {
-            string[] paths = name.Split('.');
-            string sep = "";
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            foreach (var s in paths)
-            {
-                if (s.Length > 0)
-                {
-                    sb.Append(sep);
-                    sb.Append(s);
-                    sep = ".";
-                }
-            }
-            return sb.ToString();
-        }
-
-        static string NormalizePathNames(Symbol[] symbolPaths)
-        {
-            string sep = "";
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            foreach (var s in symbolPaths)
-            {
-                if (s == symbolPaths[symbolPaths.Length- 1])
-                {
-                    if (s.Kind == Symbol.Kinds.Typedef)
-                    {//If the last symbol is a Typedef don't put it in the path.
-                        continue;
-                    }
-                }
-                    sb.Append(sep);
-                    sb.Append(s.Name);
-                    sep = ".";
-            }
-            return sb.ToString();
-        }
-#endif
         private DataDefinition CheckVariable(Node node, StorageArea storageArea, bool isReadStorageArea)
         {
             if (storageArea == null || !storageArea.NeedDeclaration)
                 return null;
-#if DOMAIN_CHECKER
-            if (_compilerOptions.UseSemanticDomain)
-            {
-                //Check that a semantic data has been associated to this node.
-                System.Diagnostics.Debug.Assert(node.SemanticData != null);
-                System.Diagnostics.Debug.Assert(node.SemanticData.SemanticKind == SemanticKinds.Symbol);
-                //The semantic data is a ProgramSymbol or a FunctionSymbol
-                System.Diagnostics.Debug.Assert(((Symbol) node.SemanticData).Kind == Symbol.Kinds.Program ||
-                                                ((Symbol) node.SemanticData).Kind == Symbol.Kinds.Function ||
-                                                ((Symbol) node.SemanticData).Kind == Symbol.Kinds.Variable ||
-                                                ((Symbol) node.SemanticData).Kind == Symbol.Kinds.Index);
-            }
-#endif
 
             var area = storageArea.GetStorageAreaThatNeedDeclaration;
             if (area.SymbolReference == null) return null;
@@ -629,65 +563,6 @@ namespace TypeCobol.Compiler.Diagnostics
             var found = foundQualified.Select(v => v.Value);
 
             var foundCount = found.Count();
-#if DOMAIN_CHECKER
-            Scopes.Domain<VariableSymbol>.Entry result = null;
-            List<Symbol[]> foundSymbolTypedPaths = null;
-            if (_compilerOptions.UseSemanticDomain)
-            {
-                switch (((Symbol) node.SemanticData).Kind)
-                {
-                    case Symbol.Kinds.Program:
-                    case Symbol.Kinds.Function:
-                    {
-                        ProgramSymbol prg = (ProgramSymbol) node.SemanticData;
-                        if (ExpandTopProgram(prg))
-                        {
-                            //Consider only succeeded expansions.
-                            result = prg.ResolveReference(area.SymbolReference, true);
-                            System.Diagnostics.Debug.Assert(result != null);
-                            //Check that we found the same number of symbols
-                            System.Diagnostics.Debug.Assert(result.Count == foundCount);
-                        }
-                    }
-                        break;
-                    case Symbol.Kinds.Variable:
-                    case Symbol.Kinds.Index:
-                        //Humm....
-                        //This Storage area's SemanticData is a Variable.
-                        //Thus this situation can only appears if the variable is inside a
-                        //Typedef, or Inside a Program or a Function.
-                        //But any way we have found it.
-                        VariableSymbol @var = (VariableSymbol) node.SemanticData;
-                        if (@var.HasFlag(Symbol.Flags.InsideTypedef))
-                        {
-                            System.Diagnostics.Debug.Assert(@var.TopParent(Symbol.Kinds.Typedef) != null);
-                            //We looking inside a TYPEDEF.
-                            TypedefSymbol tdSym = (TypedefSymbol) @var.TopParent(Symbol.Kinds.Typedef);
-                            foundSymbolTypedPaths = new List<Symbol[]>();
-                            result = tdSym.Get(AbstractScope.SymbolReferenceToPath(area.SymbolReference), null,
-                                foundSymbolTypedPaths);
-                            System.Diagnostics.Debug.Assert(result != null);
-                            System.Diagnostics.Debug.Assert(result.Count == foundCount);
-                        }
-                        else
-                        {
-                            FunctionSymbol fun = (FunctionSymbol) @var.TopParent(Symbol.Kinds.Function);
-                            ProgramSymbol prg = (ProgramSymbol) @var.TopParent(Symbol.Kinds.Program);
-                            System.Diagnostics.Debug.Assert(prg != null || fun != null);
-                            if (ExpandTopProgram(prg))
-                            {
-                                //Consider only succeeded expansions.
-                                //Lookup itself in its program.
-                                result = (fun ?? prg).ResolveReference(area.SymbolReference, true);
-                                System.Diagnostics.Debug.Assert(result != null);
-                                System.Diagnostics.Debug.Assert(result.Count == foundCount);
-                            }
-                        }
-
-                        break;
-                }
-            }
-#endif
 
             if (foundCount == 0)
             {
@@ -716,42 +591,7 @@ namespace TypeCobol.Compiler.Diagnostics
             {
                 var dataDefinitionFound = found.First();
                 DataDefinitionPath dataDefinitionPath = foundQualified.First().Key;
-#if DOMAIN_CHECKER
-                if (_compilerOptions.UseSemanticDomain)
-                {
-                    if (result != null && result.Symbol != null)
-                    {
-                        System.Diagnostics.Debug.Assert(result.Symbol.TargetNode == null || result.Symbol.TargetNode == foundQualified.First().Value);
-                        if (dataDefinitionPath != null)
-                        {
-                            string completeQualifiedName = dataDefinitionPath.ToString().Replace("::", ".");
-                            if (result.Symbol.TargetNode == null)
-                            {
-                                //Special CASE DATE we don't capture the Target Node wich is created dynamically by TypeCobol.
-                                System.Diagnostics.Debug.Assert(
-                                    (dataDefinitionFound.Name == "YYYY" || dataDefinitionFound.Name == "DD" ||
-                                     dataDefinitionFound.Name == "MM") &&
-                                    result.Symbol.Owner != null && result.Symbol.Owner.HasFlag(Symbol.Flags.HasATypedefType)
-                                    && result.Symbol.Owner is VariableTypeSymbol &&
-                                    ((VariableTypeSymbol)result.Symbol.Owner).Typedef == BuiltinSymbols.Date);
-                                //But ensure that the parent Node is the same
-                                //System.Diagnostics.Debug.Assert(dataDefinitionFound.Parent == result.Symbol.Owner.TargetNode);
-                            }
-                            else
-                                System.Diagnostics.Debug.Assert(dataDefinitionFound == result.Symbol.TargetNode);
 
-                            //Check that the qualified name of the variable found is the same.
-                            //I cannot do that because: Actually TypeCobol Path variable includes TYPEDEF.NAMES,
-                            //New Domain doesn't include TYPEDEF.NAMES in paths. ==> cannot compare qualified path names.
-                            string qname = foundSymbolTypedPaths != null
-                                ? NormalizePathNames(foundSymbolTypedPaths[0])
-                                : result.Symbol.FullTypedDotName;
-                            System.Diagnostics.Debug.Assert(NormalizePathNames(completeQualifiedName).ToLower()
-                                .Equals(qname.ToLower()));
-                        }
-                    }
-                }
-#endif
                 if (foundQualified.Count == 1)
                 {
                     IndexAndFlagDataDefiniton(dataDefinitionPath, dataDefinitionFound, node, area, storageArea);
@@ -787,7 +627,21 @@ namespace TypeCobol.Compiler.Diagnostics
                     {
                         node.StorageAreaReadsDataDefinition = new Dictionary<StorageArea, DataDefinition>();
                     }
+                    
                     node.StorageAreaReadsDataDefinition.Add(storageArea, dataDefinitionFound);
+
+                    if (dataDefinitionFound.ParentTypeDefinition == null) //Symbol found is outside a Typedef 
+                    {
+                        if (node.SymbolStorageAreasRead == null)
+                        {
+                            node.SymbolStorageAreasRead = new Dictionary<StorageArea, VariableSymbol>();
+                        }
+                        //TODO OSM, Bug: No SemanticData of type VariableSymbol for Index
+                        if (dataDefinitionFound.SemanticData is VariableSymbol variableSymbol)
+                        {
+                            node.SymbolStorageAreasRead.Add(storageArea, variableSymbol);
+                        }
+                    }
                 }
                 else
                 {
@@ -797,6 +651,20 @@ namespace TypeCobol.Compiler.Diagnostics
                         node.StorageAreaWritesDataDefinition = new Dictionary<StorageArea, DataDefinition>();
                     }
                     node.StorageAreaWritesDataDefinition.Add(storageArea, dataDefinitionFound);
+
+                    if (dataDefinitionFound.ParentTypeDefinition == null) //Symbol found is outside a Typedef 
+                    {
+                        if (node.SymbolStorageAreasWritten == null)
+                        {
+                            node.SymbolStorageAreasWritten = new Dictionary<StorageArea, VariableSymbol>();
+                        }
+                        //TODO OSM, Bug: No SemanticData of type VariableSymbol for Index
+                        if(dataDefinitionFound.SemanticData is VariableSymbol variableSymbol)
+                        {
+                            node.SymbolStorageAreasWritten.Add(storageArea, variableSymbol);
+                        }
+                        
+                    }
                 }
 
                 return dataDefinitionFound;
@@ -811,13 +679,6 @@ namespace TypeCobol.Compiler.Diagnostics
         {
             if (dataDefinition.IsIndex)
             {
-#if DOMAIN_CHECKER
-                if (_compilerOptions.UseSemanticDomain)
-                {
-                    //Ensure that domain SemanticData is also in index symbol
-                    System.Diagnostics.Debug.Assert(((Symbol)dataDefinition.SemanticData).Kind == Symbol.Kinds.Index);
-                }
-#endif
                 var index = dataDefinition;
 
                 index.AddReferences(storageArea, node); //Add this node as a reference to the founded index
@@ -956,13 +817,32 @@ namespace TypeCobol.Compiler.Diagnostics
         public static void CheckReferenceToParagraphOrSection(PerformProcedure perform)
         {
             var performCE = perform.CodeElement;
-            SymbolReference symbol;
-            symbol = ResolveProcedureName(perform.SymbolTable, performCE.Procedure as AmbiguousSymbolReference,
-                perform);
-            if (symbol != null) performCE.Procedure = symbol;
-            symbol = ResolveProcedureName(perform.SymbolTable, performCE.ThroughProcedure as AmbiguousSymbolReference,
-                perform);
-            if (symbol != null) performCE.ThroughProcedure = symbol;
+            Node paragraphOrSection = ResolveProcedureName(perform.SymbolTable, performCE.Procedure as AmbiguousSymbolReference, perform);
+
+            if (paragraphOrSection != null)
+            {
+                if(paragraphOrSection is Paragraph paragraph)
+                {
+                    perform.ParagraphSymbol = (ParagraphSymbol) paragraph.SemanticData;
+                }
+                else if (paragraphOrSection is Section section)
+                {
+                    perform.SectionSymbol = (SectionSymbol)section.SemanticData;
+                }
+            }
+
+            paragraphOrSection = ResolveProcedureName(perform.SymbolTable, performCE.ThroughProcedure as AmbiguousSymbolReference, perform);
+            if (paragraphOrSection != null)
+            {
+                if (paragraphOrSection is Paragraph paragraph)
+                {
+                    perform.ThroughParagraphSymbol = (ParagraphSymbol)paragraph.SemanticData;
+                }
+                else if (paragraphOrSection is Section section)
+                {
+                    perform.ThroughSectionSymbol = (SectionSymbol)section.SemanticData;
+                }
+            }
         }
 
         /// <summary>Disambiguate between section and paragraph names</summary>
@@ -970,36 +850,44 @@ namespace TypeCobol.Compiler.Diagnostics
         /// <param name="symbol">Symbol to disambiguate</param>
         /// <param name="ce">Original CodeElement ; error diagnostics will be added to it if name resolution fails</param>
         /// <returns>symbol as a SymbolReference whith a SymbolType properly set</returns>
-        private static SymbolReference ResolveProcedureName(SymbolTable table, SymbolReference symbol, Node node)
+        public static Node ResolveProcedureName(SymbolTable table, SymbolReference symbol, Node node)
         {
             if (symbol == null) return null;
 
-            SymbolReference sname = null, pname = null;
-            var sfound = table.GetSection(symbol.Name);
-            if (sfound.Count > 0) sname = new SymbolReference(symbol.NameLiteral, SymbolType.SectionName);
-            var pfound = table.GetParagraph(symbol.Name);
-            if (pfound.Count > 0) pname = new SymbolReference(symbol.NameLiteral, SymbolType.ParagraphName);
+            var sections = table.GetSection(symbol.Name);
 
-            if (pname == null)
+
+            var paragraphs = table.GetParagraph(symbol.Name);
+
+            if (paragraphs == null || paragraphs.Count==0)
             {
-                if (sname == null)
+                if (sections == null || sections.Count == 0)
                 {
                     DiagnosticUtils.AddError(node, "Symbol " + symbol.Name + " is not referenced", symbol);
                 }
                 else
                 {
-                    if (sfound.Count > 1)
+                    if (sections.Count > 1)
+                    {
                         DiagnosticUtils.AddError(node, "Ambiguous reference to section " + symbol.Name, symbol);
-                    return sname;
+                    } else
+                    {
+                        return sections[0];
+                    }
                 }
             }
             else
             {
-                if (sname == null)
+                if (sections == null || sections.Count == 0)
                 {
-                    if (pfound.Count > 1)
+                    if (paragraphs.Count > 1)
+                    {
                         DiagnosticUtils.AddError(node, "Ambiguous reference to paragraph " + symbol.Name, symbol);
-                    return pname;
+                    }
+                    else
+                    {
+                        return paragraphs[0];
+                    }
                 }
                 else
                 {

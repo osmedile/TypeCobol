@@ -186,13 +186,11 @@ namespace TypeCobol.Compiler
             {
                 CompilationResultsForCopy = new CompilationDocument(TextDocument.Source, TextDocument.Lines, compilerOptions, documentProvider, scanState, copyTextNameVariations);
                 CompilationResultsForCopy.CustomSymbols = customSymbols;
-                CompilationResultsForCopy.RootSymbolTable = CompilationProject.RootSymbolTable;
             }
             else
             {
                 CompilationResultsForProgram = new CompilationUnit(TextDocument.Source, TextDocument.Lines, compilerOptions, documentProvider, copyTextNameVariations);
                 CompilationResultsForProgram.CustomSymbols = customSymbols;
-                CompilationResultsForProgram.RootSymbolTable = CompilationProject.RootSymbolTable;
             }
             CompilerOptions = compilerOptions;
         }

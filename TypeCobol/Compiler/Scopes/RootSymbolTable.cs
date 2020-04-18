@@ -159,61 +159,7 @@ namespace TypeCobol.Compiler.Scopes
             if (ProgramAdded != null && absScope.Kind == Kinds.Program)
                 ProgramAdded(this, new SymbolEventArgs(absScope));
         }
-
-        /// <summary>
-        /// Remove the given scope from the domain.
-        /// </summary>
-        /// <param name="absScope">The Scope to be removed</param>
-        public override void RemoveFromDomain(AbstractScope absScope)
-        {
-            ScopeDomain.Remove(absScope);
-
-            absScope.FreeDomain();
-
-            //Remove all Types
-            var types = absScope.Types;
-            if (types != null)
-            {
-                foreach (var t in types)
-                {
-                    RemoveFromDomain(t);
-                }
-            }
-
-            //Remove all programs
-            var programs = absScope.Programs;
-            if (programs != null)
-            {
-                foreach (var p in programs)
-                {
-                    RemoveFromDomain(p);
-                }
-            }
-
-            //Remove all functions
-            var functions = absScope.Functions;
-            if (functions != null)
-            {
-                foreach (var p in functions)
-                {
-                    RemoveFromDomain(p);
-                }
-            }
-
-            //Special case Namespace
-            if (absScope.Kind == Kinds.Namespace)
-            {
-                NamespaceSymbol ns = (NamespaceSymbol)absScope;
-                var nss = ns.Namespaces;
-                if (nss != null)
-                {
-                    foreach (var n in nss)
-                    {
-                        RemoveFromDomain(n);
-                    }
-                }
-            }
-        }
+        
 
         /// <summary>
         /// Add the given Type instance the domain
@@ -234,27 +180,7 @@ namespace TypeCobol.Compiler.Scopes
             System.Diagnostics.Debug.Assert(type != null);
             TypeDomain.Remove(type);
         }
-
-        /// <summary>
-        /// Performs a search in the universe of variables of this RootSymbolTable
-        /// using a name.
-        /// </summary>
-        /// <param name="name">Name of the variable searched.</param>
-        /// <returns>A non-null domain entry of variables matching the given name.</returns>
-        [NotNull]
-        public Domain<VariableSymbol>.Entry LookupVariable([NotNull] string name)
-        {
-            System.Diagnostics.Debug.Assert(name != null);
-
-            var results = new Domain<VariableSymbol>.Entry(name);
-            foreach (var variableSymbol in Universe.Where(v => string.Equals(v.Name, name, StringComparison.OrdinalIgnoreCase)))
-            {
-                results.Add(variableSymbol);
-            }
-
-            return results;
-        }
-
+        
         /// <summary>
         /// Searches for scopes of this RootSymbolTable having the given name.
         /// </summary>
@@ -270,95 +196,6 @@ namespace TypeCobol.Compiler.Scopes
 
             return new Domain<AbstractScope>.Entry(name);
         }
-
-        /// <summary>
-        /// Searches for types of this RootSymbolTable having the given name.
-        /// </summary>
-        /// <param name="name">Name of the type searched.</param>
-        /// <returns>A non-null domain entry of types matching the given name.</returns>
-        [NotNull]
-        public Domain<TypedefSymbol>.Entry LookupType([NotNull] string name)
-        {
-            System.Diagnostics.Debug.Assert(name != null);
-
-            if (TypeDomain.TryGetValue(name, out var result))
-                return result;
-
-            return new Domain<TypedefSymbol>.Entry(name);
-        }
-
-        /// <summary>
-        /// Resolve any AbstractScope. Namespace, program and function are abstract scopes.
-        /// </summary>
-        /// <param name="path">The Abstract scope path</param>
-        /// <param name="kinds">All kinds of scope to be resolved.</param>
-        /// <returns>A Scope instance of matches</returns>
-        private Domain<TScope>.Entry ResolveScope<TScope>(string[] path, params Symbol.Kinds[] kinds)
-            where TScope : AbstractScope
-        {
-            var candidates = ResolveSymbol<AbstractScope>(path, LookupScope);
-            if (candidates == null)
-                return null;
-
-            Domain<TScope>.Entry results = new Domain<TScope>.Entry(candidates.Name);
-            kinds = kinds == null || kinds.Length == 0 ? _AllScopeKinds : kinds;
-            foreach (var candidate in candidates)
-            {
-                if (kinds.Contains(candidate.Kind))
-                    results.Add((TScope)candidate);
-            }
-
-            return results;
-        }
-
-        /// <summary>
-        /// Resolve a namespace path
-        /// </summary>
-        /// <param name="path">The Namespace's path'</param>
-        /// <returns></returns>
-        public Domain<NamespaceSymbol>.Entry ResolveNamespace(string[] path)
-        {
-            return ResolveScope<NamespaceSymbol>(path, Kinds.Namespace);
-        }
-
-        /// <summary>
-        /// Resolve a Program path
-        /// </summary>
-        /// <param name="path">The Program's path'</param>
-        /// <returns>The set of matching results</returns>
-        public Domain<ProgramSymbol>.Entry ResolveProgram(string[] path)
-        {
-            return ResolveScope<ProgramSymbol>(path, Kinds.Program);
-        }
-
-        /// <summary>
-        /// Resolve a Function path
-        /// </summary>
-        /// <param name="path">The function's path'</param>
-        /// <returns></returns>
-        public Domain<FunctionSymbol>.Entry ResolveFunction(string[] path)
-        {
-            return ResolveScope<FunctionSymbol>(path, Kinds.Function);
-        }
-
-        /// <summary>
-        /// Resolve a Program or a Function path
-        /// </summary>
-        /// <param name="path">The program's' or function's path'</param>
-        /// <returns>The set of matching results</returns>
-        public Domain<ProgramSymbol>.Entry ResolveProgramOrFunction(string[] path)
-        {
-            return ResolveScope<ProgramSymbol>(path, Kinds.Program, Kinds.Function);
-        }
-
-        /// <summary>
-        /// Resolve a Type
-        /// </summary>
-        /// <param name="path">Type's path'</param>
-        /// <returns>The set of matching results</returns>
-        public Domain<TypedefSymbol>.Entry ResolveType(string[] path)
-        {
-            return ResolveSymbol<TypedefSymbol>(path, LookupType);
-        }
+        
     }
 }

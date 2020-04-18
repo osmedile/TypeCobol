@@ -20,27 +20,7 @@ namespace TypeCobol.Compiler.Symbols
             Programs = new Scope < ProgramSymbol >(this);
             Namespaces = new Scope<NamespaceSymbol>(this);
         }
-
-        /// <summary>
-        /// Copy constructor
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="from"></param>
-        public NamespaceSymbol(string name, NamespaceSymbol from) : this(name)
-        {
-            foreach (var t in from.Types)
-            {
-                Types.Enter(t);
-            }
-            foreach (var p in from.Programs)
-            {
-                Programs.Enter(p);
-            }
-            foreach (var n in from.Namespaces)
-            {
-                Namespaces.Enter(n);
-            }
-        }
+        
 
         /// <summary>
         /// Enter a Program in this namespace
@@ -59,7 +39,7 @@ namespace TypeCobol.Compiler.Symbols
             entry.Symbol.Owner = this;
             //Add it to the all scope domain
             Symbol root = TopParent(Kinds.Root);
-            ((RootSymbolTable)root)?.AddToDomain(entry.Symbol);
+            //((RootSymbolTable)root)?.AddToDomain(entry.Symbol);
             return entry.Symbol;
         }
 
@@ -73,8 +53,8 @@ namespace TypeCobol.Compiler.Symbols
             {
                 Programs.Delete(prgSym);
                 //Remove it from the all scope domain
-                Symbol root = TopParent(Kinds.Root);
-                ((RootSymbolTable)root)?.RemoveFromDomain(prgSym);
+                //Symbol root = TopParent(Kinds.Root);
+                //((RootSymbolTable)root)?.RemoveFromDomain(prgSym);
                 prgSym.Owner = null;
             }
         }
@@ -105,35 +85,7 @@ namespace TypeCobol.Compiler.Symbols
             get;
             protected set;
         }
-
-        protected Domain<TSymbol>.Entry ResolveSymbol<TSymbol>(string[] path, Func<string, Domain<TSymbol>.Entry> lookupSymbol) 
-            where TSymbol : Symbol
-        {
-            if (path == null || path.Length == 0 || path[0] == null)
-                return null;
-
-            var name = path[0];
-            var results = new Domain<TSymbol>.Entry(name);
-            foreach (var candidate in lookupSymbol(name))
-            {
-                if (candidate.IsMatchingPath(path))
-                {
-                    results.Add(candidate);
-                }
-            }
-
-            return results;
-        }
-
-        public override Domain<TypedefSymbol>.Entry ResolveType(RootSymbolTable root, string[] path)
-        {
-            throw new InvalidOperationException("Namespace symbol does not contain any type.");
-        }
-
-        public override Domain<AbstractScope>.Entry ResolveScope(RootSymbolTable root, string[] path)
-        {
-            return ResolveSymbol<AbstractScope>(path, root.LookupScope);
-        }
+        
 
         public override TR Accept<TR, TP>(IVisitor<TR, TP> v, TP arg) { return v.VisitNamespaceSymbol(this, arg); }
     }

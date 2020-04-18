@@ -472,7 +472,6 @@ namespace TypeCobol.Compiler.Symbols
         /// </typeparam>
         public interface IVisitor<out TR, in TP>
         {
-            TR VisitFunctionSymbol(FunctionSymbol s, TP arg);
             TR VisitIndexSymbol(IndexSymbol s, TP arg);
             TR VisitNamespaceSymbol(NamespaceSymbol s, TP arg);
             TR VisitParagraphSymbol(ParagraphSymbol s, TP arg);
@@ -482,7 +481,6 @@ namespace TypeCobol.Compiler.Symbols
             TR VisitSectionSymbol(SectionSymbol s, TP arg);
             TR VisitTypedefSymbol(TypedefSymbol s, TP arg);
             TR VisitVariableSymbol(VariableSymbol s, TP arg);
-            TR VisitVariableTypeSymbol(VariableTypeSymbol s, TP arg);
             TR VisitSymbol(Symbol s, TP arg);
         }
 
@@ -494,7 +492,6 @@ namespace TypeCobol.Compiler.Symbols
         public abstract class AbstractSymbolVisitor<TR, TP> : IVisitor<TR, TP>
         {
             public TR Visit(Symbol s, TP arg) { return s.Accept(this, arg); }
-            public virtual TR VisitFunctionSymbol(FunctionSymbol s, TP arg) { return VisitSymbol(s, arg); }
             public virtual TR VisitIndexSymbol(IndexSymbol s, TP arg) { return VisitSymbol(s, arg); }
             public virtual TR VisitNamespaceSymbol(NamespaceSymbol s, TP arg) { return VisitSymbol(s, arg); }
             public virtual TR VisitParagraphSymbol(ParagraphSymbol s, TP arg) { return VisitSymbol(s, arg); }
@@ -504,7 +501,6 @@ namespace TypeCobol.Compiler.Symbols
             public virtual TR VisitSectionSymbol(SectionSymbol s, TP arg) { return VisitSymbol(s, arg); }            
             public virtual TR VisitTypedefSymbol(TypedefSymbol s, TP arg) { return VisitSymbol(s, arg); }
             public virtual TR VisitVariableSymbol(VariableSymbol s, TP arg) { return VisitSymbol(s, arg); }
-            public virtual TR VisitVariableTypeSymbol(VariableTypeSymbol s, TP arg) { return VisitSymbol(s, arg); }
             public abstract TR VisitSymbol(Symbol s, TP arg);
         }
     }

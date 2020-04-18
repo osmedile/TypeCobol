@@ -25,10 +25,9 @@ namespace TypeCobol.Tools.APIHelpers
         public static string[] DEFAULT_EXTENSIONS = { ".cbl", ".cpy", ".copy"};
         public static string[] DEFAULT_COPY_EXTENSIONS = {".cpy", ".copy"};
 
-        public static Tuple<SymbolTable, RootSymbolTable> LoadIntrinsic(List<string> paths, DocumentFormat intrinsicDocumentFormat, EventHandler<DiagnosticsErrorEvent> diagEvent)
+        public static SymbolTable LoadIntrinsic(List<string> paths, DocumentFormat intrinsicDocumentFormat, EventHandler<DiagnosticsErrorEvent> diagEvent)
         {
             var parser = new Parser();
-            parser.CustomRootSymbols = new RootSymbolTable();
 
             var table = new SymbolTable(null, SymbolTable.Scope.Intrinsic);
             var instrincicFiles = new List<string>();
@@ -80,7 +79,7 @@ namespace TypeCobol.Tools.APIHelpers
                 }
             }
 
-            return new Tuple<SymbolTable, RootSymbolTable>(table, parser.CustomRootSymbols);
+            return table;
         }
 
         /// <summary>
@@ -90,10 +89,10 @@ namespace TypeCobol.Tools.APIHelpers
         /// <param name="config">Current configuration</param>
         /// <param name="customSymbols">Intrinsic or Namespace SymbolTable</param>
         /// <returns></returns>
-        private static CompilationUnit ParseDependency(string path, [NotNull] TypeCobolConfiguration config, SymbolTable customSymbols, RootSymbolTable rootSymbolTable)
+        private static CompilationUnit ParseDependency(string path, [NotNull] TypeCobolConfiguration config, SymbolTable customSymbols)
         {
             var options = new TypeCobolOptions(config) { ExecToStep = ExecutionStep.SemanticCheck };
-            var parser = new Parser(customSymbols, rootSymbolTable);
+            var parser = new Parser(customSymbols);
 
             parser.Init(path, options, config.Format, config.CopyFolders);
             parser.Parse(path); //Parse the dependency file
@@ -101,7 +100,7 @@ namespace TypeCobol.Tools.APIHelpers
             return parser.Results;
         }
 
-        public static IEnumerable<string> GetDependenciesMissingCopies([NotNull] TypeCobolConfiguration config, SymbolTable intrinsicTable, RootSymbolTable rootSymbolTable, EventHandler<DiagnosticsErrorEvent> diagEvent)
+        public static IEnumerable<string> GetDependenciesMissingCopies([NotNull] TypeCobolConfiguration config, SymbolTable intrinsicTable, EventHandler<DiagnosticsErrorEvent> diagEvent)
         {
             List<CopyDirective> missingCopies = new List<CopyDirective>();
 
@@ -111,7 +110,7 @@ namespace TypeCobol.Tools.APIHelpers
                 // For each dependency source found in path
                 foreach (string dependency in Tools.FileSystem.GetFiles(path, _DependenciesExtensions, true))
                 {
-                    missingCopies.AddRange(ParseDependency(dependency, config, intrinsicTable, rootSymbolTable).MissingCopies);
+                    missingCopies.AddRange(ParseDependency(dependency, config, intrinsicTable).MissingCopies);
                 }
             }
 
@@ -119,8 +118,8 @@ namespace TypeCobol.Tools.APIHelpers
             return missingCopies.Select(mc => mc.TextName);
         }
 
-        public static Tuple<SymbolTable, RootSymbolTable> LoadDependencies([NotNull] TypeCobolConfiguration config, SymbolTable intrinsicTable,
-            RootSymbolTable rootSymbolTable, EventHandler<DiagnosticsErrorEvent> diagEvent,
+        public static SymbolTable LoadDependencies([NotNull] TypeCobolConfiguration config, SymbolTable intrinsicTable,
+            EventHandler<DiagnosticsErrorEvent> diagEvent,
             out List<RemarksDirective.TextNameVariation> usedCopies,
             //Key : path of the dependency
             //Copy name not found
@@ -187,7 +186,7 @@ namespace TypeCobol.Tools.APIHelpers
 #endif
                 try
                 {
-                    CompilationUnit parsingResult = ParseDependency(path, config, table, rootSymbolTable);
+                    CompilationUnit parsingResult = ParseDependency(path, config, table);
 
                     //Report diagnostics
                     var diagnostics = parsingResult.AllDiagnostics();
@@ -246,7 +245,7 @@ namespace TypeCobol.Tools.APIHelpers
 
             //Reset symbolTable of all dependencies 
 
-            return new Tuple<SymbolTable, RootSymbolTable>(table, rootSymbolTable);
+            return table;
         }
         /// <summary>
         /// Load both Intrinsic symbols and Dependencies files.
@@ -255,15 +254,15 @@ namespace TypeCobol.Tools.APIHelpers
         /// <param name="DiagnosticsErrorEvent"></param>
         /// <param name="DependencyErrorEvent"></param>
         /// <returns></returns>
-        public static Tuple<SymbolTable, RootSymbolTable> LoadIntrinsicAndDependencies(TypeCobolConfiguration config,
+        public static SymbolTable LoadIntrinsicAndDependencies(TypeCobolConfiguration config,
             EventHandler<Tools.APIHelpers.DiagnosticsErrorEvent> DiagnosticsErrorEvent, EventHandler<Tools.APIHelpers.DiagnosticsErrorEvent> DependencyErrorEvent,
             out List<RemarksDirective.TextNameVariation> usedCopies,
             //Key : path of the dependency
             //Copy name not found
             out IDictionary<string, IEnumerable<string>> missingCopies)
         {
-            Tuple<SymbolTable, RootSymbolTable> customSymbols = Tools.APIHelpers.Helpers.LoadIntrinsic(config.Copies, config.Format, DiagnosticsErrorEvent); //Load intrinsic
-            customSymbols = Tools.APIHelpers.Helpers.LoadDependencies(config, customSymbols.Item1, customSymbols.Item2, DependencyErrorEvent, out usedCopies, out missingCopies); //Load dependencies
+            var customSymbols = Tools.APIHelpers.Helpers.LoadIntrinsic(config.Copies, config.Format, DiagnosticsErrorEvent); //Load intrinsic
+            customSymbols = Tools.APIHelpers.Helpers.LoadDependencies(config, customSymbols, DependencyErrorEvent, out usedCopies, out missingCopies); //Load dependencies
             return customSymbols;
         }
     }

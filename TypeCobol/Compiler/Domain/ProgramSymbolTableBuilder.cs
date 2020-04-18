@@ -121,9 +121,8 @@ namespace TypeCobol.Compiler.Domain
         /// RootSymbolTable instance constructor.
         /// </summary>
         /// <param name="root">The RootSymbolTable to be used</param>
-        public ProgramSymbolTableBuilder(RootSymbolTable root)
+        public ProgramSymbolTableBuilder()
         {
-            this.MyRoot = root;
             Programs = new List<ProgramSymbol>();
             Diagnostics = new List<Diagnostic>();
         }
@@ -135,23 +134,6 @@ namespace TypeCobol.Compiler.Domain
         {
             get;
             set;
-        }
-
-        private RootSymbolTable MyRoot
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// Remove all program build by this Program Symbol table Builder.
-        /// </summary>
-        public void RemovePrograms()
-        {
-            foreach (var prog in Programs)
-            {
-                this.MyRoot.RemoveProgram(prog);
-            }
         }
 
         public override void OnNode(Node node, Program program)
@@ -184,12 +166,11 @@ namespace TypeCobol.Compiler.Domain
             bool bDuplicate = false;
             if (this.CurrentProgram == null)
             {//This is the main program or a stacked program with no parent.
-                var prg = this.MyRoot.Programs.Lookup(programIdentification.ProgramName.Name);
-                if (prg != null)
-                {//Duplicate Program
-                    bDuplicate = true;
-                }
-                this.CurrentProgram = this.MyRoot.EnterProgram(programIdentification.ProgramName.Name);
+
+                ProgramSymbol prgSym = new ProgramSymbol(programIdentification.ProgramName.Name);
+
+
+                this.CurrentProgram = prgSym;
                 //Add the new Stacked program.
                 Programs.Add(CurrentProgram);
             }
@@ -207,7 +188,7 @@ namespace TypeCobol.Compiler.Domain
                     nestedProgram.Owner = this.CurrentProgram;
                     this.CurrentProgram = nestedProgram;
                     //Add it to the all scope domain
-                    this.MyRoot.AddToDomain(nestedProgram);
+                    //this.MyRoot.AddToDomain(nestedProgram);
                 }
                 else
                 {
@@ -407,124 +388,7 @@ namespace TypeCobol.Compiler.Domain
         {
             LastDataDefinitionSymbol = null;
         }
-
-        /// <summary>
-        /// The Function declaration context Stack.
-        /// </summary>
-        private readonly Stack<FunctionDeclaration> _functionDeclStack = new Stack<FunctionDeclaration>();
-
-        /// <summary>
-        /// Start a Function Declaration
-        /// </summary>
-        /// <param name="header"></param>
-        public override void StartFunctionDeclaration(FunctionDeclarationHeader header)
-        {
-            System.Diagnostics.Debug.Assert(CurrentNode != null && CurrentNode.CodeElement == header);            
-            FunctionDeclaration funDecl = (FunctionDeclaration) CurrentNode;
-            _functionDeclStack.Push(funDecl);
-            //Create a function symbol
-            FunctionSymbol funSym = new FunctionSymbol(header.FunctionName.Name);
-            funDecl.SemanticData = funSym;
-            //Enter the function in the current scope
-            this.CurrentScope.Functions.Enter(funSym);
-            //Add it to the all scope domain
-            this.MyRoot.AddToDomain(funSym);
-            //The its owner has the current scope.
-            funSym.Owner = this.CurrentScope;
-            //What about function visibility.
-            SetSymbolAccessModifer(funSym, header.Visibility);
-            //The current scope is know the function.
-            LastFunctionDeclaration = funDecl;
-            this.CurrentScope = funSym;            
-            CurrentProgram = funSym;
-        }
-
-        /// <summary>
-        /// Handle the special case of function parameter with DataConditions.
-        /// These DataConditions must created as child of the current declaration
-        /// </summary>
-        /// <param name="parameter">The paramter to be handled</param>
-        private VariableSymbol FunctionParameter2Symbol(ParameterDescription parameter, Scope<VariableSymbol> parentScope)
-        {
-            ParameterDescriptionEntry desc = (ParameterDescriptionEntry) parameter.CodeElement;
-            List<DataCondition> toBeRemoved = null;
-            if (desc.DataConditions != null)
-            {
-                //Create a list of DataConditionEntry to be added as children and then to be removed.
-                //Doing this will make these DatConditions to be perfectly handled.
-                toBeRemoved = new List<DataCondition>();
-                foreach (DataConditionEntry condition in desc.DataConditions)
-                {
-                    DataCondition cond = new DataCondition(condition);
-                    toBeRemoved.Add(cond);
-                }
-                parameter.AddRange(toBeRemoved);
-            }
-            VariableSymbol p = DataDefinition2Symbol(parameter, parentScope, null);
-            if (toBeRemoved != null)
-            {
-                foreach (var r in toBeRemoved)
-                {
-                    parameter.Remove(r);
-                }
-            }
-            //Enter the symbol in the parent scope
-            parentScope.Enter(p);
-            p.Owner = parentScope.Owner;
-            return p;
-        }
-
-        public override void EndFunctionDeclaration(FunctionDeclarationEnd end)
-        {            
-            System.Diagnostics.Debug.Assert(this.CurrentScope != null && this.CurrentScope is FunctionSymbol && CurrentScope == CurrentProgram);
-            FunctionDeclaration funDecl = LastFunctionDeclaration;
-            FunctionSymbol funSym = (FunctionSymbol)CurrentProgram;
-
-            //Collect Function parameters.
-            ParametersProfileNode funcProfile = funDecl.Profile;
-            List<VariableSymbol> parameters = new List<VariableSymbol>();
-            //Input
-            foreach (ParameterDescription input in funcProfile.InputParameters)
-            {
-                VariableSymbol p = FunctionParameter2Symbol(input, funSym.LinkageStorageData);
-                p.SetFlag(Symbol.Flags.Parameter | Symbol.Flags.Input | Symbol.Flags.LINKAGE, true);
-                parameters.Add(p);
-            }
-            foreach (ParameterDescription inout in funcProfile.InoutParameters)
-            {
-                VariableSymbol p = FunctionParameter2Symbol(inout, funSym.LinkageStorageData);
-                p.SetFlag(Symbol.Flags.Parameter | Symbol.Flags.Inout | Symbol.Flags.LINKAGE, true);
-                parameters.Add(p);
-            }
-            foreach (ParameterDescription output in funcProfile.OutputParameters)
-            {
-                VariableSymbol p = FunctionParameter2Symbol(output, funSym.LinkageStorageData);
-                p.SetFlag(Symbol.Flags.Parameter | Symbol.Flags.Output | Symbol.Flags.LINKAGE, true);
-                parameters.Add(p);
-            }
-
-            VariableSymbol retVar = null;
-            if (funcProfile.ReturningParameter != null)
-            {
-                ParameterDescription ret = funcProfile.ReturningParameter;
-                retVar = FunctionParameter2Symbol(ret, funSym.LinkageStorageData);
-                retVar.SetFlag(Symbol.Flags.Returning | Symbol.Flags.LINKAGE, true);
-            }
-
-            //Create the Function type.
-            parameters.TrimExcess();
-            Types.FunctionType funType = new Types.FunctionType(parameters, retVar);
-            funSym.Type = funType;
-
-            //Pop the Function declaration context
-            System.Diagnostics.Debug.Assert(_functionDeclStack.Count > 0);
-            _functionDeclStack.Pop();
-            //Also Pop Scopes
-            System.Diagnostics.Debug.Assert(funSym.Owner is ProgramSymbol);
-            CurrentScope = (AbstractScope)funSym.Owner;
-            CurrentProgram = (ProgramSymbol)funSym.Owner;
-        }
-
+        
         /// <summary>
         /// Convert a data usage to a Type UsageFormat.
         /// </summary>
@@ -825,162 +689,8 @@ namespace TypeCobol.Compiler.Domain
                     break;
             }
         }
-
-        /// <summary>
-        /// Create a type definitions
-        /// </summary>
-        /// <param name="dataDef">The Data Definition to convert</param>
-        /// <param name="parentScope">The current parent scope</param>
-        /// <returns>The Type definition symbol</returns>
-        internal TypedefSymbol CreateTypeDefinition(DataDefinition dataDef, Scope<VariableSymbol> parentScope)
-        {
-            if (dataDef.CodeElement.Type == CodeElementType.DataRedefinesEntry)
-            {//Cannot redefine a TypeDef
-                DataRedefinesEntry dataRedefines = (DataRedefinesEntry)dataDef.CodeElement;
-                SymbolReference symRef = dataRedefines.RedefinesDataName;
-
-                Diagnostic d = new Diagnostic(MessageCode.SemanticTCErrorInParser,
-                    symRef.NameLiteral.Token.Column,
-                    symRef.NameLiteral.Token.EndColumn,
-                    symRef.NameLiteral.Token.Line,
-                    string.Format(TypeCobolResource.CannotRedefinedTypedefDecl, symRef.Name));
-                Diagnostics.Add(d);
-                return null;
-            }
-            //Find the declaring program of function scope.
-            DataTypeDescriptionEntry dtde = (DataTypeDescriptionEntry)dataDef.CodeElement;
-
-            ProgramSymbol programScope = (ProgramSymbol)CurrentScope.NearestKind(Symbol.Kinds.Program, Symbol.Kinds.Function);
-            System.Diagnostics.Debug.Assert(programScope != null);
-
-            //First lookup in the current scope if the typedef symbol exists.
-            TypedefSymbol tdSym = null;
-            var entry = programScope.ReverseResolveType(programScope, new string[] { dataDef.Name });
-            if (entry != null)
-            {
-                System.Diagnostics.Debug.Assert(entry.Count == 1);
-                tdSym = entry.Symbol;
-                System.Diagnostics.Debug.Assert(tdSym.Type != null);
-                System.Diagnostics.Debug.Assert(tdSym.Type.Tag == Type.Tags.Typedef);
-                if (entry.Count > 1 || ((TypedefType)tdSym.Type).TargetType != null)
-                {
-                    Diagnostic d = new Diagnostic(MessageCode.SemanticTCErrorInParser,
-                        dtde.Column,
-                        dtde.Column,
-                        dtde.Line,
-                        string.Format(TypeCobolResource.TypeAlreadyDeclared, dataDef.Name));
-                    Diagnostics.Add(d);
-                    return null;
-                }
-            }
-            //We create the type definition symbol            
-            if (tdSym == null)
-            {
-                tdSym = new TypedefSymbol(dataDef.Name);
-                tdSym.Type = new TypedefType(tdSym);
-                if (dtde.Strict != null && dtde.Strict.Value)
-                {
-                    tdSym.SetFlag(Symbol.Flags.Strict, true);
-                }
-                if (dtde.Strong != null && dtde.Strong.Value)
-                {
-                    tdSym.SetFlag(Symbol.Flags.Strong, true);
-                }
-                SetSymbolAccessModifer(tdSym, dtde.Visibility);
-                //A Typedef goes in the Types scope of their program scope
-                //Enter it right now to allow recursive type definition to be possible here.
-                //The owner of the type is the top program.
-                if (parentScope.Owner.Kind == Symbol.Kinds.Program || parentScope.Owner.Kind == Symbol.Kinds.Function)
-                {
-                    tdSym.Owner = parentScope.Owner;
-                    ((ProgramSymbol)parentScope.Owner).Types.Enter(tdSym);
-                    //Add the type to the domain of types
-                    this.MyRoot.AddToDomain(tdSym);
-                }
-                else
-                {//Declaration of a TypeDef out of a Program or a Function 
-                    Diagnostic d = new Diagnostic(MessageCode.SemanticTCErrorInParser,
-                        dtde.Column,
-                        dtde.Column,
-                        dtde.Line,
-                        string.Format(TypeCobolResource.TypedefDeclaredOutProgramOrFunction, dataDef.Name));
-                    Diagnostics.Add(d);
-                    return null;
-                }
-            }
-
-            VariableSymbol varSym = DataDefinition2Symbol(dataDef, parentScope, tdSym);
-            //Ignore the variable symbol, but only take the underlying type.
-            System.Diagnostics.Debug.Assert(varSym.Type != null);
-            System.Diagnostics.Debug.Assert(tdSym.Type != null);
-            System.Diagnostics.Debug.Assert(tdSym.Type.Tag == Type.Tags.Typedef);
-            ((TypedefType)tdSym.Type).TargetType = varSym.Type;
-            tdSym.Type.Symbol = tdSym;
-            //Important if the target Type is a Group Type we must change the parent Scope to the TypedefSymbol.
-            Types.Type elemType = tdSym.Type?.TypeComponent;
-            if (elemType != null && elemType.Tag == Type.Tags.Group)
-            {
-                GroupType recType = (GroupType)elemType;
-                recType.Scope.Owner = tdSym;
-            }
-            //Mark all symbol has belonging to a TYPEDEF
-            tdSym.SetFlag(Symbol.Flags.InsideTypedef, true, true);
-            //We do not enter typedef in the domain but we propagate any decoration.
-            DecorateSymbol(dataDef, tdSym, parentScope);
-            return tdSym;
-        }
-
-        /// <summary>
-        /// Create a Symbol whose type is a type defined as a TypeDef
-        /// </summary>
-        /// <param name="dataDef">The Data Definition to convert</param>
-        /// <param name="parentScope">The current parent scope</param>
-        /// <param name="typedef">not null if  we have been called by a TYPEDEF declaration, null otherwise</param>
-        /// <returns>The Created Symbol</returns>
-        internal VariableSymbol CreateDataTypeSymbol(DataDefinition dataDef, Scope<VariableSymbol> parentScope, TypedefSymbol typedef)
-        {
-            if (dataDef.CodeElement.Type == CodeElementType.DataRedefinesEntry)
-            {//Cannot redefine a TypeDef
-                DataRedefinesEntry dataRedefines = (DataRedefinesEntry)dataDef.CodeElement;
-                SymbolReference symRef = dataRedefines.RedefinesDataName;
-
-                Diagnostic d = new Diagnostic(MessageCode.SemanticTCErrorInParser,
-                    symRef.NameLiteral.Token.Column,
-                    symRef.NameLiteral.Token.EndColumn,
-                    symRef.NameLiteral.Token.Line,
-                    string.Format(TypeCobolResource.CannotRedefinesAVariableWhoseTypeDefed, symRef.Name));
-                Diagnostics.Add(d);
-                return null;
-            }
-
-            TypeCobol.Compiler.CodeElements.DataType dataType = dataDef.DataType;
-            System.Diagnostics.Debug.Assert(dataType != null);
-            DataDescriptionEntry entry = dataDef.CodeElement as DataDescriptionEntry;
-            TypeCobol.Compiler.CodeElements.SymbolReference datSymRef = entry.UserDefinedDataType;
-            //System.Diagnostics.Debug.Assert(datSymRef != null);
-            //We need also a valid CurrentScope to lookup Typedef if one exit, or to create an unresolved Typedef declaration.
-            System.Diagnostics.Debug.Assert(CurrentScope != null);
-
-            string[] paths = datSymRef == null ? new string[] { dataType.Name } : AbstractScope.SymbolReferenceToPath(datSymRef);
-            VariableTypeSymbol varTypeSym = new VariableTypeSymbol(dataDef.Name, paths);
-            DecorateSymbol(dataDef, varTypeSym, parentScope);
-            if (typedef == null)
-                CurrentProgram.AddToDomain(varTypeSym);
-            else
-                typedef.Add(varTypeSym);
-            
-            //If we have created a VariableTypeSymbol Symbol instance then sure the underlying Program should be completed from the Top Program.
-            //This can be an optimization to avoid pur Cobol85 program to be completed, they don't have TYPEDEF.
-            if (!CurrentProgram.HasFlag(Symbol.Flags.NeedTypeCompletion))
-            {
-                CurrentProgram.SetFlag(Symbol.Flags.NeedTypeCompletion, true);
-                ProgramSymbol toProgram = (ProgramSymbol)CurrentProgram.TopParent(Symbol.Kinds.Program);
-                if (toProgram != CurrentProgram)
-                    toProgram.SetFlag(Symbol.Flags.NeedTypeCompletion, true);
-            }
-            return varTypeSym;
-        }
-
+        
+        
         /// <summary>
         /// Create a condition variable symbol
         /// </summary>
@@ -1112,7 +822,7 @@ namespace TypeCobol.Compiler.Domain
         /// <returns>The Renamed variable resolved if any, null otherwise</returns>
         private VariableSymbol ResolveRenamedVariable(SymbolReference renamed, Scope<VariableSymbol> parentScope)
         {
-            Domain<VariableSymbol>.Entry candidateRenamed = CurrentProgram.ResolveReference(renamed, true);
+            Domain<VariableSymbol>.Entry candidateRenamed = null;//TODO OSMBeforeMerge CurrentProgram.ResolveReference(renamed, true);
             if (candidateRenamed == null || candidateRenamed.Count == 0)
             {
                 Diagnostic d = new Diagnostic(MessageCode.SemanticTCErrorInParser,
@@ -1360,7 +1070,7 @@ namespace TypeCobol.Compiler.Domain
                             //Special case Typedef
                             if (IsTypedefDefinition(dataDef) && typedef == null)
                             {
-                                sym = CreateTypeDefinition(dataDef, parentScope);
+                                sym = null; //TODO OSM
                             }
                             else if (IsSingleUsageDefinition(dataDef))
                             {
@@ -1379,7 +1089,7 @@ namespace TypeCobol.Compiler.Domain
                                         //TypeCobol.Compiler.CodeElements.DataType dataType = dataDef.DataType;
                                         if (entry != null && entry.UserDefinedDataType != null)
                                         {
-                                            sym = CreateDataTypeSymbol(dataDef, parentScope, typedef);
+                                            sym = null; //TODO OSM
                                         }
                                         else
                                         {
@@ -1435,10 +1145,9 @@ namespace TypeCobol.Compiler.Domain
         {
             foreach (var child in dataDef.Children)
             {
-                if (child.CodeElement == null && child is IndexDefinition)
+                if (child.CodeElement == null && child is IndexDefinition indexDef)
                 {
                     //An index definition symbol
-                    IndexDefinition indexDef = (IndexDefinition) child;
                     var indexSym = CreateIndexSymbol(indexDef, parentScope, typedef);
                     //Attach the Indexed
                     indexSym.Owner = indexedSym.Owner;
@@ -1451,7 +1160,7 @@ namespace TypeCobol.Compiler.Domain
                         indexSym.SetFlag(Symbol.Flags.Global, true);
                     }
 
-                    child.SemanticData = indexSym;
+                    indexDef.SemanticData = indexSym;
                 }
             }
         }
@@ -1679,6 +1388,18 @@ namespace TypeCobol.Compiler.Domain
                 //Handle indexes belonging to this Data Definition
                 HandleIndexes(level1Node, dataDefSym, scope, null);
             }
+        }
+
+        public override void StartParagraph(ParagraphHeader header)
+        {
+            ParagraphSymbol paragraphSymbol = new ParagraphSymbol(header.ParagraphName.Name);
+            CurrentNode.SemanticData = paragraphSymbol;
+        }
+
+        public override void StartSection(SectionHeader header)
+        {
+            SectionSymbol sectionSymbol = new SectionSymbol(header.SectionName.Name);
+            CurrentNode.SemanticData = sectionSymbol;
         }
     }
 }

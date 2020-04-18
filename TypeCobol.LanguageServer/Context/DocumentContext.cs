@@ -83,9 +83,7 @@ namespace TypeCobol.LanguageServer.Context
                 else
                 {
                     FileCompiler.CompilationResultsForProgram.TokensLinesChanged -= LanguageServer.TokensLinesChanged;
-                    FileCompiler.CompilationResultsForProgram.WholeDocumentChanged -= LanguageServer.WholeDocumentChanged;
-                    //If we have a Program Symbol Table Builder instance associated ==> free it
-                    FileCompiler.CompilationResultsForProgram.PrgSymbolTblBuilder?.RemovePrograms();
+                    FileCompiler.CompilationResultsForProgram.WholeDocumentChanged -= LanguageServer.WholeDocumentChanged;                    
                 }
             }
         }

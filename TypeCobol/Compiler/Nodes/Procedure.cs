@@ -10,6 +10,7 @@ namespace TypeCobol.Compiler.Nodes {
     using System.Text;
     using TypeCobol.Compiler.CodeElements;
     using CodeElements.Expressions;
+    using TypeCobol.Compiler.Symbols;
 
     public class ProcedureDivision: GenericNode<ProcedureDivisionHeader> {
 	    public ProcedureDivision(ProcedureDivisionHeader header): base(header) { }
@@ -179,7 +180,6 @@ namespace TypeCobol.Compiler.Nodes {
 	    public Section(SectionHeader header): base(header) { }
 	    public override string ID { get { return "section"; } }
         public override string Name { get { return this.CodeElement.SectionName.Name; } }
-
         public override bool VisitNode(IASTVisitor astVisitor) {
             return astVisitor.Visit(this);
         }

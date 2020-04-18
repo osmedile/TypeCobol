@@ -50,7 +50,7 @@ namespace TypeCobol.Compiler.Parser
                 }
             }
         }
-        public static ProgramSymbolTableBuilder CupParseProgramOrClass(TextSourceInfo textSourceInfo, ISearchableReadOnlyList<CodeElementsLine> codeElementsLines, TypeCobolOptions compilerOptions, SymbolTable customSymbols, RootSymbolTable rootSymbolTable,PerfStatsForParserInvocation perfStatsForParserInvocation, out SourceFile root, out List<Diagnostic> diagnostics, 
+        public static ProgramSymbolTableBuilder CupParseProgramOrClass(TextSourceInfo textSourceInfo, ISearchableReadOnlyList<CodeElementsLine> codeElementsLines, TypeCobolOptions compilerOptions, SymbolTable customSymbols, PerfStatsForParserInvocation perfStatsForParserInvocation, out SourceFile root, out List<Diagnostic> diagnostics, 
             out Dictionary<CodeElement, Node> nodeCodeElementLinkers,
             out List<DataDefinition> typedVariablesOutsideTypedef,
             out List<TypeDefinition> typeThatNeedTypeLinking)
@@ -74,7 +74,7 @@ namespace TypeCobol.Compiler.Parser
                 //----------------------------------------------------------------------
                 //Register a static SymbolTableBuilder for a Program as a Node Listener.
                 //----------------------------------------------------------------------
-                prgSymTblBuilderListener = () => (prgSymTblBuilder = new ProgramSymbolTableBuilder(rootSymbolTable));
+                prgSymTblBuilderListener = () => (prgSymTblBuilder = new ProgramSymbolTableBuilder());
                 Compiler.Parser.NodeDispatcher.RegisterStaticNodeListenerFactory(prgSymTblBuilderListener);
             }
             builder.SyntaxTree = new SyntaxTree(); //Initialize SyntaxTree for the current source file

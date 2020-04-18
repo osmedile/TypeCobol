@@ -57,7 +57,7 @@ namespace TypeCobol
 			if (format == null) format = GetFormat(path);
             
             CompilationProject project = new CompilationProject(path, root.FullName, Helpers.DEFAULT_EXTENSIONS,
-				format.Encoding, format.EndOfLineDelimiter, format.FixedLineLength, format.ColumnsLayout, options, this.CustomRootSymbols);
+				format.Encoding, format.EndOfLineDelimiter, format.FixedLineLength, format.ColumnsLayout, options );
 			//Add copy folder into sourceFileProvider
 			SourceFileProvider sourceFileProvider = project.SourceFileProvider;
 			copies = copies ?? new List<string>();

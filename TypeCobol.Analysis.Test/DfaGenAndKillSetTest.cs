@@ -10,6 +10,8 @@ using System.IO;
 using TypeCobol.Analysis.Dfa;
 using TypeCobol.Analysis.Cfg;
 using TypeCobol.Analysis.Graph;
+using TypeCobol.Compiler.CodeElements.Expressions;
+using System.Collections.Generic;
 
 namespace TypeCobol.Analysis.Test
 {
@@ -105,13 +107,13 @@ namespace TypeCobol.Analysis.Test
             string result = writer.ToString();
 
             //Resolve variable I,J
-            var multiI = document.Results.PrgSymbolTblBuilder.Programs[0].ResolveReference(new string[]{ "I"}, true);
+            var multiI = new List<DataDefinition>(document.Results.ProgramClassDocumentSnapshot.Root.MainProgram.SymbolTable.GetVariablesExplicit(new URI("I")));
             Assert.AreEqual(1, multiI.Count);
-            Symbol I = multiI.Symbol;
+            Symbol I = (Symbol) multiI[0].SemanticData;
 
-            var multiJ = document.Results.PrgSymbolTblBuilder.Programs[0].ResolveReference(new string[] { "J" }, true);
+            var multiJ = new List<DataDefinition>(document.Results.ProgramClassDocumentSnapshot.Root.MainProgram.SymbolTable.GetVariablesExplicit(new URI("J")));
             Assert.AreEqual(1, multiJ.Count);
-            Symbol J = multiJ.Symbol;
+            Symbol J = (Symbol)multiJ[0].SemanticData;
 
             TypeCobolDataFlowGraphBuilder dfaBuilder = new TypeCobolDataFlowGraphBuilder(ctx.CfgDfaBuilder.Cfg);
             dfaBuilder.ComputeGenSet();
@@ -193,13 +195,13 @@ namespace TypeCobol.Analysis.Test
             string result = writer.ToString();
 
             //Resolve variable I,J
-            var multiI = document.Results.PrgSymbolTblBuilder.Programs[0].ResolveReference(new string[] { "I" }, true);
+            var multiI = new List<DataDefinition>(document.Results.ProgramClassDocumentSnapshot.Root.MainProgram.SymbolTable.GetVariablesExplicit(new URI("I")));
             Assert.AreEqual(1, multiI.Count);
-            Symbol I = multiI.Symbol;
+            Symbol I = (Symbol)multiI[0].SemanticData;
 
-            var multiJ = document.Results.PrgSymbolTblBuilder.Programs[0].ResolveReference(new string[] { "J" }, true);
+            var multiJ = new List<DataDefinition>(document.Results.ProgramClassDocumentSnapshot.Root.MainProgram.SymbolTable.GetVariablesExplicit(new URI("J")));
             Assert.AreEqual(1, multiJ.Count);
-            Symbol J = multiJ.Symbol;
+            Symbol J = (Symbol)multiJ[0].SemanticData;
 
             TypeCobolDataFlowGraphBuilder dfaBuilder = new TypeCobolDataFlowGraphBuilder(ctx.CfgDfaBuilder.Cfg);
             dfaBuilder.ComputeKillSet();

@@ -32,7 +32,7 @@ namespace TypeCobol.Test
             StringBuilder errors = new StringBuilder();
 
             //Set to true to automaticaly replace content in ExpectedResult File
-            bool autoReplace = false;
+            bool autoReplace = true;
 
             if (testName == string.Empty && result == string.Empty && expectedResult == string.Empty &&
                 expectedResultPath == string.Empty)

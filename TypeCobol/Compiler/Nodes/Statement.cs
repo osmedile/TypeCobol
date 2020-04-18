@@ -3,8 +3,7 @@
     using System.Collections.Generic;
     using TypeCobol.Compiler.CodeElements;
     using TypeCobol.Compiler.CodeElements.Expressions;
-
-
+    using TypeCobol.Compiler.Symbols;
 
     public interface Statement { }
 
@@ -179,6 +178,10 @@
 
     public class Goto: GenericNode<GotoStatement>, Statement {
 	    public Goto(GotoStatement statement): base(statement) { }
+
+        public ParagraphSymbol ParagraphSymbol { get; internal set; }
+        public SectionSymbol SectionSymbol { get; internal set; }
+
         public override bool VisitNode(IASTVisitor astVisitor)
         {
             return astVisitor.Visit(this);
@@ -580,7 +583,12 @@
     public class PerformProcedure: GenericNode<PerformProcedureStatement>, Statement {
 	    public PerformProcedure(PerformProcedureStatement statement): base(statement) { }
 
-            public override bool VisitNode(IASTVisitor astVisitor)
+        public ParagraphSymbol ParagraphSymbol { get; internal set; }
+        public ParagraphSymbol ThroughParagraphSymbol { get; internal set; }
+        public SectionSymbol SectionSymbol { get; internal set; }
+        public SectionSymbol ThroughSectionSymbol { get; internal set; }
+
+        public override bool VisitNode(IASTVisitor astVisitor)
             {
                 return astVisitor.Visit(this);
             }

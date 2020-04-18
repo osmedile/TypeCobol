@@ -178,8 +178,6 @@ namespace TypeCobol.Analysis.Report
             System.Diagnostics.Debug.Assert(((Symbol)cfgBuilder.Cfg.ProgramNode.SemanticData).Kind == Symbol.Kinds.Program ||
                                             ((Symbol)cfgBuilder.Cfg.ProgramNode.SemanticData).Kind == Symbol.Kinds.Function);
 
-            ProgramSymbol program = (ProgramSymbol)cfgBuilder.Cfg.ProgramNode.SemanticData;
-
             CallUsePoints.Clear();
             TypeCobolDataFlowGraphBuilder dfaBuilder = new TypeCobolDataFlowGraphBuilder(cfgBuilder.Cfg);
             dfaBuilder.OnUsePointEvent += OnCallUsePoint;
@@ -188,7 +186,7 @@ namespace TypeCobol.Analysis.Report
             //Report Call Use Points.            
             foreach (DfaUsePoint<Node, Symbol> up in CallUsePoints)
             {
-                List < Tuple<string, string> > defPaths = ComputeUsePointDefPaths(dfaBuilder, program, up);
+                List < Tuple<string, string> > defPaths = ComputeUsePointDefPaths(dfaBuilder, up);
                 if (defPaths.Count > 0)
                 {
                     foreach (var path in defPaths)
@@ -221,7 +219,7 @@ namespace TypeCobol.Analysis.Report
         /// <param name="program">The Current Program</param>
         /// <param name="up">The Use Point instance</param>
         /// <returns>a List of Tuple(VariablName, Definition Path)</VariablName></returns>
-        private List<Tuple<string, string>> ComputeUsePointDefPaths(TypeCobolDataFlowGraphBuilder dfaBuilder, ProgramSymbol program, DfaUsePoint<Node, Symbol> up)
+        private List<Tuple<string, string>> ComputeUsePointDefPaths(TypeCobolDataFlowGraphBuilder dfaBuilder, DfaUsePoint<Node, Symbol> up)
         {
             List<Tuple<string, string>> paths = new List<Tuple<string, string>>();
             if (up.UseDef == null || up.UseDef.Cardinality() == 0)
@@ -264,12 +262,14 @@ namespace TypeCobol.Analysis.Report
                                             {//(2.1.1.1.2)An Identifier --> Recurse     
                                              //Find the use point of the sending identifier in the DefPoint's Block.
                                              //(2.1.1.1.2.1) Resolve the identifier variable
-                                                SymbolReference symRef = simpleMove.SendingVariable.StorageArea.SymbolReference;
-                                                Compiler.Scopes.Domain<VariableSymbol>.Entry result = program.ResolveReference(symRef, true);
-                                                System.Diagnostics.Debug.Assert(result != null);
-                                                if (result.Count == 1)
+
+                                                
+
+                                                VariableSymbol sendingVariable = null;
+                                                def.Instruction.SymbolStorageAreasRead.TryGetValue(simpleMove.SendingVariable.StorageArea, out sendingVariable);
+                                                if (sendingVariable != null)
                                                 {//(2.1.1.1.2.2) The sending identifier variable is resolved -> look for its UsePoint instruction in the definition block
-                                                    Symbol sendingVariable = result.Symbol; ;
+                                                    
                                                     Graph.BasicBlock<Node, DfaBasicBlockInfo<Symbol>> upBlock = dfaBuilder.Cfg.AllBlocks[def.BlockIndex];
                                                     DfaBasicBlockInfo<Symbol> upBlockData = upBlock.Data;
                                                     for (int i = upBlockData.UseListFirstIndex; i < upBlockData.UseListFirstIndex + upBlockData.UseCount; i++)
@@ -277,7 +277,7 @@ namespace TypeCobol.Analysis.Report
                                                         if (dfaBuilder.UseList[i].Instruction == def.Instruction && dfaBuilder.UseList[i].Variable == sendingVariable)
                                                         {   //(2.1.1.1.2.3) The UsePoint of the sending identifier is found then recurse compute its definition paths
                                                             StringBuilder newSB = new StringBuilder();
-                                                            List<Tuple<string, string>> newPtahs = ComputeUsePointDefPaths(dfaBuilder, program, dfaBuilder.UseList[i]);
+                                                            List<Tuple<string, string>> newPtahs = ComputeUsePointDefPaths(dfaBuilder, dfaBuilder.UseList[i]);
                                                             foreach (var item in newPtahs)
                                                             {
                                                                 paths.Add(new Tuple<string, string>(item.Item1, string.Format(@"{0}<-{1}", up.Variable.FullDotName, item.Item2)));

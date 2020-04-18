@@ -35,7 +35,6 @@ namespace TypeCobol.LanguageServer
     {
 
         private SymbolTable _customSymbols;
-        private RootSymbolTable _customRootSymbols;
         private string _rootDirectoryFullName;
         private string _workspaceName;
         private DependenciesFileWatcher _DepWatcher;
@@ -184,7 +183,6 @@ namespace TypeCobol.LanguageServer
             string fileName = Path.GetFileName(docContext.Uri.LocalPath);
             ITextDocument initialTextDocumentLines = new ReadOnlyTextDocument(fileName, Configuration.Format.Encoding, Configuration.Format.ColumnsLayout, sourceText);
             FileCompiler fileCompiler = null;
-            CompilationProject.RootSymbolTable = _customRootSymbols;
 
 #if EUROINFO_RULES //Issue #583
             SymbolTable arrangedCustomSymbol = null;
@@ -444,8 +442,7 @@ namespace TypeCobol.LanguageServer
             var typeCobolOptions = new TypeCobolOptions(Configuration);
 
             CompilationProject = new CompilationProject(_workspaceName, _rootDirectoryFullName, Helpers.DEFAULT_EXTENSIONS, Configuration.Format.Encoding, Configuration.Format.EndOfLineDelimiter, 
-                Configuration.Format.FixedLineLength, Configuration.Format.ColumnsLayout, typeCobolOptions, 
-                _customRootSymbols);
+                Configuration.Format.FixedLineLength, Configuration.Format.ColumnsLayout, typeCobolOptions);
 
             if (Configuration.CopyFolders != null && Configuration.CopyFolders.Count > 0)
             {
@@ -550,10 +547,9 @@ namespace TypeCobol.LanguageServer
             _customSymbols = null;
             try
             {
-                Tuple < SymbolTable, RootSymbolTable > customSymbolTables = Tools.APIHelpers.Helpers.LoadIntrinsicAndDependencies(Configuration, DiagnosticsErrorEvent, DiagnosticsErrorEvent,
+                var customSymbolTables = Tools.APIHelpers.Helpers.LoadIntrinsicAndDependencies(Configuration, DiagnosticsErrorEvent, DiagnosticsErrorEvent,
                     out List<RemarksDirective.TextNameVariation> usedCopies, out IDictionary<string, IEnumerable<string>> missingCopies); //Refresh Intrinsics and Dependencies
-                _customSymbols = customSymbolTables.Item1;
-                _customRootSymbols = customSymbolTables.Item2;
+                _customSymbols = customSymbolTables;
 
                 if (missingCopies.Count > 0)
                 {

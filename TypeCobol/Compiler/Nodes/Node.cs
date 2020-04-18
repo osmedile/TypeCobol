@@ -498,6 +498,13 @@ namespace TypeCobol.Compiler.Nodes {
         public Dictionary<StorageArea, DataDefinitionPath> QualifiedStorageAreas { get; set; }
 
         /// <summary>
+        /// 
+        /// </summary>
+        public Dictionary<StorageArea, VariableSymbol> SymbolStorageAreasWritten { get; set; }
+        public Dictionary<StorageArea, VariableSymbol> SymbolStorageAreasRead { get; set; }
+
+
+        /// <summary>
         /// Get the fully qualified name used to reference the DataDefinition referenced by this StorageArea
         ///
         /// For a DataDefinition outside a typedef, this its qualified name

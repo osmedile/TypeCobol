@@ -68,13 +68,7 @@ namespace TypeCobol.Compiler.Scopes
         {
             get;
         }
-        /// <summary>
-        /// Functions symbols
-        /// </summary>
-        Scope<FunctionSymbol> Functions
-        {
-            get;
-        }
+        
         /// <summary>
         /// Functions symbols
         /// </summary>

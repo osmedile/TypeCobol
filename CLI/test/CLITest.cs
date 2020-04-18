@@ -454,7 +454,7 @@ namespace CLI.Test
         /// <returns></returns>
         public static bool CompareDirectory(DirectoryInfo targetDir, DirectoryInfo actualDir, string testPlaylistDirectory = null)
         {
-            bool autoReplace = false;
+            bool autoReplace = true;
 
             if (targetDir == null && actualDir == null && testPlaylistDirectory.Contains("LSRTests"))
                 return autoReplace;

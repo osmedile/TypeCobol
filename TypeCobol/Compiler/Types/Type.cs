@@ -235,7 +235,6 @@ namespace TypeCobol.Compiler.Types
         public interface IVisitor<out TR, in TS>
         {
             TR VisitArrayType(ArrayType t, TS s);
-            TR VisitFunctionType(FunctionType t, TS s);
             TR VisitPictureType(PictureType t, TS s);
             TR VisitPointerType(PointerType t, TS s);
             TR VisitProgramType(ProgramType t, TS s);
@@ -254,7 +253,6 @@ namespace TypeCobol.Compiler.Types
         {
             public TR Visit(Type t, TS s) { return t.Accept(this, s); }
             public virtual TR VisitArrayType(ArrayType t, TS s) { return VisitType(t, s); }
-            public virtual TR VisitFunctionType(FunctionType t, TS s) { return VisitType(t, s); }
             public virtual TR VisitPictureType(PictureType t, TS s) { return VisitType(t, s); }
             public virtual TR VisitPointerType(PointerType t, TS s) { return VisitType(t, s); }
             public virtual TR VisitProgramType(ProgramType t, TS s) { return VisitType(t, s); }

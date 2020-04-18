@@ -25,7 +25,6 @@ namespace TypeCobol.Compiler.Symbols
             LinkageStorageData = new Scope<VariableSymbol>(this);
             Sections = new Scope<SectionSymbol>(this);
             Paragraphs = new Scope<ParagraphSymbol>(this);
-            Functions = new Scope<FunctionSymbol>(this);
             Programs = new Scope<ProgramSymbol>(this);
             Domain = new Domain<VariableSymbol>();
         }
@@ -103,15 +102,6 @@ namespace TypeCobol.Compiler.Symbols
         }
 
         /// <summary>
-        /// Functions scope of the program.
-        /// </summary>
-        public override Scope<FunctionSymbol> Functions
-        {
-            get;
-            protected set;
-        }
-
-        /// <summary>
         /// Programs scope of the program.
         /// </summary>
         public override Scope<ProgramSymbol> Programs
@@ -145,20 +135,7 @@ namespace TypeCobol.Compiler.Symbols
             entry.Symbol.Owner = this;
             return entry.Symbol;
         }
-
-        /// <summary>
-        /// Remove a program;
-        /// </summary>
-        /// <param name="prgSym">The program to be removed</param>
-        public void RemoveProgram(ProgramSymbol prgSym)
-        {
-            if (prgSym != null)
-            {
-                Programs.Delete(prgSym);
-                prgSym.Owner = null;
-            }
-        }
-
+        
         /// <summary>
         /// Add the given VariableSymbol instance in this Program domain
         /// </summary>
@@ -170,46 +147,11 @@ namespace TypeCobol.Compiler.Symbols
             lock (Domain)
             {
                 //First add it in the Global Domain.
-                Symbol root = TopParent(Kinds.Root);
-                ((RootSymbolTable) root)?.AddToUniverse(varSym);
+                //Symbol root = TopParent(Kinds.Root);
+                //((RootSymbolTable) root)?.AddToUniverse(varSym);
                 Domain.Add(varSym);
             }
             return varSym;
-        }
-
-        /// <summary>
-        /// Free the domain associated to this program.
-        /// </summary>
-        internal override void FreeDomain()
-        {
-            RootSymbolTable root = (RootSymbolTable)TopParent(Kinds.Root);
-            if (root != null)
-            {
-                foreach (var varSym in Domain)
-                {
-                    root.RemoveFromUniverse(varSym);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Add the element to this Program's domain.
-        /// </summary>
-        /// <param name="element"></param>
-        /// <returns></returns>
-        public VariableSymbol Add(VariableSymbol element)
-        {
-            return AddToDomain(element);
-        }
-
-        /// <summary>
-        /// Get the Scope of symbol associated to the given symbol name.
-        /// </summary>
-        /// <param name="path">The Symbol's path to get the Scope, the path is in reverse order à la COBOL.</param>
-        /// <returns>The Multi Symbol set of all symbol corresponding to the given path.</returns>
-        public Domain<VariableSymbol>.Entry Get(string[] path)
-        {
-            return ResolveReference(path, true);
         }
 
         /// <summary>
@@ -232,205 +174,8 @@ namespace TypeCobol.Compiler.Symbols
         /// </summary>
         public virtual Flags FunctionVisibilityMask => IsNested ? (Flags.Private | Flags.Public) : 0;
 
-
-        /// <summary>
-        /// Determines if a Symbol is accessible using and accessibility mask.
-        /// </summary>
-        /// <param name="sym">The symbol to be checked</param>
-        /// <param name="mask">The accessibility mask</param>
-        /// <returns>true if the symbol is accessible, false otherwise.</returns>
-        private bool IsSymbolAccessible(Symbol sym, Flags mask)
-        {
-            System.Diagnostics.Debug.Assert(sym != null);
-            if (sym.HasFlag(Flags.BuiltinSymbol))
-                return true;//Builtin symbols are always accessible.
-            Symbol symTopPrg = sym.TopParent(Kinds.Program);
-            System.Diagnostics.Debug.Assert(symTopPrg != null);
-            Symbol myTopPrg = TopParent(Kinds.Program);
-            System.Diagnostics.Debug.Assert(myTopPrg != null);
-
-            if (symTopPrg == myTopPrg)
-            {//Same program ==> Apply the visibility mask
-                System.Diagnostics.Debug.Assert(sym.Owner != null);
-                if (sym.Owner == this || sym == this)
-                {//This My Own Symbol.
-                    return true;
-                }
-                if (mask == 0 || sym.HasFlag(mask))
-                {
-                    if (sym.HasFlag(Flags.Global))
-                    {//The Symbol is a global Symbol => only SubNested PROGRAM can See it
-                        if (this.Kind == Kinds.Function)
-                        {//I am a function, I cannot access anything else.
-                            return false;
-                        }
-                        if (sym.Owner.Kind == Kinds.Function)
-                        {//Symbol declared inside a Function, cannot be accessed out of the function.                        
-                            return false;
-                        }
-                        //Now the symbol must has been declared in an enclosing program of this one.
-                        //In other words, one parent of this program must be the parent of the symbol.
-                        return this.HasParent(sym.Owner);
-                    }
-                    else
-                    {   //if mask == 0 ==> Local visibility ==> (symNearestKind == this)
-                        // else ==> mask != Global && Mask == Public || Mask == Private;
-                        System.Diagnostics.Debug.Assert((mask == 0) || (mask & (Flags.Public | Flags.Private)) != 0);
-                        return sym.HasFlag(Flags.Public | Flags.Private);
-                    }
-                }
-                else
-                {
-#if ALLOW_PRIV_PUBLIC_PROC_CALL_LOCAL_PROC
-                    //Special case, only functions having the same parent can be called each other, this applied
-                    // When a Private or Public Procedure call a Local Procedure with the same owner.
-                    return this.Kind == Kinds.Function && sym.Kind == Kinds.Function && this.Owner == sym.Owner;
-#else
-                    return false;
-#endif
-                }
-            }
-            else
-            {//Different programs ==> only public.
-                return sym.HasFlag(Flags.Public);
-            }
-        }
-
-        /// <summary>
-        /// Determines if a Type is accessible from this Program.
-        /// </summary>
-        /// <param name="typeSym">The Type to be checked</param>
-        /// <returns>true if the type is accessible, false otherwise</returns>
-        public virtual bool IsTypeAccessible(TypedefSymbol typeSym)
-        {
-            return IsSymbolAccessible(typeSym, TypeVisibilityMask);
-        }
-
-        /// <summary>
-        /// Determines if a Function is accessible from this Program.
-        /// </summary>
-        /// <param name="typeSym">The Function to be checked</param>
-        /// <returns>true if the type is accessible, false otherwise</returns>
-        public virtual bool IsFunctionAccessible(FunctionSymbol funSym)
-        {
-            return IsSymbolAccessible(funSym, FunctionVisibilityMask);
-        }
-
-        /// <summary>
-        /// Get the top program.
-        /// </summary>
-        /// <param name="curPrg"></param>
-        /// <returns></returns>
-        public static ProgramSymbol GetTopProgram(ProgramSymbol curPrg)
-        {
-            ProgramSymbol top = (ProgramSymbol)curPrg.TopParent(Symbol.Kinds.Program);
-            return top;
-        }
-
-        /// <summary>
-        /// Resolve the given Symbol paths from this scope
-        /// </summary>
-        /// <param name="paths">The qualified path of the symbol reference in COBOL85 order</param>
-        /// <param name="results">The All discovered candidate symbol accumulator</param>
-        /// <param name="bRecurseEnglobingPrograms">true to recurse into englobing variables to look for global variable, false otherwise</param>
-        /// <param name="visibilityMask">Visibility Mask</param>
-        /// <returns>The referenced symbols if any</returns>
-        private void ResolveReference(string[] paths, Domain<VariableSymbol>.Entry results, bool bRecurseEnglobingPrograms, Symbol.Flags visibilityMask)
-        {
-            if (paths == null || paths.Length == 0 || paths[0] == null)
-                return;
-
-            string name = paths[0];
-            if (this.Domain.TryGetValue(name, out var candidates))
-            {
-                foreach (var candidate in candidates)
-                {
-                    if (visibilityMask != 0)
-                    {
-                        if ((candidate.Flag & visibilityMask) == 0)
-                            continue;
-                    }
-
-                    if (candidate.IsMatchingPath(paths))
-                        results.Add(candidate);
-                }
-            }
-
-            if (bRecurseEnglobingPrograms)
-            {
-                if (results.Count == 0)
-                {
-                    ProgramSymbol curProg = this;
-                    if (curProg.Owner != null && curProg.Owner.Kind == Kinds.Program)
-                    {
-                        curProg = (ProgramSymbol)curProg.Owner;
-                        curProg.ResolveReference(paths, results, true, visibilityMask == 0 ? VariableVisibilityMask : visibilityMask);
-                    }
-                }
-                else if ((visibilityMask & Flags.GLOBAL_STORAGE) == 0)
-                {
-                    // We have to search in TopProgram GLOBAL-STORAGE even if we already have found results locally.
-                    var topPgm = GetTopProgram(this);
-                    if (this != topPgm)
-                    {
-                        topPgm.ResolveReference(paths, results, false, Flags.GLOBAL_STORAGE);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Resolve the given SymbolReference from this scope
-        /// </summary>
-        /// <param name="symRef">The Symbol Reference to be resolved</param>
-        /// <param name="bRecurseEnglobingPrograms">true to recurse into englobing variables to look for global variable, false otherwise</param>
-        /// <returns>The referenced symbols if any</returns>
-        public Domain<VariableSymbol>.Entry ResolveReference(SymbolReference symRef, bool bRecurseEnglobingPrograms)
-        {
-            System.Diagnostics.Debug.Assert(symRef != null);
-            return ResolveReference(SymbolReferenceToPath(symRef), bRecurseEnglobingPrograms);
-        }
-
-        /// <summary>
-        /// Resolve the given Symbol paths from this scope
-        /// </summary>
-        /// <param name="paths">The qualified path of the symbol reference in COBOL85 order</param>
-        /// <param name="bRecurseEnglobingPrograms">true to recurse into enclobing variables to look for global variable, false otherwise</param>
-        /// <returns>The referenced symbols if any</returns>
-        public Domain<VariableSymbol>.Entry ResolveReference(string[] paths, bool bRecurseEnglobingPrograms)
-        {
-            if (paths == null || paths.Length == 0 || paths[0] == null)
-                return null;
-
-            var results = new Domain<VariableSymbol>.Entry(paths[0]);
-            ResolveReference(paths, results, bRecurseEnglobingPrograms, 0);
-            return results;
-        }
-
-        /// <summary>
-        /// Resolve a type.
-        /// </summary>
-        /// <param name="root">The Root Symbol Table</param>
-        /// <param name="path">The type's path'</param>
-        /// <returns>The Set of resolve types</returns>
-        public override Domain<TypedefSymbol>.Entry ResolveType(RootSymbolTable root, string[] path)
-        {
-            ProgramSymbol topPrg = (ProgramSymbol)TopParent(Kinds.Program);
-            return ResolveSymbol<TypedefSymbol>(path, topPrg, root.LookupType);
-        }
-
-        /// <summary>
-        /// Resolve a type.
-        /// </summary>
-        /// <param name="root">The Root Symbol Table</param>
-        /// <param name="path">The type's path'</param>
-        /// <returns>The Set of resolve types</returns>
-        public override Domain<AbstractScope>.Entry ResolveScope(RootSymbolTable root, string[] path)
-        {
-            ProgramSymbol topPrg = (ProgramSymbol)TopParent(Kinds.Program);
-            return ResolveSymbol<AbstractScope>(path, topPrg, root.LookupScope);
-        }
-
+        
+        
         /// <summary>
         /// Dump a section
         /// </summary>
@@ -507,20 +252,6 @@ namespace TypeCobol.Compiler.Symbols
         }
 
         /// <summary>
-        /// Dump all nested procedure = Functions.
-        /// </summary>
-        /// <param name="tw"></param>
-        /// <param name="indentLevel"></param>
-        public void DumpFunctions(TextWriter tw, int indentLevel)
-        {
-            foreach (var f in this.Functions)
-            {
-                f.Dump(tw, indentLevel);
-                tw.WriteLine();
-            }
-        }
-
-        /// <summary>
         /// Dump this symbol in the given TextWriter instance.
         /// </summary>
         /// <param name="tw">TextWriter instance</param>
@@ -541,7 +272,6 @@ namespace TypeCobol.Compiler.Symbols
             tw.Write("PROCEDURE DIVISION.");
             this.Type?.Dump(tw, indentLevel + 1);
             tw.WriteLine();
-            DumpFunctions(tw, indentLevel);
             DumpNestedPrograms(tw, indentLevel);
             tw.Write(s);
             tw.Write("END PROGRAM ");

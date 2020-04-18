@@ -35,9 +35,6 @@ namespace TypeCobol.Compiler
         /// <summary>Optional custom symbol table to use for name and type resolution.</summary>
         public CodeModel.SymbolTable CustomSymbols = null;
 
-        /// <summary>The Root Symbol table to be used.</summary>
-        public RootSymbolTable RootSymbolTable = null;
-
         /// <summary>
         /// The build system implements an efficient way to retrieve ProcessedTokensDocuments
         /// for all COPY compiler directives

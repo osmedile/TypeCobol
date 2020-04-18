@@ -82,12 +82,6 @@ namespace TypeCobol.Compiler.Symbols
             return null;
         }
 
-        public override object VisitVariableTypeSymbol(VariableTypeSymbol typedVariable, Context context)
-        {
-            VisitVariableSymbol(typedVariable, context);
-            return null;
-        }
-
         #endregion
 
         #region Types renumbering

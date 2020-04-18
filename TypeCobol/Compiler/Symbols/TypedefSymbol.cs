@@ -193,28 +193,7 @@ namespace TypeCobol.Compiler.Symbols
                 ctx.TypedPath.RemoveLast();
                 return ctx;
             }
-
-            public override LookupContext VisitVariableTypeSymbol(VariableTypeSymbol s, LookupContext ctx)
-            {
-                ctx.Path.AddLast(s);
-                ctx.TypedPath.AddLast(s);
-                if (s.Typedef != null)
-                {
-                    ctx.TypedPath.AddLast(s.Typedef);
-                }
-                if (s.Name.Equals(ctx.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    ctx.Candidates.AddLast(new Tuple<VariableSymbol, Symbol[], Symbol[]>(s, ctx.Path.ToArray(), ctx.TypedPath.ToArray()));
-                }
-                s.Type?.Accept(this, ctx);
-                ctx.Path.RemoveLast();
-                ctx.TypedPath.RemoveLast();
-                if (s.Typedef != null)
-                {
-                    ctx.TypedPath.RemoveLast();
-                }
-                return ctx;
-            }
+            
 
             /// <summary>
             /// Default Type completion

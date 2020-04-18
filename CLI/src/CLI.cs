@@ -132,7 +132,7 @@ namespace TypeCobol.Server
             //First phase : parse all inputs but do not make CrossCheck yet
             foreach (var inputFilePath in _configuration.InputFiles)
             {
-                var parser = new Parser(rootSymbolTables.Item1, rootSymbolTables.Item2);
+                var parser = new Parser(rootSymbolTables);
                 parser.Init(inputFilePath, typeCobolOptions, _configuration.Format, _configuration.CopyFolders);
                 parser.Parse(inputFilePath);
 
@@ -144,7 +144,7 @@ namespace TypeCobol.Server
                 //Add newly discovered programs in the root symbol table
                 if (parser.Results.TemporaryProgramClassDocumentSnapshot != null)
                 {
-                    AddProgramsToRootTable(rootSymbolTables.Item1, parser.Results.TemporaryProgramClassDocumentSnapshot.Root.Programs);
+                    AddProgramsToRootTable(rootSymbolTables, parser.Results.TemporaryProgramClassDocumentSnapshot.Root.Programs);
                 }
                 
                 //Optionally generate the source with expanded copy (note that it is not supported for multiple files)
@@ -193,7 +193,7 @@ namespace TypeCobol.Server
             return AddErrorsAndComputeReturnCode();
         }
 
-        private Tuple<SymbolTable, RootSymbolTable> LoadIntrinsicsAndDependencies()
+        private SymbolTable LoadIntrinsicsAndDependencies()
         {
             var result = Helpers.LoadIntrinsicAndDependencies(_configuration, OnDiagnosticsInIntrinsics, OnDiagnosticsInDependencies, out var usedCopies, out var missingCopies);
 
