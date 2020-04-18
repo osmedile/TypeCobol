@@ -98,14 +98,6 @@ namespace TypeCobol.Compiler.Symbols
 
             return paths;
         }
-
-        public virtual void AddToDomain(AbstractScope absScope)
-        { }
-        public virtual void RemoveFromDomain(AbstractScope absScope)
-        { }
-        public virtual void AddToDomain(TypedefSymbol type)
-        { }
-        public virtual void RemoveFromDomain(TypedefSymbol type)
-        { }
+        
     }
 }
