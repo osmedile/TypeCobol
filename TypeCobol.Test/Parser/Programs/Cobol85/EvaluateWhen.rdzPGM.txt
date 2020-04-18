@@ -1,4 +1,4 @@
-﻿--- Diagnostics ---
+--- Diagnostics ---
 Line 9[12,24] <37, Warning, General> - Warning: "when other" is missing
 Line 10[19,25] <27, Error, Syntax> - Syntax error : Symbol nullInd is not referenced OffendingSymbol=[19,25:nullInd]<UserDefinedWord>
 

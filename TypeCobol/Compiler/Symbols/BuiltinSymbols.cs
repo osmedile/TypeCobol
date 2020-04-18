@@ -20,10 +20,7 @@ namespace TypeCobol.Compiler.Symbols
         public static readonly TypedefSymbol DBCS;
         public static readonly TypedefSymbol FloatingPoint;
 
-        public static readonly TypedefSymbol Boolean;
-        public static readonly TypedefSymbol Date;
-        public static readonly TypedefSymbol Currency;
-        public static readonly TypedefSymbol String;
+        public static readonly TypedefSymbol Level88;
 
         /// <summary>
         /// Static constructor.
@@ -47,12 +44,8 @@ namespace TypeCobol.Compiler.Symbols
             FloatingPoint = new TypedefSymbol(string.Intern("FloatingPoint"));
             FloatingPoint.Type = new TypedefType(FloatingPoint, BuiltinTypes.FloatingPointType);
 
-            Boolean = new TypedefSymbol(string.Intern("Bool"));
-            Boolean.Type = new TypedefType(Boolean, BuiltinTypes.BooleanType);
-            Date = (TypedefSymbol)BuiltinTypes.DateType.Symbol;
-            Currency = (TypedefSymbol)BuiltinTypes.CurrencyType.Symbol;
-            String = new TypedefSymbol(string.Intern("String"));
-            String.Type = new TypedefType(String, BuiltinTypes.StringType);
+            Level88 = new TypedefSymbol(string.Intern("Level88"));
+            Level88.Type = new TypedefType(Level88, BuiltinTypes.Level88Type);
         }
 
         /// <summary>
@@ -68,11 +61,6 @@ namespace TypeCobol.Compiler.Symbols
             types.Enter(AlphanumericEdited);
             types.Enter(DBCS);
             types.Enter(FloatingPoint);
-
-            types.Enter(Boolean);
-            types.Enter(Date);
-            types.Enter(Currency);
-            types.Enter(String);
         }
     }
 }

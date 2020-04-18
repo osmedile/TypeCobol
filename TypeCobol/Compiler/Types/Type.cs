@@ -29,10 +29,7 @@ namespace TypeCobol.Compiler.Types
             Function,
             Typedef,
             Renames,
-
-            //TypeCobol Tags
-            Boolean,
-            String,
+            Level88
         }
 
         /// <summary>

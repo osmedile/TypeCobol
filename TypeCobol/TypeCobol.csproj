@@ -348,7 +348,6 @@
     <Compile Include="Compiler\Scanner\TokenUtils.cs" />
     <Compile Include="Compiler\Scopes\Domain.cs" />
     <Compile Include="Compiler\Scopes\IScope.cs" />
-    <Compile Include="Compiler\Scopes\RootSymbolTable.cs" />
     <Compile Include="Compiler\Scopes\Scope.cs" />
     <Compile Include="Compiler\Source\GapSourceText.cs" />
     <Compile Include="Compiler\Source\InvalidPositionException.cs" />
@@ -361,15 +360,12 @@
     <Compile Include="Compiler\Symbols\AbstractSymbolAndTypeVisitor.cs" />
     <Compile Include="Compiler\Symbols\BuiltinSymbols.cs" />
     <Compile Include="Compiler\Symbols\IndexSymbol.cs" />
-    <Compile Include="Compiler\Symbols\LevelRenumber.cs" />
-    <Compile Include="Compiler\Symbols\NamespaceSymbol.cs" />
     <Compile Include="Compiler\Symbols\ParagraphSymbol.cs" />
     <Compile Include="Compiler\Symbols\ProgramSymbol.cs" />
     <Compile Include="Compiler\Symbols\RedefinesSymbol.cs" />
     <Compile Include="Compiler\Symbols\RenamesSymbol.cs" />
     <Compile Include="Compiler\Symbols\SectionSymbol.cs" />
     <Compile Include="Compiler\Symbols\Symbol.cs" />
-    <Compile Include="Compiler\Symbols\SymbolEventArgs.cs" />
     <Compile Include="Compiler\Symbols\TypedefSymbol.cs" />
     <Compile Include="Compiler\Symbols\VariableSymbol.cs" />
     <Compile Include="Compiler\Text\CobolChar.cs" />
@@ -388,7 +384,6 @@
     <Compile Include="Compiler\TypeChecker\CompilationError.cs" />
     <Compile Include="Compiler\Types\ArrayType.cs" />
     <Compile Include="Compiler\Types\BuiltinTypes.cs" />
-    <Compile Include="Compiler\Types\CyclicTypeChecker.cs" />
     <Compile Include="Compiler\Types\GroupType.cs" />
     <Compile Include="Compiler\Types\PictureCategory.cs" />
     <Compile Include="Compiler\Types\PictureType.cs" />

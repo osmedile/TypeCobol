@@ -11,7 +11,6 @@ namespace TypeCobol.Compiler.Symbols
     {
         public TR Visit(Symbol s, TP arg) { return s.Accept(this, arg); }
         public virtual TR VisitIndexSymbol(IndexSymbol s, TP arg) { return VisitSymbol(s, arg); }
-        public virtual TR VisitNamespaceSymbol(NamespaceSymbol s, TP arg) { return VisitSymbol(s, arg); }
         public virtual TR VisitParagraphSymbol(ParagraphSymbol s, TP arg) { return VisitSymbol(s, arg); }
         public virtual TR VisitProgramSymbol(ProgramSymbol s, TP arg) { return VisitSymbol(s, arg); }
         public virtual TR VisitRedefinesSymbol(RedefinesSymbol s, TP arg) { return VisitSymbol(s, arg); }

@@ -17,7 +17,6 @@ namespace TypeCobol.Compiler.Symbols
         /// <param name="name"></param>
         public ProgramSymbol(string name) : base(name, Kinds.Program)
         {
-            Types = new Scope<TypedefSymbol>(this);
             FileData = new Scope<VariableSymbol>(this);
             GlobalStorageData = new Scope<VariableSymbol>(this);
             WorkingStorageData = new Scope<VariableSymbol>(this);
@@ -27,15 +26,6 @@ namespace TypeCobol.Compiler.Symbols
             Paragraphs = new Scope<ParagraphSymbol>(this);
             Programs = new Scope<ProgramSymbol>(this);
             Domain = new Domain<VariableSymbol>();
-        }
-
-        /// <summary>
-        /// All types of this program.
-        /// </summary>
-        public override Scope<TypedefSymbol> Types
-        {
-            get;
-            protected set;
         }
 
         /// <summary>
@@ -126,12 +116,8 @@ namespace TypeCobol.Compiler.Symbols
         /// <returns>The ProgramSymbol</returns>
         public ProgramSymbol EnterProgram(string name)
         {
-            Domain<ProgramSymbol>.Entry entry = Programs.Lookup(name);
-            if (entry == null)
-            {
-                ProgramSymbol prgSym = new ProgramSymbol(name);
-                entry = Programs.Enter(prgSym);
-            }
+            ProgramSymbol prgSym = new ProgramSymbol(name);
+            Domain<ProgramSymbol>.Entry entry = Programs.Enter(prgSym);
             entry.Symbol.Owner = this;
             return entry.Symbol;
         }
@@ -163,17 +149,6 @@ namespace TypeCobol.Compiler.Symbols
         /// Get the Variable visibility mask.
         /// </summary>
         public virtual Flags VariableVisibilityMask => IsNested ? (Flags.Global | Flags.GLOBAL_STORAGE) : 0;
-
-        /// <summary>
-        /// Get the type visibility mask for a Program.
-        /// </summary>
-        public virtual Flags TypeVisibilityMask => IsNested ? (Flags.Global | Flags.Private | Flags.Public) : 0;
-
-        /// <summary>
-        /// Get the function visibility mask for a Program.
-        /// </summary>
-        public virtual Flags FunctionVisibilityMask => IsNested ? (Flags.Private | Flags.Public) : 0;
-
         
         
         /// <summary>

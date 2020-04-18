@@ -1,4 +1,4 @@
-﻿--- Diagnostics ---
+--- Diagnostics ---
 Line 22[25,28] <30, Error, Semantics> - Semantic error: Cannot write DVZF0OS3::toto to strictly typed variable var2:DVZF0OS3bis::toto. OffendingSymbol=[25,28:var2]<UserDefinedWord>
 Line 23[25,28] <30, Error, Semantics> - Semantic error: Cannot write DVZF0OS3bis::toto to strictly typed variable var1:DVZF0OS3::toto. OffendingSymbol=[25,28:var1]<UserDefinedWord>
 Line 41[25,28] <30, Error, Semantics> - Semantic error: Cannot write DVZF0OS3::toto to strictly typed variable var2:DVZF0OS3bis::toto. OffendingSymbol=[25,28:var2]<UserDefinedWord>

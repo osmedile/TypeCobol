@@ -32,10 +32,8 @@ namespace TypeCobol.Compiler.Types
         public static readonly Type DBCSType;
         public static readonly Type FloatingPointType;
 
-        public static readonly Type BooleanType;
-        public static readonly Type DateType;
-        public static readonly Type CurrencyType;
-        public static readonly Type StringType;
+        public readonly static Type Level88Type;
+
 
 
         #region BuiltinUsageTypes
@@ -57,6 +55,7 @@ namespace TypeCobol.Compiler.Types
         public readonly static Type UsagePackedDecimalType = new Type(Tags.Usage, UsageFormat.PackedDecimal);
         public readonly static Type UsageProcedurePointerType = new Type(Tags.Usage, UsageFormat.ProcedurePointer);
         public readonly static Type UsageComp3Type = new Type(Tags.Usage, UsageFormat.Comp3);
+
         #endregion
 
 
@@ -98,18 +97,8 @@ namespace TypeCobol.Compiler.Types
             DBCSType.SetFlag(Symbol.Flags.BuiltinType, true);
             FloatingPointType = new Type(Type.Tags.Usage, Type.UsageFormat.FloatingPoint);
             FloatingPointType.SetFlag(Symbol.Flags.BuiltinType, true);
+            Level88Type = new Type(Tags.Level88);
 
-            BooleanType = new Type(Type.Tags.Boolean);
-            BooleanType.SetFlag(Symbol.Flags.BuiltinType, true);
-
-            DateType = BuiltinTypes.CreateDateType(new TypedefSymbol(string.Intern("Date")));
-            DateType.SetFlag(Symbol.Flags.BuiltinType, true);
-
-            CurrencyType = BuiltinTypes.CreateCurrencyType(new TypedefSymbol(string.Intern("Currency")));
-            CurrencyType.SetFlag(Symbol.Flags.BuiltinType, true);
-
-            StringType = new Type(Type.Tags.String);
-            StringType.SetFlag(Symbol.Flags.BuiltinType, true);
         }
 
     /// <summary>
@@ -162,52 +151,6 @@ namespace TypeCobol.Compiler.Types
                 default:
                     throw new ArgumentException("Invalid Usage : " + usage.ToString());
             }
-        }
-
-        public static Type DateYYYYType = new PictureType(new PictureValidator("9(04)", false));
-        public static Type DateMMType = new PictureType(new PictureValidator("9(02)", false));
-        public static Type DateDDType = DateMMType;
-        public static Type CY_pic = new PictureType(new PictureValidator("X(03)", false));
-
-
-        /// <summary>
-        /// Create the Date Type.
-        /// </summary>
-        /// <param name="symbol">The Typedef symbol to be associated to the Date type</param>
-        /// <returns>The Date type</returns>
-        internal static Type CreateDateType(TypedefSymbol symbol)
-        {
-            symbol.Level = 1;
-            GroupType recType = new GroupType(symbol);
-            VariableSymbol yyyy = new VariableSymbol("YYYY") { Level = 2, Type = DateYYYYType, Owner = symbol };
-            recType.Scope.Enter(yyyy);
-
-            VariableSymbol mm = new VariableSymbol("MM") { Level = 2, Type = DateMMType, Owner = symbol };
-            recType.Scope.Enter(mm);
-
-            VariableSymbol dd = new VariableSymbol("DD") { Level = 2, Type = DateDDType, Owner = symbol };
-            recType.Scope.Enter(dd);
-
-            TypedefType dateType = new TypedefType(symbol, recType);            
-            symbol.Type = dateType;
-            //IMPORTANT Mark all symbol has belonging to a TYPEDEF, in order that the expander works.
-            symbol.SetFlag(Symbol.Flags.InsideTypedef, true, true);
-            return dateType;
-        }
-
-        /// <summary>
-        /// Create the Currency Type.
-        /// </summary>
-        /// <param name="symbol">The Typedef symbol to be associated to the Currency type</param>
-        /// <returns>The Currency type</returns>
-        internal static Type CreateCurrencyType(TypedefSymbol symbol)
-        {
-            symbol.Level = 1;
-            TypedefType currencyType = new TypedefType(symbol, CY_pic);
-            symbol.Type = currencyType;
-            //IMPORTANT Mark all symbol has belonging to a TYPEDEF, in order that the expander works.
-            symbol.SetFlag(Symbol.Flags.InsideTypedef, true, true);
-            return currencyType;
-        }
+        }        
     }
 }

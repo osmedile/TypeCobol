@@ -1,4 +1,4 @@
-﻿       IDENTIFICATION DIVISION.
+       IDENTIFICATION DIVISION.
        PROGRAM-ID. DVZF0OS3.
        data DIVISION.
        working-storage section.

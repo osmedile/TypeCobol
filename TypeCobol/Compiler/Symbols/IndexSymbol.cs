@@ -49,19 +49,7 @@ namespace TypeCobol.Compiler.Symbols
                 return false;
             return Indexed.HasParent(parent);
         }
-
-        /// <summary>
-        /// When an IndexSymbol is normalized it IndexedSymbol must changed.
-        /// </summary>
-        /// <param name="scope"></param>
-        internal override void NormalizeExpandedSymbol(Scope<VariableSymbol> scope)
-        {
-            base.NormalizeExpandedSymbol(scope);
-            Domain<VariableSymbol>.Entry entry = scope.Lookup(Indexed.Name);
-            System.Diagnostics.Debug.Assert(entry != null);
-            System.Diagnostics.Debug.Assert(entry.Count == 1);
-            Indexed = entry.Symbol;            
-        }
+        
 
         public override TR Accept<TR, TP>(IVisitor<TR, TP> v, TP arg) { return v.VisitIndexSymbol(this, arg); }
     }

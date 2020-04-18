@@ -1,4 +1,4 @@
-﻿--- Program ---
+--- Program ---
 PROGRAM: DVZXMNT0 common:False initial:False recursive:False
  author: ? written: ? compiled: ? installation: ? security: ?
 --- Intrinsic:Namespace:Program:Global:Local

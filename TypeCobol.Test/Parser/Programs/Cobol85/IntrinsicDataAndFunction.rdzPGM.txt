@@ -1,4 +1,4 @@
-﻿--- Diagnostics ---
+--- Diagnostics ---
 Line 16[34,41] <27, Error, Syntax> - Syntax error : Symbol unknown1 is not referenced OffendingSymbol=[34,41:unknown1]<UserDefinedWord>
 Line 18[40,47] <27, Error, Syntax> - Syntax error : Symbol unknown1 is not referenced OffendingSymbol=[40,47:unknown1]<UserDefinedWord>
 Line 18[49,56] <27, Error, Syntax> - Syntax error : Symbol unknown2 is not referenced OffendingSymbol=[49,56:unknown2]<UserDefinedWord>

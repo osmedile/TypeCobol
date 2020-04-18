@@ -1,4 +1,4 @@
-﻿       IDENTIFICATION DIVISION.
+       IDENTIFICATION DIVISION.
        PROGRAM-ID. MainProgram.
        data division.
        working-storage section.

@@ -1,4 +1,4 @@
-﻿--- Diagnostics ---
+--- Diagnostics ---
 Line 8[19,28] <27, Error, Syntax> - Syntax error : Symbol TST-STT-KO is not referenced OffendingSymbol=[19,28:TST-STT-KO]<UserDefinedWord>
 Line 9[52,58] <27, Error, Syntax> - Syntax error : Symbol NBR-ERR is not referenced OffendingSymbol=[52,58:NBR-ERR]<UserDefinedWord>
 Line 10[19,28] <27, Error, Syntax> - Syntax error : Symbol TST-STT-OK is not referenced OffendingSymbol=[19,28:TST-STT-OK]<UserDefinedWord>

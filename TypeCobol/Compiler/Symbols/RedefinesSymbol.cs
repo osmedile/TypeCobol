@@ -40,19 +40,6 @@ namespace TypeCobol.Compiler.Symbols
         public VariableSymbol TopRedefined => Redefined != null && Redefined.HasFlag(Flags.Redefines) ? ((RedefinesSymbol) Redefined).TopRedefined : Redefined;
 
         /// <summary>
-        /// When a RedefinesSymbol is normalized it  Redefined Symbol must change.
-        /// </summary>
-        /// <param name="scope"></param>
-        internal override void NormalizeExpandedSymbol(Scope<VariableSymbol> scope)
-        {
-            base.NormalizeExpandedSymbol(scope);
-            Domain<VariableSymbol>.Entry entry = scope.Lookup(Redefined.Name);
-            System.Diagnostics.Debug.Assert(entry != null);
-            System.Diagnostics.Debug.Assert(entry.Count == 1);
-            Redefined = entry.Symbol;            
-        }
-
-        /// <summary>
         /// Dump this symbol in the given TextWriter instance
         /// </summary>
         /// <param name="tw">TextWriter instance</param>

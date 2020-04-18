@@ -13,13 +13,6 @@ namespace TypeCobol.Compiler.Scopes
     public interface IScope
     {
         /// <summary>
-        /// Type symbols
-        /// </summary>
-        Scope<TypedefSymbol> Types
-        {
-            get;
-        }
-        /// <summary>
         /// File data symbols
         /// </summary>
         Scope<VariableSymbol> FileData

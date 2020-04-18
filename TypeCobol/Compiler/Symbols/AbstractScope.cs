@@ -20,12 +20,6 @@ namespace TypeCobol.Compiler.Symbols
         {
         }
 
-        public virtual Scope<TypedefSymbol> Types
-        {
-            get { return null; }
-            protected set { ; }
-        }
-
         public virtual Scope<VariableSymbol> FileData
         {
             get { return null; }

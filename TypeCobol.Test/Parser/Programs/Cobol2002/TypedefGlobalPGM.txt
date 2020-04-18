@@ -1,4 +1,4 @@
-﻿--- Diagnostics ---
+--- Diagnostics ---
 Line 22[1,31] <30, Error, Semantics> - Semantic error: TYPE 'NewPrivateType' is not referenced
 Line 39[1,31] <30, Error, Semantics> - Semantic error: TYPE 'NewPrivateType' is not referenced
 

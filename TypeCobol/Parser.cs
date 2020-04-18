@@ -26,8 +26,6 @@ namespace TypeCobol
         protected FileCompiler Compiler = null;
 		/// <summary>Optional custom symbol table to use for name and type resolution.</summary>
 		public SymbolTable CustomSymbols = null;
-        /// <summary>Optional custom root symbol table to use for name and type resolution.</summary>
-        public RootSymbolTable CustomRootSymbols = null;
 
 		public Parser() {
 			Inits = new Dictionary<string,bool>();
@@ -37,12 +35,6 @@ namespace TypeCobol
         public Parser(SymbolTable customSymbols) :this()
         {
             CustomSymbols = customSymbols;
-        }
-
-        public Parser(SymbolTable customSymbols, RootSymbolTable customRootSymbols) : this()
-        {
-            CustomSymbols = customSymbols;
-            CustomRootSymbols = customRootSymbols;
         }
 
         private static DocumentFormat GetFormat(string filename) {
@@ -57,7 +49,7 @@ namespace TypeCobol
 			if (format == null) format = GetFormat(path);
             
             CompilationProject project = new CompilationProject(path, root.FullName, Helpers.DEFAULT_EXTENSIONS,
-				format.Encoding, format.EndOfLineDelimiter, format.FixedLineLength, format.ColumnsLayout, options );
+				format.Encoding, format.EndOfLineDelimiter, format.FixedLineLength, format.ColumnsLayout, options);
 			//Add copy folder into sourceFileProvider
 			SourceFileProvider sourceFileProvider = project.SourceFileProvider;
 			copies = copies ?? new List<string>();

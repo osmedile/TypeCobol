@@ -1,4 +1,4 @@
-﻿       IDENTIFICATION DIVISION.
+       IDENTIFICATION DIVISION.
        PROGRAM-ID. DVZS0OSM.
 
        data division.

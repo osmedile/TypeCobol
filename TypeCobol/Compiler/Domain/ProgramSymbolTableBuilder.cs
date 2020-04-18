@@ -127,15 +127,6 @@ namespace TypeCobol.Compiler.Domain
             Diagnostics = new List<Diagnostic>();
         }
 
-        /// <summary>
-        /// The Last FunctionDeclarationHeader encountered
-        /// </summary>
-        private FunctionDeclaration LastFunctionDeclaration
-        {
-            get;
-            set;
-        }
-
         public override void OnNode(Node node, Program program)
         {
             
@@ -157,6 +148,15 @@ namespace TypeCobol.Compiler.Domain
             System.Diagnostics.Debug.Assert(CurrentNode == node);
             CurrentNode = node.Parent;
             LastExitedNode = node;
+
+#if DEBUG
+            //Node is not a program and define a Symbol
+            if(!(node is Program) && node.CodeElement?.StorageAreaDefinitions?.Count > 0 ) {
+                //These node should have a SemanticData set to a specifialized Symbol (Variable, Pargraph, ...)
+                
+                System.Diagnostics.Debug.Assert(!(node.SemanticData is ProgramSymbol));
+            }
+#endif
         }
 
         public override void StartCobolProgram(ProgramIdentification programIdentification, LibraryCopyCodeElement libraryCopy)
@@ -702,7 +702,7 @@ namespace TypeCobol.Compiler.Domain
         {
             System.Diagnostics.Debug.Assert(dataDef.CodeElement.Type == CodeElementType.DataConditionEntry);
             VariableSymbol sym = new VariableSymbol(dataDef.Name);
-            sym.Type = BuiltinTypes.BooleanType;
+            sym.Type = BuiltinTypes.Level88Type;
             DecorateSymbol(dataDef, sym, parentScope);
             if (typedef == null)
                 CurrentProgram.AddToDomain(sym);
