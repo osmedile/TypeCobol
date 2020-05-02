@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -31,8 +32,8 @@ namespace TypeCobol.Test
         {
             StringBuilder errors = new StringBuilder();
 
-            //Set to true to automaticaly replace content in ExpectedResult File
-            bool autoReplace = true;
+            //Set to true to automatically replace content in ExpectedResult File
+            bool autoReplace = false;
 
             if (testName == string.Empty && result == string.Empty && expectedResult == string.Empty &&
                 expectedResultPath == string.Empty)
@@ -89,72 +90,42 @@ namespace TypeCobol.Test
             return Path.Combine(Directory.GetCurrentDirectory(), _report);
         }
 
-        public static void CreateRunReport(string reportName, string localDirectoryFullName, string cobolFileName,
-            [NotNull] CompilationStats stats, CompilationUnit compiler = null)
-        {
-
-            // Display a performance report
-            StringBuilder report = new StringBuilder();
-            report.AppendLine("Program properties :");
-
-            report.AppendLine("- " + (compiler?.CobolTextLines.Count ?? stats.Line) + " lines");
-            report.AppendLine("- " + (compiler?.CodeElementsDocumentSnapshot.CodeElements.Count() ?? stats.TotalCodeElements) + " code elements");
-
-            report.AppendLine(" Iteration : " + stats.IterationNumber); 
-
-            if (compiler != null)
-            {
-                var totalTime = compiler.PerfStatsForText.FirstCompilationTime +
-                                compiler.PerfStatsForScanner.FirstCompilationTime +
-                                compiler.PerfStatsForPreprocessor.FirstCompilationTime +
-                                compiler.PerfStatsForCodeElementsParser.FirstCompilationTime +
-                                compiler.PerfStatsForTemporarySemantic.FirstCompilationTime +
-                                compiler.PerfStatsForProgramCrossCheck.FirstCompilationTime;
-
-                report.AppendLine("");
-                report.AppendLine("First compilation performance");
-                FormatLine(compiler.PerfStatsForText.FirstCompilationTime, totalTime, "text update");
-                FormatLine(compiler.PerfStatsForScanner.FirstCompilationTime, totalTime, "scanner");
-                FormatLine(compiler.PerfStatsForPreprocessor.FirstCompilationTime, totalTime, "preprocessor");
-                FormatLine(compiler.PerfStatsForCodeElementsParser.FirstCompilationTime, totalTime, "code elements");
-                FormatLine(compiler.PerfStatsForTemporarySemantic.FirstCompilationTime, totalTime, "temporary semantic");
-                FormatLine(compiler.PerfStatsForProgramCrossCheck.FirstCompilationTime, totalTime, "cross check");
-
-                report.AppendLine("Total: " + totalTime.ToString("##0.00") + " ms");
-            }
-
-            report.AppendLine("");
-            report.AppendLine(compiler != null
-                ? "Incremental compilation performance (average time)"
-                : "Full compilation performance (average time)");
-
-            FormatLine(stats.AverageTextUpdateTime, stats.AverageTotalProcessingTime, "text update");
-            FormatLine(stats.AverageScannerTime, stats.AverageTotalProcessingTime, "scanner");
-            FormatLine(stats.AveragePreprocessorTime, stats.AverageTotalProcessingTime, "preprocessor");
-            FormatLine(stats.AverageCodeElementParserTime, stats.AverageTotalProcessingTime, "code elements parser");
-            FormatLine(stats.AverateTemporarySemanticsParserTime, stats.AverageTotalProcessingTime, "temporary semantic");
-            FormatLine(stats.AverageCrossCheckerParserTime, stats.AverageTotalProcessingTime, "cross check");
-
-            report.AppendLine("Total average time: " + stats.AverageTotalProcessingTime.ToString("##0.00") + " ms");
-
-            var reportFile = reportName + "_" + cobolFileName.Split('.')[0] + "_" +
-                                DateTime.Now.ToString("yyyMMdd_HH_mm_ss") + ".txt";
-            Directory.CreateDirectory(GetReportDirectoryPath());
-            File.WriteAllText(Path.Combine(localDirectoryFullName, reportFile), report.ToString());
-            Console.WriteLine(report.ToString());
-
-
-            void FormatLine(float time, float totalTime, string text)
-            {
-                report.AppendLine($"{time,10:#####0.00} ms " + FormatPercentage(time, totalTime) + " " + text);
-            }
-        }
 
         
 
-        private static string FormatPercentage(float averageTime, float totalTime)
+        private static string FormatPercentage(double averageTime, double totalTime)
         {
             return $" ({(averageTime * 100 / totalTime),5:#0.00} %)";
+        }
+
+        public static float Median(IList<int> numbers)
+        {
+            int numberCount = numbers.Count();
+            int halfIndex = numbers.Count() / 2;
+            var sortedNumbers = numbers.OrderBy(n => n).ToArray();
+            if ((numberCount % 2) == 0)
+            {
+                return (sortedNumbers[halfIndex] + sortedNumbers[halfIndex-1]) / 2;
+            }
+            else
+            {
+                return sortedNumbers[halfIndex];
+            }
+        }
+
+        public static float Median(IList<long> numbers)
+        {
+            int numberCount = numbers.Count();
+            int halfIndex = numbers.Count() / 2;
+            var sortedNumbers = numbers.OrderBy(n => n).ToArray();
+            if ((numberCount % 2) == 0)
+            {
+                return (sortedNumbers[halfIndex] + sortedNumbers[halfIndex - 1]) / 2;
+            }
+            else
+            {
+                return sortedNumbers[halfIndex];
+            }
         }
 
 
@@ -163,28 +134,163 @@ namespace TypeCobol.Test
             public CompilationStats()
             {
                 IterationNumber = 0;
-                AverageCodeElementParserTime = 0;
-                AverageCrossCheckerParserTime = 0;
-                AveragePreprocessorTime = 0;
-                AverageScannerTime = 0;
-                AverageTextUpdateTime = 0;
-                AverateTemporarySemanticsParserTime = 0;
-                AverageTotalProcessingTime = 0;
+                
                 Line = 0;
                 TotalCodeElements = 0;
             }
+
             public float IterationNumber { get; set; }
-            public float AverageTextUpdateTime { get; set; }
-            public float AverageScannerTime { get; set; }
-            public float AveragePreprocessorTime { get; set; }
-            public float AverageCodeElementParserTime { get; set; }
-            public float AverateTemporarySemanticsParserTime { get; set; }
-            public float AverageCrossCheckerParserTime { get; set; }
-            public float AverageTotalProcessingTime { get; set; }
+
+
+            public List<int> TextUpdateTime { get; } = new List<int>();
+            public List<int> ScannerTime { get; } = new List<int>();
+            public List<int> PreprocessorTime { get; } = new List<int>();
+            public List<int> CodeElementParserTime { get; } = new List<int>();
+            public List<int> TemporarySemanticsParserTime { get; } = new List<int>();
+            public List<int> CrossCheckerParserTime { get; } = new List<int>();
+            public List<int> TotalProcessingTime { get; } = new List<int>();
+            public List<long> CheckErrors { get; } = new List<long>();
+
             //Number of lines in Cobol file
             public int Line { get; set; }
             //Number of CodeElements found during the parsing
             public int TotalCodeElements { get; set; }
+
+            public void AccumulateResults(CompilationUnit compilationUnit, long timeToCheckErrors)
+            {
+                Line = compilationUnit.CobolTextLines.Count;
+                TotalCodeElements = compilationUnit.CodeElementsDocumentSnapshot.CodeElements.Count();
+
+                this.TextUpdateTime.Add(compilationUnit.PerfStatsForText.LastRefreshTime);
+                this.ScannerTime.Add(compilationUnit.PerfStatsForScanner.LastRefreshTime);
+                this.PreprocessorTime.Add(compilationUnit.PerfStatsForPreprocessor.LastRefreshTime);
+                this.CodeElementParserTime.Add(compilationUnit.PerfStatsForCodeElementsParser.LastRefreshTime);
+                this.TemporarySemanticsParserTime.Add(compilationUnit.PerfStatsForTemporarySemantic.LastRefreshTime);
+                this.CrossCheckerParserTime.Add(compilationUnit.PerfStatsForProgramCrossCheck.LastRefreshTime);
+
+                this.CheckErrors.Add(timeToCheckErrors);
+
+                this.TotalProcessingTime.Add(compilationUnit.PerfStatsForText.LastRefreshTime
+                                              + compilationUnit.PerfStatsForScanner.LastRefreshTime
+                                              + compilationUnit.PerfStatsForPreprocessor.LastRefreshTime
+                                              + compilationUnit.PerfStatsForCodeElementsParser.LastRefreshTime
+                                              + compilationUnit.PerfStatsForTemporarySemantic.LastRefreshTime
+                                              + compilationUnit.PerfStatsForProgramCrossCheck.LastRefreshTime);
+            }
+
+
+            public void ExportToCSV(string reportName, string localDirectoryFullName, string cobolFileName, string separator = "\t")
+            {
+                var testName = reportName + "_" + cobolFileName.Split('.')[0];
+
+                // Display a performance report
+                StringBuilder report = new StringBuilder();
+                AppendColumns("TestName", "Property", "value");
+                AppendColumns(testName, "Lines", Line.ToString(), "", "", "");
+                AppendColumns(testName, "TotalCodeElements", TotalCodeElements.ToString(), "", "", "");
+                AppendColumns(testName, "Iteration times", IterationNumber.ToString(CultureInfo.InvariantCulture), "", "", "");
+
+                AppendColumns("TestName", "phase", "average time", "average percent", "median", "median percentage");
+                FormatLine("text update", TextUpdateTime);
+                FormatLine("scanner", ScannerTime);
+                FormatLine("preprocessor", PreprocessorTime);
+                FormatLine("code elements", CodeElementParserTime);
+                FormatLine("Node/Symbold", TemporarySemanticsParserTime);
+                FormatLine("Cross check", CrossCheckerParserTime);
+                FormatLineLong("Check errors", CheckErrors);
+                FormatLine("Total time", TotalProcessingTime);
+                
+                //report.AppendLine("Total median time: " + Median(stats.TotalProcessingTime).ToString("##0.00") + " ms");
+
+                var reportFile = testName + "_" + DateTime.Now.ToString("yyyMMdd_HH_mm_ss") + ".txt";
+                Directory.CreateDirectory(GetReportDirectoryPath());
+                File.WriteAllText(Path.Combine(localDirectoryFullName, reportFile), report.ToString());
+                //Console.WriteLine(report.ToString());
+
+
+                void FormatLine(string phase, IList<int> numbers)
+                {
+                    AppendColumns(testName, phase, numbers.Average().ToString(), (numbers.Average() * 100 / TotalProcessingTime.Average()) + "%",
+                                                 Median(numbers).ToString(), (Median(numbers) * 100 / Median(TotalProcessingTime)) + "%");
+                    //report.AppendLine("" + separator + phase + separator + "${time,10:#####0.00} ms " + FormatPercentage(time, totalTime) );
+                }
+
+                void FormatLineLong(string phase, IList<long> numbers)
+                {
+                    AppendColumns(testName, phase, numbers.Average().ToString(), (numbers.Average() * 100 / TotalProcessingTime.Average()) + "%",
+                        Median(numbers).ToString(), (Median(numbers) * 100 / Median(TotalProcessingTime)) + "%");
+                }
+
+                void AppendColumns(params string[] columns)
+                {
+                    foreach (var col  in columns)
+                    {
+                        report.Append(col + separator);
+                    }
+                    report.AppendLine();
+                }
+            }
+
+
+            public void CreateRunReport(string reportName, string localDirectoryFullName, string cobolFileName, bool incremental)
+            {
+
+                // Display a performance report
+                StringBuilder report = new StringBuilder();
+                report.AppendLine("Program properties :");
+
+                report.AppendLine("- " + Line + " lines");
+                report.AppendLine("- " + TotalCodeElements + " code elements");
+
+                report.AppendLine(" Iteration : " + IterationNumber);
+
+                report.AppendLine("");
+                report.AppendLine(incremental
+                    ? "Incremental compilation performance (average time)"
+                    : "Full compilation performance (average time)");
+
+                FormatLine(TextUpdateTime.Average(), TotalProcessingTime.Average(), "text update");
+                FormatLine(ScannerTime.Average(), TotalProcessingTime.Average(), "scanner");
+                FormatLine(PreprocessorTime.Average(), TotalProcessingTime.Average(), "preprocessor");
+                FormatLine(CodeElementParserTime.Average(), TotalProcessingTime.Average(), "code elements");
+                FormatLine(TemporarySemanticsParserTime.Average(), TotalProcessingTime.Average(), "Node/Symbol");
+                FormatLine(CrossCheckerParserTime.Average(), TotalProcessingTime.Average(), "cross check");
+                FormatLine(CheckErrors.Average(), TotalProcessingTime.Average(), "Check errors");
+
+                report.AppendLine("Total average time: " + TotalProcessingTime.Average().ToString("##0.00") + " ms");
+
+                //-------------------
+                report.AppendLine("");
+                report.AppendLine(incremental
+                    ? "Incremental compilation performance (median)"
+                    : "Full compilation performance (median)");
+
+                FormatLine(Median(TextUpdateTime), Median(TotalProcessingTime), "text update");
+                FormatLine(Median(ScannerTime), Median(TotalProcessingTime), "scanner");
+                FormatLine(Median(PreprocessorTime), Median(TotalProcessingTime), "preprocessor");
+                FormatLine(Median(CodeElementParserTime), Median(TotalProcessingTime), "code elements");
+                FormatLine(Median(TemporarySemanticsParserTime), Median(TotalProcessingTime), "Node/Symbol");
+                FormatLine(Median(CrossCheckerParserTime), Median(TotalProcessingTime), "cross check");
+                FormatLine(Median(CheckErrors), Median(TotalProcessingTime), "Check errors");
+
+                report.AppendLine("Total median time: " + Median(TotalProcessingTime).ToString("##0.00") + " ms");
+
+
+
+
+
+                var reportFile = reportName + "_" + cobolFileName.Split('.')[0] + "_" +
+                                    DateTime.Now.ToString("yyyMMdd_HH_mm_ss") + ".txt";
+                Directory.CreateDirectory(GetReportDirectoryPath());
+                File.WriteAllText(Path.Combine(localDirectoryFullName, reportFile), report.ToString());
+                Console.WriteLine(report.ToString());
+
+
+                void FormatLine(double time, double totalTime, string text)
+                {
+                    report.AppendLine($"{time,10:#####0.00} ms " + FormatPercentage(time, totalTime) + " " + text);
+                }
+            }
         }
     }
 }
