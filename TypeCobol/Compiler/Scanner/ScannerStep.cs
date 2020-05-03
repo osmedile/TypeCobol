@@ -15,12 +15,12 @@ namespace TypeCobol.Compiler.Scanner
         /// <summary>
         /// Initial scan of a complete document
         /// </summary>
-        public static void ScanDocument(TextSourceInfo textSourceInfo, ISearchableReadOnlyList<TokensLine> documentLines,
+        public static void ScanDocument(TextSourceInfo textSourceInfo, IReadOnlyList<TokensLine> documentLines,
             TypeCobolOptions compilerOptions, List<RemarksDirective.TextNameVariation> copyTextNameVariations) {
             ScanDocument(textSourceInfo, documentLines, compilerOptions, copyTextNameVariations, null);
         }
 
-        public static void ScanDocument(TextSourceInfo textSourceInfo, ISearchableReadOnlyList<TokensLine> documentLines, TypeCobolOptions compilerOptions, List<RemarksDirective.TextNameVariation> copyTextNameVariations,
+        public static void ScanDocument(TextSourceInfo textSourceInfo, IReadOnlyList<TokensLine> documentLines, TypeCobolOptions compilerOptions, List<RemarksDirective.TextNameVariation> copyTextNameVariations,
             [CanBeNull] MultilineScanState initialScanState)
         {
             TokensLine tokensLine = null;            

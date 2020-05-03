@@ -78,15 +78,15 @@ namespace TypeCobol.Compiler
                     if (processedTokensDocument != null)
                     {
                         // Parse the whole document for the first time
-                        CodeElementsParserStep.ParseDocument(TextSourceInfo, ((ImmutableList<CodeElementsLine>)processedTokensDocument.Lines), CompilerOptions, perfStatsForParserInvocation);
+                        CodeElementsParserStep.ParseDocument(TextSourceInfo, ((ISearchableReadOnlyList<CodeElementsLine>)processedTokensDocument.Lines), CompilerOptions, perfStatsForParserInvocation);
 
                         // Create the first code elements document snapshot
-                        CodeElementsDocumentSnapshot = new CodeElementsDocument(processedTokensDocument, new DocumentVersion<ICodeElementsLine>(this), ((ImmutableList<CodeElementsLine>)processedTokensDocument.Lines));
+                        CodeElementsDocumentSnapshot = new CodeElementsDocument(processedTokensDocument, new DocumentVersion<ICodeElementsLine>(this), ((ISearchableReadOnlyList<CodeElementsLine>)processedTokensDocument.Lines));
                     }
                 }
                 else
                 {
-                    ImmutableList<CodeElementsLine>.Builder codeElementsDocumentLines = ((ImmutableList<CodeElementsLine>)processedTokensDocument.Lines).ToBuilder();
+                    var codeElementsDocumentLines = ((ImmutableList<CodeElementsLine>)processedTokensDocument.Lines).ToBuilder();
                     IList<DocumentChange<ICodeElementsLine>> documentChanges = CodeElementsParserStep.ParseProcessedTokensLinesChanges(TextSourceInfo, codeElementsDocumentLines, processedTokensLineChanges, PrepareDocumentLineForUpdate, CompilerOptions, perfStatsForParserInvocation);
 
                     // Create a new version of the document to track these changes
@@ -225,7 +225,7 @@ namespace TypeCobol.Compiler
                     List<TypeDefinition> typeThatNeedTypeLinking = new List<TypeDefinition>();
 
                     //TODO cast to ImmutableList<CodeElementsLine> sometimes fails here
-                    ProgramClassParserStep.CupParseProgramOrClass(TextSourceInfo, ((ImmutableList<CodeElementsLine>)codeElementsDocument.Lines), CompilerOptions, CustomSymbols, perfStatsForParserInvocation, out root, out newDiagnostics, out nodeCodeElementLinkers,
+                    ProgramClassParserStep.CupParseProgramOrClass(TextSourceInfo, ((ISearchableReadOnlyList<CodeElementsLine>)codeElementsDocument.Lines), CompilerOptions, CustomSymbols, perfStatsForParserInvocation, out root, out newDiagnostics, out nodeCodeElementLinkers,
                         out typedVariablesOutsideTypedef,
                         out typeThatNeedTypeLinking);
 

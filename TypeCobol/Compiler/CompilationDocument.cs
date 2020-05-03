@@ -625,15 +625,15 @@ namespace TypeCobol.Compiler
                     if (tokensDocument != null)
                     {
                         // Process all lines of the document for the first time
-                        PreprocessorStep.ProcessDocument(TextSourceInfo, ((ImmutableList<CodeElementsLine>)tokensDocument.Lines), CompilerOptions, processedTokensDocumentProvider, CopyTextNamesVariations, perfStatsForParserInvocation, this.MissingCopies);
+                        PreprocessorStep.ProcessDocument(TextSourceInfo, (ISearchableReadOnlyList<ProcessedTokensLine>)tokensDocument.Lines, CompilerOptions, processedTokensDocumentProvider, CopyTextNamesVariations, perfStatsForParserInvocation, this.MissingCopies);
 
                         // Create the first processed tokens document snapshot
-                        ProcessedTokensDocumentSnapshot = new ProcessedTokensDocument(tokensDocument, new DocumentVersion<IProcessedTokensLine>(this), ((ImmutableList<CodeElementsLine>)tokensDocument.Lines), CompilerOptions);
+                        ProcessedTokensDocumentSnapshot = new ProcessedTokensDocument(tokensDocument, new DocumentVersion<IProcessedTokensLine>(this), ((ISearchableReadOnlyList<IProcessedTokensLine>)tokensDocument.Lines), CompilerOptions);
                     }
                 }
                 else
                 {
-                    ImmutableList<CodeElementsLine>.Builder processedTokensDocumentLines = ((ImmutableList<CodeElementsLine>)tokensDocument.Lines).ToBuilder();
+                    var processedTokensDocumentLines = ((ImmutableList<CodeElementsLine>)tokensDocument.Lines).ToBuilder();
                     IList<DocumentChange<IProcessedTokensLine>> documentChanges = PreprocessorStep.ProcessTokensLinesChanges(TextSourceInfo, processedTokensDocumentLines, tokensLineChanges, PrepareDocumentLineForUpdate, CompilerOptions, processedTokensDocumentProvider, CopyTextNamesVariations, perfStatsForParserInvocation, this.MissingCopies);
 
                     // Create a new version of the document to track these changes

@@ -69,10 +69,8 @@ namespace TypeCobol.Test.Parser.Scanner
         
         public static string ScanLines(TokensLine[] tokensLines) 
         {
-            ImmutableList<TokensLine>.Builder tokensLinesList = ImmutableList<TokensLine>.Empty.ToBuilder();
-            tokensLinesList.AddRange(tokensLines);
-
-            ScannerStep.ScanDocument(TextSourceInfo, tokensLinesList, CompilerOptions, CopyTextNameVariations);
+            var tokensLinesList = new List<TokensLine>(tokensLines);
+            ScannerStep.ScanDocument(TextSourceInfo, tokensLinesList.AsReadOnly(), CompilerOptions, CopyTextNameVariations);
 
             StringBuilder sbResult = new StringBuilder();
             for (int i = 0; i < tokensLines.Length; i++)
