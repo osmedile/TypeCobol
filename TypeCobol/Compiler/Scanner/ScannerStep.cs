@@ -326,7 +326,7 @@ namespace TypeCobol.Compiler.Scanner
                 if (lineToScan.Type == CobolTextLineType.Continuation && lineToScanIndex > 0)
                 {
                     int revLineToScanIndex = lineToScanIndex;
-                    IEnumerator<TokensLine> reversedEnumerator = documentLines.GetEnumerator(lineToScanIndex - 1, -1, true);
+                    IEnumerator<TokensLine> reversedEnumerator = documentLines.GetEnumerator(lineToScanIndex - 1, true);
                     while(reversedEnumerator.MoveNext())
                     {
                         // Get the previous line until a non continuation and non comment line is encountered
@@ -361,7 +361,7 @@ namespace TypeCobol.Compiler.Scanner
                 // Navigate forwards to the end of the multiline continuation 
                 if (lineToScanIndex < (documentLines.Count - 1))
                 {
-                    IEnumerator<TokensLine> enumerator = documentLines.GetEnumerator(lineToScanIndex + 1, -1, false);
+                    IEnumerator<TokensLine> enumerator = documentLines.GetEnumerator(lineToScanIndex + 1, false);
                     while (enumerator.MoveNext())
                     {
                         // Get the next line until a non continuation and non comment line is encountered
