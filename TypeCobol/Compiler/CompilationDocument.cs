@@ -570,7 +570,8 @@ namespace TypeCobol.Compiler
                 // Create a new snapshot only if things changed since last snapshot
                 if (TokensDocumentSnapshot == null || TokensDocumentSnapshot.CurrentVersion != currentTokensLinesVersion)
                 {
-                    TokensDocumentSnapshot = new TokensDocument(TextSourceInfo, textLinesVersionForCurrentTokensLines, currentTokensLinesVersion, compilationDocumentLines.ToImmutable());
+                    //TokensDocumentSnapshot = new TokensDocument(TextSourceInfo, textLinesVersionForCurrentTokensLines, currentTokensLinesVersion, compilationDocumentLines.ToImmutable());
+                    TokensDocumentSnapshot = new TokensDocument(TextSourceInfo, textLinesVersionForCurrentTokensLines, currentTokensLinesVersion, new SearchableReadOnlyList<CodeElementsLine>(compilationDocumentLines));
                 }
             }
         }
@@ -633,7 +634,7 @@ namespace TypeCobol.Compiler
                 }
                 else
                 {
-                    var processedTokensDocumentLines = ((ImmutableList<CodeElementsLine>)tokensDocument.Lines).ToBuilder();
+                    var processedTokensDocumentLines = (ISearchableReadOnlyList<CodeElementsLine>)tokensDocument.Lines;
                     IList<DocumentChange<IProcessedTokensLine>> documentChanges = PreprocessorStep.ProcessTokensLinesChanges(TextSourceInfo, processedTokensDocumentLines, tokensLineChanges, PrepareDocumentLineForUpdate, CompilerOptions, processedTokensDocumentProvider, CopyTextNamesVariations, perfStatsForParserInvocation, this.MissingCopies);
 
                     // Create a new version of the document to track these changes
@@ -646,7 +647,7 @@ namespace TypeCobol.Compiler
                     currentProcessedTokensLineVersion = currentProcessedTokensLineVersion.next;
 
                     // Update the processed tokens document snapshot
-                    ProcessedTokensDocumentSnapshot = new ProcessedTokensDocument(tokensDocument, currentProcessedTokensLineVersion, processedTokensDocumentLines.ToImmutable(), CompilerOptions);
+                    ProcessedTokensDocumentSnapshot = new ProcessedTokensDocument(tokensDocument, currentProcessedTokensLineVersion, processedTokensDocumentLines, CompilerOptions);
                 }
 
                 // Stop perf measurement
