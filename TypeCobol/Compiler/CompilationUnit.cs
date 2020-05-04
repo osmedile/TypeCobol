@@ -86,7 +86,7 @@ namespace TypeCobol.Compiler
                 }
                 else
                 {
-                    var codeElementsDocumentLines = ((ImmutableList<CodeElementsLine>)processedTokensDocument.Lines).ToBuilder();
+                    var codeElementsDocumentLines = (ISearchableReadOnlyList<CodeElementsLine>)processedTokensDocument.Lines;
                     IList<DocumentChange<ICodeElementsLine>> documentChanges = CodeElementsParserStep.ParseProcessedTokensLinesChanges(TextSourceInfo, codeElementsDocumentLines, processedTokensLineChanges, PrepareDocumentLineForUpdate, CompilerOptions, perfStatsForParserInvocation);
 
                     // Create a new version of the document to track these changes
@@ -99,7 +99,7 @@ namespace TypeCobol.Compiler
                     currentCodeElementsLinesVersion = currentCodeElementsLinesVersion.next;
                    
                     // Update the code elements document snapshot
-                    CodeElementsDocumentSnapshot = new CodeElementsDocument(processedTokensDocument, currentCodeElementsLinesVersion, codeElementsDocumentLines.ToImmutable());
+                    CodeElementsDocumentSnapshot = new CodeElementsDocument(processedTokensDocument, currentCodeElementsLinesVersion, codeElementsDocumentLines);
                 }
 
                 // Stop perf measurement
