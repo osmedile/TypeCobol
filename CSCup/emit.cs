@@ -355,8 +355,7 @@ public class emit {
 		     pre("do_action") + "(");
       cout.WriteLine("    int                        " + pre("act_num,"));
       cout.WriteLine("    TUVienna.CS_CUP.Runtime.lr_parser " + pre("parser,"));
-      cout.WriteLine("    StackList<Symbol>            xstack1,");
-      cout.WriteLine("    int                        " + pre("top)"));
+      cout.WriteLine("    StackList<Symbol>            xstack1)");
     //  cout.WriteLine("    throws java.lang.Exception");
       cout.WriteLine("    {");
 
@@ -364,6 +363,7 @@ public class emit {
       /* New declaration!! now return Symbol
 	 6/13/96 frankf */
       cout.WriteLine("      /* Symbol object for return from actions */");
+      cout.WriteLine("      int " + pre("top") + " = xstack1.Count-1 ;");
       cout.WriteLine("      StackList<Symbol> " + pre("stack") + " =  xstack1;");
       cout.WriteLine("      TUVienna.CS_CUP.Runtime.Symbol " + pre("result") + ";");
       cout.WriteLine();
@@ -932,12 +932,11 @@ public class emit {
       cout.WriteLine("  public override TUVienna.CS_CUP.Runtime.Symbol do_action(");
       cout.WriteLine("    int                        act_num,");
       cout.WriteLine("    TUVienna.CS_CUP.Runtime.lr_parser parser,");
-      cout.WriteLine("    StackList<Symbol>            CUP_parser_stack,");
-      cout.WriteLine("    int                        top)");
+      cout.WriteLine("    StackList<Symbol>            CUP_parser_stack)");
       cout.WriteLine("  {");
       cout.WriteLine("    /* call code in generated class */");
       cout.WriteLine("    return action_obj." + pre("do_action(") +
-                  "act_num, parser, stack, top);");
+                  "act_num, parser, stack);");
       cout.WriteLine("  }");
       cout.WriteLine("");
 

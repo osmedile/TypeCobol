@@ -252,9 +252,6 @@ namespace TUVienna.CS_CUP.Runtime
    * debugging routines */
   /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
 
-  /** Indication of the index for top of stack (for use by actions). */
-  protected int tos;
-
   /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
 
   /** The current lookahead Symbol. */
@@ -313,8 +310,7 @@ namespace TUVienna.CS_CUP.Runtime
   public abstract Symbol do_action(
     int       act_num, 
     lr_parser parser, 
-    StackList<Symbol>     stack, 
-    int       top);
+    StackList<Symbol>     stack);
 
   /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
 
@@ -561,7 +557,6 @@ namespace TUVienna.CS_CUP.Runtime
       /* push dummy Symbol with start state to get us underway */
       stack.Clear();
       stack.Push(new Symbol(0, start_state()));
-      tos = 0;
 
       /* continue until we are told to stop */
       for (_done_parsing = false; !_done_parsing; )
@@ -582,7 +577,6 @@ namespace TUVienna.CS_CUP.Runtime
 	      cur_token.parse_state = act-1;
 	      cur_token.used_by_parser = true;
 	      stack.Push(cur_token);
-	      tos++;
 
 	      /* advance to the next Symbol */
 	      cur_token = scan();
@@ -591,7 +585,7 @@ namespace TUVienna.CS_CUP.Runtime
 	  else if (act < 0)
 	    {
 	      /* perform the action for the reduce */
-	      lhs_sym = do_action((-act)-1, this, stack, tos);
+	      lhs_sym = do_action((-act)-1, this, stack);
 
 	      /* look up information about the production */
 	      lhs_sym_num = production_tab[(-act)-1][0];
@@ -601,7 +595,6 @@ namespace TUVienna.CS_CUP.Runtime
 	      for (int i = 0; i < handle_size; i++)
 		{
 		  stack.Pop();
-		  tos--;
 		}
 	      
 	      /* look up the state to go to from the one popped back to */
@@ -611,7 +604,6 @@ namespace TUVienna.CS_CUP.Runtime
 	      lhs_sym.parse_state = act;
 	      lhs_sym.used_by_parser = true;
 	      stack.Push(lhs_sym);
-	      tos++;
 	    }
 	  /* finally if the entry is zero, we have an error */
 	  else if (act == 0)
@@ -755,7 +747,6 @@ namespace TUVienna.CS_CUP.Runtime
       /* push dummy Symbol with start state to get us underway */
       stack.Clear();
       stack.Push(new Symbol(0, start_state()));
-      tos = 0;
 
       /* continue until we are told to stop */
       for (_done_parsing = false; !_done_parsing; )
@@ -778,7 +769,6 @@ namespace TUVienna.CS_CUP.Runtime
 	      cur_token.used_by_parser = true;
 	      debug_shift(cur_token);
 	      stack.Push(cur_token);
-	      tos++;
 
 	      /* advance to the next Symbol */
 	      cur_token = scan();
@@ -788,7 +778,7 @@ namespace TUVienna.CS_CUP.Runtime
 	  else if (act < 0)
 	    {
 	      /* perform the action for the reduce */
-	      lhs_sym = do_action((-act)-1, this, stack, tos);
+	      lhs_sym = do_action((-act)-1, this, stack);
 
 	      /* look up information about the production */
 	      lhs_sym_num = production_tab[(-act)-1][0];
@@ -800,7 +790,6 @@ namespace TUVienna.CS_CUP.Runtime
 	      for (int i = 0; i < handle_size; i++)
 		{
 		  stack.Pop();
-		  tos--;
 		}
 	      
 	      /* look up the state to go to from the one popped back to */
@@ -813,7 +802,6 @@ namespace TUVienna.CS_CUP.Runtime
 	      lhs_sym.parse_state = act;
 	      lhs_sym.used_by_parser = true;
 	      stack.Push(lhs_sym);
-	      tos++;
 
 	      debug_message("# Goto state #" + act);
 	    }
@@ -958,7 +946,6 @@ namespace TUVienna.CS_CUP.Runtime
 	    debug_message("# Pop stack by one, state was # " +
 	                  stack.Peek().parse_state);
           left_pos = stack.Pop().left;	
-	  tos--;
 
 	  /* if we have hit bottom, we fail */
 	  if (stack.Count==0) 
@@ -982,7 +969,6 @@ namespace TUVienna.CS_CUP.Runtime
       error_token.parse_state = act-1;
       error_token.used_by_parser = true;
       stack.Push(error_token);
-      tos++;
 
       return true;
     }
@@ -1180,7 +1166,6 @@ namespace TUVienna.CS_CUP.Runtime
 	      cur_err_token().used_by_parser = true;
 	      if (debug) debug_shift(cur_err_token());
 	      stack.Push(cur_err_token());
-	      tos++;
 
 	      /* advance to the next Symbol, if there is none, we are done */
 	      if (!advance_lookahead()) 
@@ -1204,7 +1189,7 @@ namespace TUVienna.CS_CUP.Runtime
 	  else if (act < 0)
 	    {
 	      /* perform the action for the reduce */
-	      lhs_sym = do_action((-act)-1, this, stack, tos);
+	      lhs_sym = do_action((-act)-1, this, stack);
 
 	      /* look up information about the production */
 	      lhs_sym_num = production_tab[(-act)-1][0];
@@ -1216,7 +1201,6 @@ namespace TUVienna.CS_CUP.Runtime
 	      for (int i = 0; i < handle_size; i++)
 		{
 		  stack.Pop();
-		  tos--;
 		}
 	      
 	      /* look up the state to go to from the one popped back to */
@@ -1226,7 +1210,6 @@ namespace TUVienna.CS_CUP.Runtime
 	      lhs_sym.parse_state = act;
 	      lhs_sym.used_by_parser = true;
 	      stack.Push(lhs_sym);
-	      tos++;
 	       
 	      if (debug) debug_message("# Goto state #" + act);
 

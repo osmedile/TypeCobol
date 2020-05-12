@@ -343,12 +343,11 @@ namespace TUVienna.CS_CUP
     	public override Symbol do_action(
         	int                        act_num,
         	lr_parser parser,
-	        StackList<Symbol>            stack,
-        	int                        top)
+	        StackList<Symbol>            stack)
  
         {
             /* call code in generated class */
-        	return action_obj.CUP_parser_do_action(act_num, parser, stack, top);
+        	return action_obj.CUP_parser_do_action(act_num, parser, stack);
         }
 
         /** Indicates start state. */
@@ -509,10 +508,10 @@ namespace TUVienna.CS_CUP
     	public  Symbol CUP_parser_do_action(
                                   int                        CUP_parser_act_num,
                                   lr_parser CUP_parser_parser,
-                                  StackList<Symbol> CUP_parser_stack,
-                                  int                        CUP_parser_top)
+                                  StackList<Symbol> CUP_parser_stack)
                               {
-            
+
+                                  int CUP_parser_top = CUP_parser_stack.Count - 1;
                                   /* Symbol object for return from actions */
                                   Symbol CUP_parser_result;
                                   
