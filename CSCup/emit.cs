@@ -390,12 +390,19 @@ namespace TUVienna.CS_CUP
                 /* give them their own block to work in */
                 cout.WriteLine("            {");
 
-	  /* create the result symbol */
-	  /*make the variable RESULT which will point to the new Symbol (see below)
-	    and be changed by action code
-	    6/13/96 frankf */
-	  cout.WriteLine("              " +  prod.lhs().the_symbol().stack_type() +
-		      " RESULT = null;");
+                bool resultDeclarationPrinted = false;
+
+
+                var printAction = (!string.IsNullOrWhiteSpace(prod.action()?.code_string()) && !prod.action().Equals(""));
+
+                String resultParameter = "";
+                if (printAction)
+                {
+                    resultDeclarationPrinted = true;
+                    WriteResultDeclaration(cout, prod, out resultParameter);
+                }
+
+
 
                 /* Add code to propagate RESULT assignments that occur in
                  * action code embedded in a production (ie, non-rightmost
@@ -412,6 +419,12 @@ namespace TUVienna.CS_CUP
                     if (((non_terminal)s).is_embedded_action == false) continue;
                     // OK, it fits.  Make a conditional assignment to RESULT.
                     int index = prod.rhs_length() - i - 1; // last rhs is on top.
+
+                    if (!resultDeclarationPrinted)
+                    {
+                        resultDeclarationPrinted = true;
+                        WriteResultDeclaration(cout, prod, out resultParameter);
+                    }
                     cout.WriteLine("              " + "// propagate RESULT from " +
                         s.name());
 
@@ -435,8 +448,7 @@ namespace TUVienna.CS_CUP
                 }
 
                 /* if there is an action string, emit it */
-          if (prod.action() != null && prod.action().code_string() != null &&
-              !prod.action().Equals(""))
+                if (printAction)
                 {
                     cout.WriteLine(prod.action().code_string());
                 }
@@ -475,12 +487,13 @@ namespace TUVienna.CS_CUP
                     cout.WriteLine("              " + pre("result") + " = new TUVienna.CS_CUP.Runtime.Symbol(" +
                         prod.lhs().the_symbol().index() + "/*" +
                         prod.lhs().the_symbol().name() + "*/" +
-			", " + leftstring + ", " + rightstring + ", RESULT);");
-	  } else {
+                        ", " + leftstring + ", " + rightstring + resultParameter + ");");
+                }
+                else
+                {
                     cout.WriteLine("              " + pre("result") + " = new TUVienna.CS_CUP.Runtime.Symbol(" +
                         prod.lhs().the_symbol().index() + "/*" +
-			prod.lhs().the_symbol().name() + "*/" + 
-			", RESULT);");
+                        prod.lhs().the_symbol().name() + "*/" + resultParameter + ");");
                 }
 
                 /* end of their block */
@@ -514,6 +527,18 @@ namespace TUVienna.CS_CUP
             cout.WriteLine("}");
             cout.WriteLine();
             action_code_time = DateTime.Now.Ticks - start_time;
+        }
+
+        private static void WriteResultDeclaration(TextWriter cout, production prod, out string resultParameter)
+        {
+            /* create the result symbol */
+            /*make the variable RESULT which will point to the new Symbol (see below)
+              and be changed by action code
+              6/13/96 frankf */
+            cout.WriteLine("              " + prod.lhs().the_symbol().stack_type() +
+                    " RESULT = null;");
+
+            resultParameter = ", RESULT";
         }
 
         /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
