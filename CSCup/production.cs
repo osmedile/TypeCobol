@@ -3,29 +3,30 @@ namespace TUVienna.CS_CUP
 {
 
 using System.Collections;
+    using System.Collections.Generic;
 
-/** This class represents a production in the grammar.  It contains
- *  a LHS non terminal, and an array of RHS symbols.  As various 
- *  transformations are done on the RHS of the production, it may shrink.
- *  As a result a separate length is always maintained to indicate how much
- *  of the RHS array is still valid.<p>
- * 
- *  I addition to construction and manipulation operations, productions provide
- *  methods for factoring out actions (see  remove_embedded_actions()), for
- *  computing the nullability of the production (i.e., can it derive the empty
- *  string, see check_nullable()), and operations for computing its first
- *  Set (i.e., the Set of terminals that could appear at the beginning of some
- *  string derived from the production, see check_first_set()).
- * 
- * @see     java_cup.production_part
- * @see     java_cup.symbol_part
- * @see     java_cup.action_part
- * @version last updated: 7/3/96
- * @author  Frank Flannery
- * translated to C# 08.09.2003 by Samuel Imriska
- */
+    /** This class represents a production in the grammar.  It contains
+     *  a LHS non terminal, and an array of RHS symbols.  As various 
+     *  transformations are done on the RHS of the production, it may shrink.
+     *  As a result a separate length is always maintained to indicate how much
+     *  of the RHS array is still valid.<p>
+     * 
+     *  I addition to construction and manipulation operations, productions provide
+     *  methods for factoring out actions (see  remove_embedded_actions()), for
+     *  computing the nullability of the production (i.e., can it derive the empty
+     *  string, see check_nullable()), and operations for computing its first
+     *  Set (i.e., the Set of terminals that could appear at the beginning of some
+     *  string derived from the production, see check_first_set()).
+     * 
+     * @see     java_cup.production_part
+     * @see     java_cup.symbol_part
+     * @see     java_cup.action_part
+     * @version last updated: 7/3/96
+     * @author  Frank Flannery
+     * translated to C# 08.09.2003 by Samuel Imriska
+     */
 
-public class production {
+    public class production {
 
   /*-----------------------------------------------------------*/
   /*--- Constructor(s) ----------------------------------------*/
@@ -212,14 +213,14 @@ public class production {
   /** Table of all productions.  Elements are stored using their index as 
    *  the key.
    */
-  protected static Hashtable _all = new Hashtable();
+  protected static Dictionary<int, production> _all = new Dictionary<int, production>();
  
   /** Access to all productions. */
-  public static IEnumerator all() {return _all.Values.GetEnumerator();}
+  public static IEnumerator<production> all() {return _all.Values.GetEnumerator();}
 
     /** Lookup a production by index. */
   public static production find(int indx) {
-    return (production) _all[indx];
+    return _all[indx];
   }
 
   /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/

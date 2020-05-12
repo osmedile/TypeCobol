@@ -80,10 +80,10 @@ public class parse_action_table {
 	}
 
       /* now go across every production and make sure we hit it */
-	  IEnumerator p = production.all(); 
+	  var p = production.all(); 
       while (p.MoveNext())
 	{
-	  prod = (production)p.Current;
+	  prod = p.Current;
 
 	  /* if we didn't hit it give a warning */
 	  if (prod.num_reductions() == 0)

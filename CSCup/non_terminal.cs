@@ -1,9 +1,9 @@
 namespace TUVienna.CS_CUP
 {
 	
-	using System.Collections;
+    using System.Collections.Generic;
 
-	/** This class represents a non-terminal symbol in the grammar.  Each
+    /** This class represents a non-terminal symbol in the grammar.  Each
 	 *  non terminal has a textual name, an index, and a string which indicates
 	 *  the type of object it will be implemented with at runtime (i.e. the class
 	 *  of object that will be pushed on the parse stack to represent it). 
@@ -13,7 +13,7 @@ namespace TUVienna.CS_CUP
      * translated to C# 08.09.2003 by Samuel Imriska
 	 */
 
-	public class non_terminal : symbol 
+    public class non_terminal : symbol 
 	{
 
 		/*-----------------------------------------------------------*/
@@ -63,10 +63,10 @@ namespace TUVienna.CS_CUP
 		/** Table of all non-terminals -- elements are stored using name strings 
 		 *  as the key 
 		 */
-		protected static Hashtable _all = new Hashtable();
+		protected static Dictionary<string, non_terminal> _all = new Dictionary<string, non_terminal>();
 
 		/** Access to all non-terminals. */
-		public static IEnumerator all() {return _all.Values.GetEnumerator();}
+		public static IEnumerator<non_terminal> all() {return _all.Values.GetEnumerator();}
 
 		/** lookup a non terminal by name string */ 
 		public static non_terminal find(string with_name)
@@ -74,20 +74,20 @@ namespace TUVienna.CS_CUP
 			if (with_name == null)
 				return null;
 			else 
-				return (non_terminal)_all[with_name];
+				return _all[with_name];
 		}
 
 		/*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
 
 		/** Table of all non terminals indexed by their index number. */
-		protected static Hashtable _all_by_index = new Hashtable();
+		protected static Dictionary<int, non_terminal> _all_by_index = new Dictionary<int, non_terminal>();
 
 		/** Lookup a non terminal by index. */
 		public static non_terminal find(int indx)
 		{
 			int the_indx = indx;
 
-			return (non_terminal)_all_by_index[the_indx];
+			return _all_by_index[the_indx];
 		}
 
 		/*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
@@ -144,7 +144,6 @@ namespace TUVienna.CS_CUP
 {
 	bool      change = true;
 	non_terminal nt;
-	IEnumerator  e;
 	production   prod;
 
 	/* repeat this process until there is no change */
@@ -154,10 +153,10 @@ namespace TUVienna.CS_CUP
 	change = false;
 
 	/* consider each non-terminal */
-	e=all();
+	var e=all();
 	while ( e.MoveNext())
 {
-	nt = (non_terminal)e.Current;
+	nt = e.Current;
 
 	/* only look at things that aren't already marked nullable */
 	if (!nt.nullable())
@@ -172,10 +171,10 @@ namespace TUVienna.CS_CUP
 }
       
 	/* do one last pass over the productions to finalize all of them */
-	e=production.all();
-	while ( e.MoveNext())
+	var e2=production.all();
+	while ( e2.MoveNext())
 {
-	prod = (production)e.Current;
+	prod = e2.Current;
 	prod.set_nullable(prod.check_nullable());
 }
 }
@@ -188,8 +187,8 @@ namespace TUVienna.CS_CUP
 	public static void compute_first_sets() 
 {
 	bool      change = true;
-	IEnumerator  n;
-	IEnumerator  p;
+	IEnumerator<non_terminal>  n;
+	IEnumerator<production>  p;
 	non_terminal nt;
 	production   prod;
 	terminal_set prod_first;
@@ -205,7 +204,7 @@ namespace TUVienna.CS_CUP
 	    n = all();
 	    while ( n.MoveNext() )
         {
-	        nt = (non_terminal)n.Current;
+	        nt = n.Current;
       
 	        /* consider every production of that non terminal */
 	        p = nt.productions();
@@ -214,7 +213,7 @@ namespace TUVienna.CS_CUP
 	        while ( p.MoveNext() )
             {
          
-	            prod = (production)p.Current;
+	            prod = p.Current;
 
 	            /* get the updated first of that production */
 	            prod_first = prod.check_first_set();
@@ -235,10 +234,10 @@ namespace TUVienna.CS_CUP
 	/*-----------------------------------------------------------*/
 
 	/** Table of all productions with this non terminal on the LHS. */
-	protected Hashtable _productions = new Hashtable(11);
+	protected Dictionary<production, production> _productions = new Dictionary<production, production>(11);
 
 	/** Access to productions with this non terminal on the LHS. */
-	public IEnumerator productions() {return _productions.Values.GetEnumerator();}
+	public IEnumerator<production> productions() {return _productions.Values.GetEnumerator();}
 
 	/*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
 
@@ -291,10 +290,10 @@ namespace TUVienna.CS_CUP
 	protected bool looks_nullable() 
 {
 	/* look and see if any of the productions now look nullable */
-	IEnumerator e = productions();
+	var e = productions();
 	while ( e.MoveNext() )
 	/* if the production can go to empty, we are nullable */
-	if (((production)e.Current).check_nullable())
+	if ((e.Current).check_nullable())
 	return true;
 
 	/* none of the productions can go to empty, so we are not nullable */
