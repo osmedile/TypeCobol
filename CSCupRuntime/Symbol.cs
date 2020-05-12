@@ -95,6 +95,15 @@ namespace TUVienna.CS_CUP.Runtime
 		  Printing this token out. (Override for pretty-print).
 		  ****************************/
 		public override string ToString() { return "#"+sym; }
+
+        public void Reset()
+        {
+            left = -1;
+            right = -1;
+            value = null;
+            parse_state = -1;
+            used_by_parser = false;
+        }
 	}
 }
 
