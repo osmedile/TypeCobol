@@ -2,7 +2,9 @@ namespace TUVienna.CS_CUP
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
 
     /** 
      * This class handles emitting generated code for the resulting parser.
@@ -323,7 +325,7 @@ namespace TUVienna.CS_CUP
          */
         protected static void emit_action_code(TextWriter cout, production start_prod)
         {
-            production prod;
+
 
             long start_time = DateTime.Now.Ticks;
 
@@ -344,20 +346,44 @@ namespace TUVienna.CS_CUP
             /* field for parser object */
             cout.WriteLine("  private " + parser_class_name + " my_parser;");
 
+            cout.WriteLine("      TUVienna.CS_CUP.Runtime.Symbol " + pre("result") + ";");
+            cout.WriteLine("      int " + pre("top") + ";");
+            cout.WriteLine("      StackList<Symbol> " + pre("stack") + ";");
+            cout.WriteLine("      TUVienna.CS_CUP.Runtime.lr_parser " + pre("parser;"));
+
+
+            //For terminal production, recycle symbol
+            /*
+            var symbolIndexPrint = new HashSet<int>();
+            foreach (var prod2 in production.all2())
+            {
+                var index = prod2.lhs().the_symbol().index();
+                if (prod2.UsedOnlyOnce() && !symbolIndexPrint.Contains(index))
+                {
+                    symbolIndexPrint.Add(index);
+                    cout.WriteLine($"  private TUVienna.CS_CUP.Runtime.Symbol symbol{index} = new TUVienna.CS_CUP.Runtime.Symbol({index} //{prod2.lhs().the_symbol().name()});");
+                }
+            }*/
+
+
+            printActionFuncArray(cout, start_prod);
+
+
             /* constructor */
             cout.WriteLine();
             cout.WriteLine("  /** Constructor */");
             cout.WriteLine("  public " + pre("actions") + "(" + parser_class_name + " t_parser) {");
             cout.WriteLine("    this.my_parser = t_parser;");
+            cout.WriteLine("    InitActions();");
+            
             cout.WriteLine("  }");
 
             /* action method head */
             cout.WriteLine();
             cout.WriteLine("  /** Method with the actual generated action code. */");
-            cout.WriteLine("  public   TUVienna.CS_CUP.Runtime.Symbol " +
-                   pre("do_action") + "(");
+            cout.WriteLine("  public   TUVienna.CS_CUP.Runtime.Symbol " + pre("do_action") + "(");
             cout.WriteLine("    int                        " + pre("act_num,"));
-            cout.WriteLine("    TUVienna.CS_CUP.Runtime.lr_parser " + pre("parser,"));
+            cout.WriteLine("    TUVienna.CS_CUP.Runtime.lr_parser " + pre("parserParam,"));
             cout.WriteLine("    StackList<Symbol>            xstack1)");
             //  cout.WriteLine("    throws java.lang.Exception");
             cout.WriteLine("    {");
@@ -366,16 +392,58 @@ namespace TUVienna.CS_CUP
             /* New declaration!! now return Symbol
            6/13/96 frankf */
             cout.WriteLine("      /* Symbol object for return from actions */");
-            cout.WriteLine("      int " + pre("top") + " = xstack1.Count-1 ;");
-            cout.WriteLine("      StackList<Symbol> " + pre("stack") + " =  xstack1;");
-            cout.WriteLine("      TUVienna.CS_CUP.Runtime.Symbol " + pre("result") + ";");
+            cout.WriteLine("      " + pre("top") + " = xstack1.Count-1 ;");
+            cout.WriteLine("      " + pre("stack") + " =  xstack1;");
+            cout.WriteLine("      " + pre("parser") + " =  " + pre("parserParam") + "; ");
+
             cout.WriteLine();
 
+            //printActionSelectionBasedOnSwitch(cout, start_prod);
+
+            cout.WriteLine($"return actionsArray[{pre("act_num")}]();");
+
+            /* end of method */
+            cout.WriteLine("    }");
+
+
+            //Legacy method
+            /*
+            cout.WriteLine();
+            cout.WriteLine("  // Method with the actual generated action code. ");
+            cout.WriteLine("  public   TUVienna.CS_CUP.Runtime.Symbol " + pre("do_actionLegacy") + "(");
+            cout.WriteLine("    int                        " + pre("act_num,"));
+            cout.WriteLine("    TUVienna.CS_CUP.Runtime.lr_parser " + pre("parserParam,"));
+            cout.WriteLine("    StackList<Symbol>            xstack1)");
+            cout.WriteLine("    {");
+            cout.WriteLine("      // Symbol object for return from actions");
+            cout.WriteLine("      " + pre("top") + " = xstack1.Count-1 ;");
+            cout.WriteLine("      " + pre("stack") + " =  xstack1;");
+            cout.WriteLine("      " + pre("parser") + " =  " + pre("parserParam") + "; ");
+            cout.WriteLine();
+                printActionSelectionBasedOnSwitch(cout, start_prod);
+            cout.WriteLine("    }");
+            */
+
+
+            /* end of class */
+            cout.WriteLine("}");
+            cout.WriteLine();
+
+
+
+            action_code_time = DateTime.Now.Ticks - start_time;
+        }
+
+
+
+        private static void printActionSelectionBasedOnSwitch(TextWriter cout, production start_prod)
+        {
             /* switch top */
             cout.WriteLine("      /* select the action based on the action number */");
             cout.WriteLine("      switch (" + pre("act_num") + ")");
             cout.WriteLine("        {");
 
+            production prod;
             /* emit action code for each production as a separate case */
             var p = production.all();
             while (p.MoveNext())
@@ -395,21 +463,24 @@ namespace TUVienna.CS_CUP
 
                 var printAction = (!string.IsNullOrWhiteSpace(prod.action()?.code_string()) && !prod.action().Equals(""));
 
-                String resultParameter = "";
+                string resultParameter = "";
+                string resultParameterWithComma = "";
                 if (printAction)
                 {
                     resultDeclarationPrinted = true;
-                    WriteResultDeclaration(cout, prod, out resultParameter);
+                    WriteResultDeclaration(cout, prod, out resultParameter, out resultParameterWithComma);
                 }
 
-
+                bool onlyTerminal = prod.HasOnlyTerminalRHS();
+                bool useRecycledSymbol = false;// prod.UsedOnlyOnce();
 
                 /* Add code to propagate RESULT assignments that occur in
-                 * action code embedded in a production (ie, non-rightmost
-                 * action code). 24-Mar-1998 CSA
-                 */
+                    * action code embedded in a production (ie, non-rightmost
+                    * action code). 24-Mar-1998 CSA
+                    */
                 for (int i = 0; i < prod.rhs_length(); i++)
                 {
+
                     // only interested in non-terminal symbols.
                     if (prod.rhs(i).GetType() != typeof(symbol_part)) continue;
                     symbol s = ((symbol_part)prod.rhs(i)).the_symbol();
@@ -423,7 +494,7 @@ namespace TUVienna.CS_CUP
                     if (!resultDeclarationPrinted)
                     {
                         resultDeclarationPrinted = true;
-                        WriteResultDeclaration(cout, prod, out resultParameter);
+                        WriteResultDeclaration(cout, prod, out resultParameter, out resultParameterWithComma);
                     }
                     cout.WriteLine("              " + "// propagate RESULT from " +
                         s.name());
@@ -484,16 +555,35 @@ namespace TUVienna.CS_CUP
                         leftstring = "(" + emit.pre("stack") + ".ElementAtFromBottom(" +
                       emit.pre("top") + loffsetText + ")).left";
                     }
-                    cout.WriteLine("              " + pre("result") + " = new TUVienna.CS_CUP.Runtime.Symbol(" +
+                    var index = prod.lhs().the_symbol().index();
+                    if (useRecycledSymbol)
+                    {
+                        cout.WriteLine($"              symbol{index}.Reset({leftstring}, {rightstring} {resultParameter});");
+                        cout.WriteLine($"              {pre("result")} = symbol{index};");
+                    }
+                    else
+                    {
+                        cout.WriteLine("              " + pre("result") + " = new TUVienna.CS_CUP.Runtime.Symbol(" +
                         prod.lhs().the_symbol().index() + "/*" +
                         prod.lhs().the_symbol().name() + "*/" +
-                        ", " + leftstring + ", " + rightstring + resultParameter + ");");
+                        ", " + leftstring + ", " + rightstring + resultParameterWithComma + ");");
+                    }
                 }
                 else
                 {
-                    cout.WriteLine("              " + pre("result") + " = new TUVienna.CS_CUP.Runtime.Symbol(" +
-                        prod.lhs().the_symbol().index() + "/*" +
-                        prod.lhs().the_symbol().name() + "*/" + resultParameter + ");");
+                    var index = prod.lhs().the_symbol().index();
+                    if (useRecycledSymbol)
+                    {
+                        cout.WriteLine($"              symbol{index}.Reset({resultParameter});");
+                        cout.WriteLine($"              {pre("result")} = symbol{index};");
+                    }
+                    else
+                    {
+                        cout.WriteLine("              " + pre("result") + " = new TUVienna.CS_CUP.Runtime.Symbol(" +
+                       index + "/*" +
+                        prod.lhs().the_symbol().name() + "*/" + resultParameterWithComma + ");");
+                    }
+
                 }
 
                 /* end of their block */
@@ -519,17 +609,172 @@ namespace TUVienna.CS_CUP
                         "internal parse table\");");
             cout.WriteLine();
             cout.WriteLine("        }");
-
-            /* end of method */
-            cout.WriteLine("    }");
-
-            /* end of class */
-            cout.WriteLine("}");
-            cout.WriteLine();
-            action_code_time = DateTime.Now.Ticks - start_time;
         }
 
-        private static void WriteResultDeclaration(TextWriter cout, production prod, out string resultParameter)
+        private static void printActionFuncArray(TextWriter cout, production start_prod)
+        {
+            var productions = production.all2();
+            /* switch top */
+            cout.WriteLine("      //Functions used to produce action");
+            cout.WriteLine($"      private Func<Symbol>[] actionsArray = new Func<Symbol>[{productions.Count}];");
+
+
+            cout.WriteLine("      private void InitActions()");
+            cout.WriteLine("      {");
+            /* emit action code for each production as a separate case */
+            foreach (var prod in productions) 
+            {
+                cout.WriteLine($"      // {prod.to_simple_string()}");
+                cout.WriteLine("      actionsArray[" + prod.index() + "] = () => {");
+
+
+
+                
+
+                bool resultDeclarationPrinted = false;
+                var printAction = (!string.IsNullOrWhiteSpace(prod.action()?.code_string()) && !prod.action().Equals(""));
+
+                string resultParameter = "";
+                string resultParameterWithComma = "";
+                if (printAction)
+                {
+                    resultDeclarationPrinted = true;
+                    WriteResultDeclaration(cout, prod, out resultParameter, out resultParameterWithComma);
+                }
+
+                bool onlyTerminal = prod.HasOnlyTerminalRHS();
+                bool useRecycledSymbol = false;// prod.UsedOnlyOnce();
+
+                /* Add code to propagate RESULT assignments that occur in
+                    * action code embedded in a production (ie, non-rightmost
+                    * action code). 24-Mar-1998 CSA
+                    */
+                for (int i = 0; i < prod.rhs_length(); i++)
+                {
+                    // only interested in non-terminal symbols.
+                    if (prod.rhs(i).GetType() != typeof(symbol_part)) continue;
+                    symbol s = ((symbol_part)prod.rhs(i)).the_symbol();
+                    if (s.GetType() != typeof(non_terminal)) continue;
+                    // skip this non-terminal unless it corresponds to
+                    // an embedded action production.
+                    if (((non_terminal)s).is_embedded_action == false) continue;
+                    // OK, it fits.  Make a conditional assignment to RESULT.
+                    int index = prod.rhs_length() - i - 1; // last rhs is on top.
+
+                    if (!resultDeclarationPrinted)
+                    {
+                        resultDeclarationPrinted = true;
+                        WriteResultDeclaration(cout, prod, out resultParameter, out resultParameterWithComma);
+                    }
+                    cout.WriteLine("              " + "// propagate RESULT from " + s.name());
+
+                    string indexDecals;
+                    if (index != 0)
+                    {
+                        indexDecals = "-" + index;
+                    }
+                    else
+                    {
+                        indexDecals = "";
+                    }
+
+                    cout.WriteLine("              " + "if ( " +
+                      "(" + emit.pre("stack") + ".ElementAtFromBottom("
+                          + emit.pre("top") + indexDecals + ")).value != null )");
+                    cout.WriteLine("                " + "RESULT = " +
+                      "(" + prod.lhs().the_symbol().stack_type() + ") " +
+                      "( " + emit.pre("stack") + ".ElementAtFromBottom("
+                          + emit.pre("top") + indexDecals + ")).value;");
+                }
+
+                /* if there is an action string, emit it */
+                if (printAction)
+                {
+                    cout.WriteLine(prod.action().code_string());
+                }
+
+                /* here we have the left and right values being propagated.  
+                  must make this a command line option.
+                   frankf 6/18/96 */
+
+                /* Create the code that assigns the left and right values of
+                   the new Symbol that the production is reducing to */
+                if (emit.lr_values())
+                {
+                    int loffset;
+                    string leftstring, rightstring;
+
+                    rightstring = "(" + emit.pre("stack") + ".ElementAtFromBottom(" +
+                      emit.pre("top") + ")).right";
+                    if (prod.rhs_length() == 0)
+                        leftstring = rightstring;
+                    else
+                    {
+                        loffset = prod.rhs_length() - 1;
+                        string loffsetText;
+                        if (loffset != 0)
+                        {
+                            loffsetText = "-" + loffset;
+                        }
+                        else
+                        {
+                            loffsetText = "";
+                        }
+
+                        leftstring = "(" + emit.pre("stack") + ".ElementAtFromBottom(" +
+                      emit.pre("top") + loffsetText + ")).left";
+                    }
+                    var index = prod.lhs().the_symbol().index();
+                    if (useRecycledSymbol)
+                    {
+                        cout.WriteLine($"              symbol{index}.Reset({leftstring}, {rightstring} {resultParameter});");
+                        cout.WriteLine($"              {pre("result")} = symbol{index};");
+                    }
+                    else
+                    {
+                        cout.WriteLine("              " + pre("result") + " = new TUVienna.CS_CUP.Runtime.Symbol(" +
+                        prod.lhs().the_symbol().index() + "/*" +
+                        prod.lhs().the_symbol().name() + "*/" +
+                        ", " + leftstring + ", " + rightstring + resultParameterWithComma + ");");
+                    }
+                }
+                else
+                {
+                    var index = prod.lhs().the_symbol().index();
+                    if (useRecycledSymbol)
+                    {
+                        cout.WriteLine($"              symbol{index}.Reset({resultParameter});");
+                        cout.WriteLine($"              {pre("result")} = symbol{index};");
+                    }
+                    else
+                    {
+                        cout.WriteLine("              " + pre("result") + " = new TUVienna.CS_CUP.Runtime.Symbol(" +
+                       index + "/*" +
+                        prod.lhs().the_symbol().name() + "*/" + resultParameterWithComma + ");");
+                    }
+                }
+
+                /* end of their block */
+                //cout.WriteLine("            }");
+
+                /* if this was the start production, do action for accept */
+                if (prod == start_prod)
+                {
+                    cout.WriteLine("          /* ACCEPT */");
+                    cout.WriteLine("          " + pre("parser") + ".done_parsing();");
+                }
+
+                /* code to return lhs symbol */
+                cout.WriteLine("          return " + pre("result") + ";");
+                cout.WriteLine();
+
+                cout.WriteLine("      };"); //TODO move this to bottow of foreach
+            }
+            cout.WriteLine("      }");
+        }
+
+
+        private static void WriteResultDeclaration(TextWriter cout, production prod, out string resultParameter, out string resultParameterWithComma)
         {
             /* create the result symbol */
             /*make the variable RESULT which will point to the new Symbol (see below)
@@ -538,7 +783,8 @@ namespace TUVienna.CS_CUP
             cout.WriteLine("              " + prod.lhs().the_symbol().stack_type() +
                     " RESULT = null;");
 
-            resultParameter = ", RESULT";
+            resultParameter = "RESULT";
+            resultParameterWithComma = ", RESULT";
         }
 
         /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
@@ -981,8 +1227,12 @@ namespace TUVienna.CS_CUP
             cout.WriteLine("    StackList<Symbol>            CUP_parser_stack)");
             cout.WriteLine("  {");
             cout.WriteLine("    /* call code in generated class */");
-            cout.WriteLine("    return action_obj." + pre("do_action(") +
-                        "act_num, parser, stack);");
+            cout.WriteLine("    var symbol =  action_obj." + pre("do_action(") + "act_num, parser, stack);");
+           // cout.WriteLine("    var symbol =  action_obj." + pre("do_actionLegacy(") + "act_num, parser, stack);");
+
+            cout.WriteLine("    return symbol;");
+
+            //
             cout.WriteLine("  }");
             cout.WriteLine("");
 

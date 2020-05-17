@@ -104,7 +104,16 @@ namespace TUVienna.CS_CUP.Runtime
             parse_state = -1;
             used_by_parser = false;
         }
-	}
+
+        public void Reset(object value)
+        {
+            left = -1;
+            right = -1;
+            this.value = value;
+            parse_state = -1;
+            used_by_parser = false;
+        }
+    }
 }
 
 

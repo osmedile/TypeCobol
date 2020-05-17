@@ -4,6 +4,7 @@ namespace TUVienna.CS_CUP
 
 using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
 
     /** This class represents a production in the grammar.  It contains
      *  a LHS non terminal, and an array of RHS symbols.  As various 
@@ -217,9 +218,11 @@ using System.Collections;
  
   /** Access to all productions. */
   public static IEnumerator<production> all() {return _all.Values.GetEnumerator();}
+        /** Access to all productions. */
+        public static ICollection<production> all2() { return _all.Values; }
 
-    /** Lookup a production by index. */
-  public static production find(int indx) {
+        /** Lookup a production by index. */
+        public static production find(int indx) {
     return _all[indx];
   }
 
@@ -273,10 +276,20 @@ using System.Collections;
 	  "Index out of range for right hand side of production");
     }
 
-  /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
+        public bool HasOnlyTerminalRHS()
+        {
+            return _rhs.All(pp => !(pp as symbol_part)?.the_symbol().is_non_term() ?? false);
+        }
 
-  /** How much of the right hand side array we are presently using. */
-  protected int _rhs_length;
+        public bool UsedOnlyOnce()
+        {
+            return _rhs.All(pp => (pp as symbol_part)?.the_symbol().use_count() <= 1);
+        }
+
+        /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
+
+        /** How much of the right hand side array we are presently using. */
+        protected int _rhs_length;
 
   /** How much of the right hand side array we are presently using. */
   public int rhs_length() {return _rhs_length;}
