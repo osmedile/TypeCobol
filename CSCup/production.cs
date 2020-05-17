@@ -405,8 +405,8 @@ using System.Collections;
       else ret = "";
             string offsetText = offset == 0 ? "" : "-" + offset;
       /* otherwise, just declare label. */
-	return ret + "\t\t" + stack_type + " " + labelname + " = (" + stack_type + 
-                   ")( " + emit.pre("stack") + ".ElementAtFromBottom(" + emit.pre("top")
+	return ret + "\t\t" + stack_type + " " + labelname + " = (" + stack_type +
+                   ")( my_parser.getParserStack().ElementAtFromBottom(" + emit.pre("top")
                    + offsetText + ")).value;\n";
 
     }
