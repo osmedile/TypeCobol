@@ -18,11 +18,18 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
     /// </summary>
     public class ProgramClassBuilder : IProgramClassBuilder
     {
+        public ProgramClassBuilder()
+        {
+            CurrentNode = Root;
+        }
+
         /// <summary>
         /// Program object resulting of the visit the parse tree
         /// </summary>
         private Program Program { get; set; }
-        public SyntaxTree SyntaxTree { get; set; }
+
+        /// <summary>Tree root</summary>
+        public SourceFile Root { get; private set; } = new SourceFile();
 
         private TypeDefinition _CurrentTypeDefinition
         {
@@ -104,7 +111,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public NodeDispatcher Dispatcher { get; internal set; }
 
-        public Node CurrentNode { get { return SyntaxTree.CurrentNode; } }
+        public Node CurrentNode { get; private set; }
 
         public Dictionary<CodeElement, Node> NodeCodeElementLinkers = new Dictionary<CodeElement, Node>();
 
@@ -119,12 +126,14 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         private void Enter(Node node, SymbolTable table = null)
         {
-            node.SymbolTable = table ?? SyntaxTree.CurrentNode.SymbolTable;
+            node.SymbolTable = table ?? CurrentNode.SymbolTable;
             if (_ProcedureDeclaration != null)
             {
                 node.SetFlag(Node.Flag.InsideProcedure, true);      //Set flag to know that this node belongs a Procedure or Function
             }
-            SyntaxTree.Enter(node);
+
+            CurrentNode.Add(node);
+            CurrentNode = node;
 
             if (node.CodeElement != null)
                 NodeCodeElementLinkers.Add(node.CodeElement, node);
@@ -132,10 +141,9 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         private void Exit()
         {
-            var node = SyntaxTree.CurrentNode;
-            Dispatcher.OnNode(node, CurrentProgram);
-            SyntaxTree.Exit();
-            LastEnteredNode = node;
+            Dispatcher.OnNode(CurrentNode, CurrentProgram);
+            LastEnteredNode = CurrentNode;
+            CurrentNode = CurrentNode.Parent;
         }
 
         private void AttachEndIfExists(CodeElementEnd end)
@@ -197,7 +205,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             TableOfGlobals = new SymbolTable(TableOfGlobalStorage, SymbolTable.Scope.Global);
             Program = null;
 
-            SyntaxTree.Root.SymbolTable = TableOfNamespaces; //Set SymbolTable of SourceFile Node, Limited to NameSpace and Intrinsic scopes
+            Root.SymbolTable = TableOfNamespaces; //Set SymbolTable of SourceFile Node, Limited to NameSpace and Intrinsic scopes
         }
 
         public virtual void StartCobolProgram(ProgramIdentification programIdentification, LibraryCopyCodeElement libraryCopy)
@@ -205,10 +213,10 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             
             if (Program == null)
             {
-                if (SyntaxTree.Root.MainProgram == null)
+                if (Root.MainProgram == null)
                 {
-                    SyntaxTree.Root.MainProgram = new SourceProgram(TableOfGlobals, programIdentification);
-                    Program = SyntaxTree.Root.MainProgram;
+                    Root.MainProgram = new SourceProgram(TableOfGlobals, programIdentification);
+                    Program = Root.MainProgram;
                 }
                 else
                 {
@@ -365,8 +373,8 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         public virtual void StartGlobalStorageSection(GlobalStorageSectionHeader header)
         {
-            Enter(new GlobalStorageSection(header), SyntaxTree.CurrentNode.SymbolTable.GetTableFromScope(SymbolTable.Scope.GlobalStorage));
             _IsInsideGlobalStorageSection = true;
+            Enter(new GlobalStorageSection(header), CurrentNode.SymbolTable.GetTableFromScope(SymbolTable.Scope.GlobalStorage));
         }
 
         public virtual void EndGlobalStorageSection()
@@ -478,7 +486,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         public virtual void StartDataRedefinesEntry(DataRedefinesEntry entry)
         {
             SetCurrentNodeToTopLevelItem(entry.LevelNumber);
-            var symbolTable = SyntaxTree.CurrentNode.SymbolTable;
+            var symbolTable = CurrentNode.SymbolTable;
             if (entry.IsGlobal)
                 symbolTable = symbolTable.GetTableFromScope(SymbolTable.Scope.Global);
 
@@ -626,7 +634,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
             // (SymbolTable - function, type finding could be impacted) 
 
             //Function must be added to Declarations scope
-            var declarationSymbolTable = SyntaxTree.CurrentNode.SymbolTable.GetTableFromScope(SymbolTable.Scope.Declarations);
+            var declarationSymbolTable = CurrentNode.SymbolTable.GetTableFromScope(SymbolTable.Scope.Declarations);
             declarationSymbolTable.AddFunction(node);
             Enter(node, new SymbolTable(declarationSymbolTable, SymbolTable.Scope.Function));
 
