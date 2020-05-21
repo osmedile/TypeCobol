@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using TypeCobol.Compiler.CodeElements;
 using TypeCobol.Compiler.Concurrency;
 using TypeCobol.Compiler.Parser;
+using TUVienna.CS_CUP.Runtime;
 
 namespace TypeCobol.Compiler.CupParser
 {
@@ -19,11 +20,66 @@ namespace TypeCobol.Compiler.CupParser
         /// With CS CUP real toke start at 3, 0 is for EOF and 1 for error.
         /// 2 is for the StatementStart terminal symbol
         /// </summary>
-        public const int CS_CUP_START_TOKEN = 2 + NSTARTS;
+        public const int CS_CUP_START_TOKEN = 2;
         /// <summary>
         /// The EOF symbol
         /// </summary>
         public static TUVienna.CS_CUP.Runtime.Symbol EOF => new TUVienna.CS_CUP.Runtime.Symbol(0, null);
+
+
+        private TUVienna.CS_CUP.Runtime.Symbol dataRedefines = new TUVienna.CS_CUP.Runtime.Symbol(((int)CodeElementType.DataRedefinesEntry) + CS_CUP_START_TOKEN);
+
+        private Symbol[] dataDescriptionSymbols = new Symbol[2]
+        {
+            new Symbol(((int)CodeElementType.DataDescriptionEntry) + CS_CUP_START_TOKEN),
+            new Symbol(((int)CodeElementType.DataDescriptionEntry) + CS_CUP_START_TOKEN)
+        };
+
+        private Symbol[] dataConditionSymbols = new Symbol[2]
+        {
+            new Symbol(((int)CodeElementType.DataConditionEntry) + CS_CUP_START_TOKEN),
+            new Symbol(((int)CodeElementType.DataConditionEntry) + CS_CUP_START_TOKEN)
+        };
+
+        private Symbol[] moveSymbols = new Symbol[2]
+        {
+            new Symbol(((int)CodeElementType.MoveStatement) + CS_CUP_START_TOKEN),
+            new Symbol(((int)CodeElementType.MoveStatement) + CS_CUP_START_TOKEN)
+        };
+        private Symbol[] setSymbols = new Symbol[2]
+        {
+            new Symbol(((int)CodeElementType.SetStatement) + CS_CUP_START_TOKEN),
+            new Symbol(((int)CodeElementType.SetStatement) + CS_CUP_START_TOKEN)
+        };
+        private Symbol[] displaySymbols = new Symbol[2]
+        {
+            new Symbol(((int)CodeElementType.DisplayStatement) + CS_CUP_START_TOKEN),
+            new Symbol(((int)CodeElementType.DisplayStatement) + CS_CUP_START_TOKEN)
+        };
+        private Symbol[] addSymbols = new Symbol[2]
+        {
+            new Symbol(((int)CodeElementType.AddStatement) + CS_CUP_START_TOKEN    ),
+            new Symbol(((int)CodeElementType.AddStatement) + CS_CUP_START_TOKEN    )
+        };
+        private Symbol[] paragraphSymbols = new Symbol[2]
+        {
+            new Symbol(((int)CodeElementType.ParagraphHeader) + CS_CUP_START_TOKEN    ),
+            new Symbol(((int)CodeElementType.ParagraphHeader) + CS_CUP_START_TOKEN    )
+        };
+        private int idx = 0;
+
+
+        private Symbol[,] symbolsCache = new Symbol[Enum.GetValues(typeof(CodeElementType)).Length+1, 2];
+
+     
+        public void toto()
+        {
+            foreach (var ceType in Enum.GetValues(typeof(CodeElementType)).Cast<int>())
+            {
+                symbolsCache[ceType,0] = new Symbol(ceType + CS_CUP_START_TOKEN    );
+                symbolsCache[ceType,1] = new Symbol(ceType + CS_CUP_START_TOKEN    );
+            }
+        }
 
         /// <summary>
         /// Current code element line index
@@ -72,6 +128,7 @@ namespace TypeCobol.Compiler.CupParser
             StartToken = -1;
             this.CodeElementsLines = codeElementsLines;
             Reset();
+            toto();
         }
 
         /// <summary>
@@ -127,15 +184,6 @@ namespace TypeCobol.Compiler.CupParser
         }
 
         /// <summary>
-        /// The Last Symbol return by the Tokenizer. This one can be used for reporting errors.
-        /// </summary>
-        public TUVienna.CS_CUP.Runtime.Symbol LastSymbol
-        {
-            get;
-            private set;
-        }
-
-        /// <summary>
         /// Enumerator all Symbol from the CodeElementLines
         /// </summary>
         /// <returns>An Enumerator on Symbols</returns>
@@ -152,9 +200,7 @@ namespace TypeCobol.Compiler.CupParser
                 {
                     if (ce != null)
                     {
-                        TUVienna.CS_CUP.Runtime.Symbol symbol = new TUVienna.CS_CUP.Runtime.Symbol(((int)ce.Type) + CS_CUP_START_TOKEN - 1, ce);
-                        LastSymbol = symbol;
-                        yield return symbol;
+                        yield return produceSymbol(ce);
                     }
                 }
             }
@@ -167,11 +213,7 @@ namespace TypeCobol.Compiler.CupParser
                         int ceCount = cel.CodeElements.Count;
                         for (; m_CodeElementIndex < ceCount; m_CodeElementIndex++)
                         {
-                            CodeElement ce = cel.CodeElements[m_CodeElementIndex];
-                            TUVienna.CS_CUP.Runtime.Symbol symbol =
-                                new TUVienna.CS_CUP.Runtime.Symbol(((int)ce.Type) + CS_CUP_START_TOKEN - 1, ce);
-                            LastSymbol = symbol;
-                            yield return symbol;
+                            yield return produceSymbol(cel.CodeElements[m_CodeElementIndex]);
                         }
                         m_CodeElementIndex = 0;
                     }
@@ -179,6 +221,78 @@ namespace TypeCobol.Compiler.CupParser
             }
             m_CodeElementsLineIndex = 0;
             yield return EOF;
+
+            TUVienna.CS_CUP.Runtime.Symbol produceSymbol(CodeElement ce)
+            {
+                TUVienna.CS_CUP.Runtime.Symbol symbol;
+                
+                if (ce.Type == CodeElementType.DataDescriptionEntry)
+                {
+                    symbol = dataDescriptionSymbols[idx];
+                    idx = (idx + 1) % 2;
+                    symbol.Reset(ce);
+                }
+                else if (ce.Type == CodeElementType.DataConditionEntry)
+                {
+                    symbol = dataConditionSymbols[idx];
+                    idx = (idx + 1) % 2;
+                    symbol.Reset(ce);
+                }
+                else if (ce.Type == CodeElementType.MoveStatement)
+                {
+                    symbol = moveSymbols[idx];
+                    idx = (idx + 1) % 2;
+                    symbol.Reset(ce);
+                }/*
+                else if(ce.Type == CodeElementType.SetStatement)
+                {
+                    symbol = setSymbols[idx];
+                    idx = (idx + 1) % 2;
+                    symbol.Reset(ce);
+                }/*
+                else if (ce.Type == CodeElementType.DisplayStatement)
+                {
+                    symbol = displaySymbols[idx];
+                    idx = (idx + 1) % 2;
+                    symbol.Reset(ce);
+                }
+                else if (ce.Type == CodeElementType.AddStatement)
+                {
+                    symbol = addSymbols[idx];
+                    idx = (idx + 1) % 2;
+                    symbol.Reset(ce);
+                }*/
+
+                else
+                {
+                    symbol = new TUVienna.CS_CUP.Runtime.Symbol(((int)ce.Type) + CS_CUP_START_TOKEN    , ce);
+                }
+                return symbol;
+            }
+
+            TUVienna.CS_CUP.Runtime.Symbol produceSymbol2(CodeElement ce)
+            {
+                TUVienna.CS_CUP.Runtime.Symbol symbol;
+                idx = (idx + 1) % 2;
+                if (ce.Type <= CodeElementType.EntryStatement)
+                {
+                    symbol = symbolsCache[(int) ce.Type, idx];
+                    symbol.Reset(ce);
+                }/*
+                else if (ce.Type == CodeElementType.MoveStatement)
+                {
+                    symbol = moveSymbols[idx];
+                    idx = (idx + 1) % 2;
+                    symbol.Reset(ce);
+                }
+                else*/
+                {
+                    symbol = new TUVienna.CS_CUP.Runtime.Symbol(((int)ce.Type) + CS_CUP_START_TOKEN    , ce);
+                }
+                
+                
+                return symbol;
+            }
         }
 
         /// <summary>
