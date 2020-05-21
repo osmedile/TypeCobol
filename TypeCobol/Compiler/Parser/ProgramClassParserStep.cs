@@ -115,7 +115,15 @@ namespace TypeCobol.Compiler.Parser
                 temporarySemanticDocument.TypeThatNeedTypeLinking);
 
             //Complete some information on Node and run checker that need a full AST
-            root.AcceptASTVisitor(new CrossCompleteChecker());
+            var crossChecker = new CrossCompleteChecker();
+            //root.AcceptASTVisitor(crossChecker);
+            
+            foreach(var node in temporarySemanticDocument.NodeCodeElementLinkers.Values)
+            {
+                crossChecker.BeginNode(node);
+                node.VisitNode(crossChecker);
+                crossChecker.EndNode(node);
+            }
         }
 
     }
