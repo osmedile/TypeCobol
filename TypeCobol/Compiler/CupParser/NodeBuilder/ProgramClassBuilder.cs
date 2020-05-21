@@ -419,9 +419,8 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
                     node.ParentTypeDefinition = _CurrentTypeDefinition;
                 Enter(node, symbolTable);
 
-                if (entry.Indexes != null && entry.Indexes.Length > 0)
+                if (entry.Indexes != null)
                 {
-                    
                     foreach (var index in entry.Indexes)
                     {
                         var indexNode = new IndexDefinition(index);
