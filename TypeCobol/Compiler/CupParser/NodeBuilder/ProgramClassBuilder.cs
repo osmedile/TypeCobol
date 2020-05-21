@@ -44,11 +44,8 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
 
         private bool typeAlreadyAddedToTypeToLink = false;
 
-        private bool _IsInsideWorkingStorageContext;
-        private bool _IsInsideLinkageSectionContext;
-        private bool _IsInsideLocalStorageSectionContext;
-        private bool _IsInsideFileSectionContext;
-        private bool _IsInsideGlobalStorageSection;
+        private Node.Flag currentSectionFlag;
+        
         private FunctionDeclaration _ProcedureDeclaration;
 
         public List<DataDefinition> TypedVariablesOutsideTypedef { get; } = new List<DataDefinition>();
@@ -361,27 +358,27 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         public virtual void StartFileSection(FileSectionHeader header)
         {
             Enter(new FileSection(header));
-            _IsInsideFileSectionContext = true;
+            currentSectionFlag = Node.Flag.FileSectionNode;
         }
 
         public virtual void EndFileSection()
         {
             ExitLastLevel1Definition();
             Exit();
-            _IsInsideFileSectionContext = false;
+            currentSectionFlag = 0;
         }
 
         public virtual void StartGlobalStorageSection(GlobalStorageSectionHeader header)
         {
-            _IsInsideGlobalStorageSection = true;
             Enter(new GlobalStorageSection(header), CurrentNode.SymbolTable.GetTableFromScope(SymbolTable.Scope.GlobalStorage));
+            currentSectionFlag = Node.Flag.GlobalStorageSection;
         }
 
         public virtual void EndGlobalStorageSection()
         {
             ExitLastLevel1Definition();
             Exit(); // Exit GlobalStorageSection
-            _IsInsideGlobalStorageSection = false;
+            currentSectionFlag = 0;
         }
 
         public virtual void StartFileDescriptionEntry(FileDescriptionEntry entry)
@@ -435,22 +432,11 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
                         Exit();
                     }
                 }
-
-
-                if(_IsInsideWorkingStorageContext)
-                    node.SetFlag(Node.Flag.WorkingSectionNode, true);      //Set flag to know that this node belongs to Working Storage Section
-                else if(_IsInsideLinkageSectionContext)               
-                    node.SetFlag(Node.Flag.LinkageSectionNode, true);      //Set flag to know that this node belongs to Linkage Section
-                else if (_IsInsideLocalStorageSectionContext)
-                    node.SetFlag(Node.Flag.LocalStorageSectionNode, true); //Set flag to know that this node belongs to Local Storage Section
-                else if (_IsInsideFileSectionContext)
-                    node.SetFlag(Node.Flag.FileSectionNode, true);         //Set flag to know that this node belongs to File Section
-                else if (_IsInsideGlobalStorageSection)
-                    node.SetFlag(Node.Flag.GlobalStorageSection, true);         //Set flag to know that this node belongs to Global Storage Section
-
                 node.SymbolTable.AddVariable(node);
                 CheckIfItsTyped(node, node.CodeElement);
             }
+
+            CurrentNode.SetFlag(currentSectionFlag, true);
         }
 
         private void CheckIfItsTyped(DataDefinition dataDefinition, CommonDataDescriptionAndDataRedefines commonDataDescriptionAndDataRedefines)
@@ -538,7 +524,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         public virtual void StartWorkingStorageSection(WorkingStorageSectionHeader header)
         {
             Enter(new WorkingStorageSection(header));
-            _IsInsideWorkingStorageContext = true;
+            currentSectionFlag = Node.Flag.WorkingSectionNode;
             if (_ProcedureDeclaration != null)
             {
                 CurrentNode.SetFlag(Node.Flag.ForceGetGeneratedLines, true);
@@ -549,13 +535,13 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         {
             ExitLastLevel1Definition();
             Exit(); // Exit WorkingStorageSection
-            _IsInsideWorkingStorageContext = false;
+            currentSectionFlag = 0;
         }
 
         public virtual void StartLocalStorageSection(LocalStorageSectionHeader header)
         {
             Enter(new LocalStorageSection(header));
-            _IsInsideLocalStorageSectionContext = true;
+            currentSectionFlag = Node.Flag.LocalStorageSectionNode;
             if (_ProcedureDeclaration != null)
             {
                 CurrentNode.SetFlag(Node.Flag.ForceGetGeneratedLines, true);
@@ -566,13 +552,13 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         {
             ExitLastLevel1Definition();
             Exit(); // Exit LocalStorageSection
-            _IsInsideLocalStorageSectionContext = false;
+            currentSectionFlag = 0;
         }
 
         public virtual void StartLinkageSection(LinkageSectionHeader header)
         {
             Enter(new LinkageSection(header));
-            _IsInsideLinkageSectionContext = true;
+            currentSectionFlag = Node.Flag.LinkageSectionNode;
             if (_ProcedureDeclaration != null)
             {
                 CurrentNode.SetFlag(Node.Flag.ForceGetGeneratedLines, true);
@@ -583,7 +569,7 @@ namespace TypeCobol.Compiler.CupParser.NodeBuilder
         {
             ExitLastLevel1Definition();
             Exit(); // Exit LinkageSection
-            _IsInsideLinkageSectionContext = false;
+            currentSectionFlag = 0;
         }
 
         public virtual void StartProcedureDivision(ProcedureDivisionHeader header)
