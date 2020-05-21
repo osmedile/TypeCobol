@@ -262,10 +262,15 @@ namespace TUVienna.CS_CUP.Runtime
   /** The parse stack itself. */
   protected StackList<Symbol> stack = new StackList<Symbol>();
 
-  /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
+        public StackList<Symbol> getParserStack()
+        {
+            return stack;
+        }
 
-  /** Direct reference to the production table. */ 
-  protected short[][] production_tab;
+        /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
+
+        /** Direct reference to the production table. */
+        protected short[][] production_tab;
 
   /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
 
@@ -308,9 +313,7 @@ namespace TUVienna.CS_CUP.Runtime
    * @param top       the index of the top element of the parse stack.
    */
   public abstract Symbol do_action(
-    int       act_num, 
-    lr_parser parser, 
-    StackList<Symbol>     stack);
+    int       act_num);
 
   /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
 
@@ -585,7 +588,7 @@ namespace TUVienna.CS_CUP.Runtime
 	  else if (act < 0)
 	    {
 	      /* perform the action for the reduce */
-	      lhs_sym = do_action((-act)-1, this, stack);
+	      lhs_sym = do_action((-act)-1);
 
 	      /* look up information about the production */
 	      lhs_sym_num = production_tab[(-act)-1][0];
@@ -778,7 +781,7 @@ namespace TUVienna.CS_CUP.Runtime
 	  else if (act < 0)
 	    {
 	      /* perform the action for the reduce */
-	      lhs_sym = do_action((-act)-1, this, stack);
+	      lhs_sym = do_action((-act)-1);
 
 	      /* look up information about the production */
 	      lhs_sym_num = production_tab[(-act)-1][0];
@@ -1189,7 +1192,7 @@ namespace TUVienna.CS_CUP.Runtime
 	  else if (act < 0)
 	    {
 	      /* perform the action for the reduce */
-	      lhs_sym = do_action((-act)-1, this, stack);
+	      lhs_sym = do_action((-act)-1);
 
 	      /* look up information about the production */
 	      lhs_sym_num = production_tab[(-act)-1][0];

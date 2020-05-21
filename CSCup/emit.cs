@@ -378,9 +378,7 @@ namespace TUVienna.CS_CUP
             cout.WriteLine();
             cout.WriteLine("  /** Method with the actual generated action code. */");
             cout.WriteLine("  public   TUVienna.CS_CUP.Runtime.Symbol " + pre("do_action") + "(");
-            cout.WriteLine("    int                        " + pre("act_num,"));
-            cout.WriteLine("    TUVienna.CS_CUP.Runtime.lr_parser " + pre("parserParam,"));
-            cout.WriteLine("    StackList<Symbol>            xstack1)");
+            cout.WriteLine("    int                        " + pre("act_num)"));
             //  cout.WriteLine("    throws java.lang.Exception");
             cout.WriteLine("    {");
 
@@ -388,7 +386,7 @@ namespace TUVienna.CS_CUP
             /* New declaration!! now return Symbol
            6/13/96 frankf */
             cout.WriteLine("      // Symbol object for return from actions");
-            cout.WriteLine("      " + pre("top") + " = xstack1.Count-1 ;");
+            cout.WriteLine("      " + pre("top") + " = this.my_parser.getParserStack().Count-1 ;");
 
             cout.WriteLine();
 
@@ -1019,12 +1017,10 @@ namespace TUVienna.CS_CUP
             /* access to action code */
             cout.WriteLine("  /** Invoke a user supplied parse action. */");
             cout.WriteLine("  public override TUVienna.CS_CUP.Runtime.Symbol do_action(");
-            cout.WriteLine("    int                        act_num,");
-            cout.WriteLine("    TUVienna.CS_CUP.Runtime.lr_parser parser,");
-            cout.WriteLine("    StackList<Symbol>            CUP_parser_stack)");
+            cout.WriteLine("    int                        act_num)");
             cout.WriteLine("  {");
-            cout.WriteLine("    /* call code in generated class */");
-            cout.WriteLine("    return action_obj." + pre("do_action(") + "act_num, null, stack);");
+            cout.WriteLine("    // call code in generated class");
+            cout.WriteLine("    return action_obj." + pre("do_action(") + "act_num);");
 
             //
             cout.WriteLine("  }");
