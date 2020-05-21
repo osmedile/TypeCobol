@@ -289,7 +289,7 @@ namespace TypeCobol.Compiler
         /// </summary>
         /// <param name="includeNodeDiagnostics"></param>
         /// <returns></returns>
-        public IList<Diagnostic> AllDiagnostics(bool includeNodeDiagnostics) {
+        public IList<Diagnostic> AllDiagnostics0(bool includeNodeDiagnostics) {
             var allDiagnostics = new List<Diagnostic>(base.AllDiagnostics());
 
             allDiagnostics.AddRange(OnlyCodeElementDiagnostics());
@@ -312,6 +312,74 @@ namespace TypeCobol.Compiler
 
                         if (ProgramClassDocumentSnapshot.Diagnostics != null)
                             allDiagnostics.AddRange(ProgramClassDocumentSnapshot.Diagnostics);
+                    }
+                }
+            }
+
+            return allDiagnostics;
+        }
+
+        public IList<Diagnostic> AllDiagnostics(bool includeNodeDiagnostics)
+        {
+            var allDiagnostics = new List<Diagnostic>();
+            if (CodeElementsDocumentSnapshot != null)
+            {
+                foreach (var codeElementLine in CodeElementsDocumentSnapshot.Lines)
+                {
+                    if (codeElementLine.ScannerDiagnostics != null)
+                    {
+                        allDiagnostics.AddRange(codeElementLine.ScannerDiagnostics);
+                    }
+
+                    if (codeElementLine.CompilerListingControlDirective?.Diagnostics != null)
+                    {
+                        allDiagnostics.AddRange(codeElementLine.CompilerListingControlDirective.Diagnostics);
+                    }
+
+                    if (codeElementLine.PreprocessorDiagnostics != null)
+                    {
+                        allDiagnostics.AddRange(codeElementLine.PreprocessorDiagnostics);
+                    }
+
+                    if (codeElementLine.ParserDiagnostics != null)
+                    {
+                        allDiagnostics.AddRange(codeElementLine.ParserDiagnostics);
+                    }
+                    /*
+                    if (codeElementLine.CodeElements != null)
+                    {
+                        foreach (var ce in codeElementLine.CodeElements)
+                        {
+                            if (ce.Diagnostics != null)
+                            {
+                                allDiagnostics.AddRange(ce.Diagnostics);
+                            }
+                        }
+                    }*/
+                }
+            }
+            
+            if (includeNodeDiagnostics)
+            {
+                lock (lockObjectForTemporarySemanticDocument)
+                {
+                    if (TemporaryProgramClassDocumentSnapshot != null)
+                    {
+                        allDiagnostics.AddRange(TemporaryProgramClassDocumentSnapshot.Diagnostics);
+                        foreach (var codeElement in TemporaryProgramClassDocumentSnapshot.NodeCodeElementLinkers.Keys)
+                        {
+                            if (codeElement.Diagnostics != null)
+                            {
+                                allDiagnostics.AddRange(codeElement.Diagnostics);
+                            }
+                        }
+                        foreach (var node in TemporaryProgramClassDocumentSnapshot.NodeCodeElementLinkers.Values)
+                        {
+                            if(node.Diagnostics != null)
+                            {
+                                allDiagnostics.AddRange(node.Diagnostics);
+                            }
+                        }
                     }
                 }
             }
